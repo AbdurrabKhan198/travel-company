@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking - Safar Zone Travels{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 py-8">
+    <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">1</div>
+                        <span class="font-semibold text-gray-800">Flight Details</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-primary mx-4"></div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">2</div>
+                        <span class="font-semibold text-gray-800">Passenger Info</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-gray-300 mx-4"></div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
+                        <span class="text-gray-500">Confirmation</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Booking Form -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-md p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h2>
+                        
+                        <form method="POST" data-validate>
+                            {% csrf_token %}
+                            
+                            <!-- Passenger Name -->
+                            <div class="mb-6">
+                                <label for="passenger_name" class="block text-gray-700 font-semibold mb-2">
+                                    Full Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="passenger_name" id="passenger_name" required 
+                                       class="input-field" placeholder="Enter full name as per ID">
+                            </div>
+
+                            <!-- Age and Gender -->
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label for="passenger_age" class="block text-gray-700 font-semibold mb-2">
+                                        Age <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" name="passenger_age" id="passenger_age" required 
+                                           min="1" max="120" class="input-field" placeholder="Age">
+                                </div>
+                                <div>
+                                    <label for="passenger_gender" class="block text-gray-700 font-semibold mb-2">
+                                        Gender <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="passenger_gender" id="passenger_gender" required class="input-field">
+                                        <option value="">Select</option>
+                                        <option value="M">Male</option>
+                                        <option value="F">Female</option>
+                                        <option value="O">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ID Type and Number -->
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label for="id_type" class="block text-gray-700 font-semibold mb-2">
+                                        ID Type <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="id_type" id="id_type" required class="input-field">
+                                        <option value="">Select ID Type</option>
+                                        <option value="aadhar">Aadhar Card</option>
+                                        <option value="passport">Passport</option>
+                                        <option value="voter">Voter ID</option>
+                                        <option value="driving">Driving License</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="id_last_4_digits" class="block text-gray-700 font-semibold mb-2">
+                                        Last 4 Digits <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="id_last_4_digits" id="id_last_4_digits" required 
+                                           maxlength="4" pattern="[0-9]{4}" class="input-field" placeholder="1234">
+                                </div>
+                            </div>
+
+                            <!-- Number of Seats -->
+                            <div class="mb-6">
+                                <label for="seats_booked" class="block text-gray-700 font-semibold mb-2">
+                                    Number of Seats <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" name="seats_booked" id="seats_booked" required 
+                                       min="1" max="{{ inventory.available_seats }}" value="1" 
+                                       class="input-field" 
+                                       onchange="updateTotal(this.value)">
+                                <p class="text-sm text-gray-500 mt-1">Maximum {{ inventory.available_seats }} seats available</p>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="mb-6">
+                                <label class="flex items-start space-x-3 cursor-pointer">
+                                    <input type="checkbox" required class="mt-1">
+                                    <span class="text-gray-700 text-sm">
+                                        I agree to the <a href="#" class="text-primary hover:underline">terms and conditions</a> 
+                                        and <a href="#" class="text-primary hover:underline">cancellation policy</a>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn-primary w-full py-4 text-lg">
+                                <i class="fas fa-check-circle mr-2"></i>Confirm Booking
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Booking Summary -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-md p-6 sticky top-24">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Booking Summary</h3>
+                        
+                        <!-- Flight Details -->
+                        <div class="border-b pb-4 mb-4">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <i class="fas fa-plane text-primary text-2xl"></i>
+                                <div>
+                                    <p class="font-bold text-gray-800">{{ inventory.route.flight_number }}</p>
+                                    <p class="text-sm text-gray-600">{{ inventory.route.duration }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">From:</span>
+                                    <span class="font-semibold text-gray-800">{{ inventory.route.from_location }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">To:</span>
+                                    <span class="font-semibold text-gray-800">{{ inventory.route.to_location }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Date:</span>
+                                    <span class="font-semibold text-gray-800">{{ inventory.travel_date|date:"d M Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price Breakdown -->
+                        <div class="space-y-3 mb-4">
+                            <div class="flex justify-between text-gray-700">
+                                <span>Base Fare (per seat)</span>
+                                <span>₹{{ inventory.price }}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-700">
+                                <span>Number of Seats</span>
+                                <span id="seat-count">1</span>
+                            </div>
+                            <div class="border-t pt-3 flex justify-between text-lg font-bold text-gray-800">
+                                <span>Total Amount</span>
+                                <span id="total-amount">₹{{ inventory.price }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Features -->
+                        <div class="bg-green-50 rounded-lg p-4 space-y-2 text-sm">
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i>Instant confirmation</p>
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i>E-ticket sent to email</p>
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i>Easy cancellation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const basePrice = {{ inventory.price }};
+    
+    function updateTotal(seats) {
+        const totalPrice = basePrice * seats;
+        document.getElementById('seat-count').textContent = seats;
+        document.getElementById('total-amount').textContent = '₹' + totalPrice.toFixed(2);
+    }
+</script>
+{% endblock %}

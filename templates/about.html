@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About Us - Safar Zone{% endblock %}
+
+{% block extra_css %}
+<style>
+    .about-hero {
+        background: linear-gradient(rgba(13, 110, 253, 0.9), rgba(13, 202, 240, 0.9)), 
+                    url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+        background-size: cover;
+        background-position: center;
+        padding: 150px 0 100px;
+        color: white;
+        text-align: center;
+    }
+    
+    .about-hero h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+    
+    .about-hero p {
+        font-size: 1.25rem;
+        max-width: 700px;
+        margin: 0 auto 30px;
+        opacity: 0.9;
+    }
+    
+    .section-title {
+        position: relative;
+        margin-bottom: 50px;
+        text-align: center;
+    }
+    
+    .section-title h2 {
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 15px;
+    }
+    
+    .section-title:after {
+        content: '';
+        display: block;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        margin: 15px auto 0;
+    }
+    
+    .about-section {
+        padding: 100px 0;
+    }
+    
+    .about-img {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .about-img img {
+        width: 100%;
+        height: auto;
+        transition: transform 0.5s ease;
+    }
+    
+    .about-img:hover img {
+        transform: scale(1.05);
+    }
+    
+    .about-content h3 {
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+    
+    .about-content p {
+        color: #6c757d;
+        margin-bottom: 20px;
+        line-height: 1.8;
+    }
+    
+    .feature-box {
+        display: flex;
+        margin-bottom: 25px;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-right: 20px;
+        flex-shrink: 0;
+    }
+    
+    .feature-text h4 {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+    
+    .team-section {
+        background: #f8f9fa;
+        padding: 100px 0;
+    }
+    
+    .team-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        transition: all 0.3s ease;
+    }
+    
+    .team-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .team-img {
+        height: 250px;
+        overflow: hidden;
+    }
+    
+    .team-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .team-card:hover .team-img img {
+        transform: scale(1.1);
+    }
+    
+    .team-info {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .team-info h4 {
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #2c3e50;
+    }
+    
+    .team-info p {
+        color: var(--primary);
+        margin-bottom: 15px;
+        font-weight: 500;
+    }
+    
+    .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .social-links a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: #f1f1f1;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .social-links a:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-3px);
+    }
+    
+    .counter-section {
+        background: linear-gradient(rgba(13, 110, 253, 0.9), rgba(13, 202, 240, 0.9)), 
+                    url('https://images.unsplash.com/photo-1526779259212-939e64709eeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        padding: 80px 0;
+        color: white;
+        text-align: center;
+    }
+    
+    .counter-box {
+        padding: 30px 15px;
+    }
+    
+    .counter {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .counter-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="about-hero">
+    <div class="container">
+        <h1 class="animate__animated animate__fadeInDown">About Safar Zone</h1>
+        <p class="animate__animated animate__fadeInUp animate__delay-1s">Your trusted travel partner for unforgettable journeys around the world</p>
+    </div>
+</section>
+
+<!-- About Section -->
+<section class="about-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="about-img">
+                    <img src="https://images.unsplash.com/photo-1527631746610-b35ffebb515f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80" alt="About Us">
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="about-content ps-lg-5">
+                    <div class="section-title text-start">
+                        <span class="text-primary">About Us</span>
+                        <h2>We're Changing the Way People Travel</h2>
+                    </div>
+                    <p>Founded in 2015, Safar Zone has grown from a small travel agency to one of the most trusted names in the travel industry. Our mission is simple: to make travel accessible, enjoyable, and memorable for everyone.</p>
+                    <p>With a team of passionate travel experts, we've helped over 50,000 travelers explore the world's most beautiful destinations. We believe that travel has the power to change lives, and we're committed to creating experiences that last a lifetime.</p>
+                    
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Global Network</h4>
+                            <p>Access to over 1,000 destinations worldwide with local experts in every location.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-award"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Award-Winning Service</h4>
+                            <p>Recognized as the "Best Travel Agency" for three consecutive years.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Sustainable Travel</h4>
+                            <p>Committed to responsible tourism that benefits local communities.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Counter Section -->
+<section class="counter-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-6">
+                <div class="counter-box">
+                    <span class="counter" data-target="500">0</span>
+                    <span class="counter-text">Destinations</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="counter-box">
+                    <span class="counter" data-target="50">0</span>
+                    <span class="counter-text">Professional Guides</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="counter-box">
+                    <span class="counter" data-target="50000">0</span>
+                    <span class="counter-text">Happy Travelers</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="counter-box">
+                    <span class="counter" data-target="98">0</span>
+                    <span class="counter-text">Satisfaction Rate</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Team Section -->
+<section class="team-section">
+    <div class="container">
+        <div class="section-title">
+            <span class="text-primary">Our Team</span>
+            <h2>Meet Our Travel Experts</h2>
+            <p>Passionate professionals dedicated to making your journey unforgettable</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Team Member">
+                    </div>
+                    <div class="team-info">
+                        <h4>Rajesh Kumar</h4>
+                        <p>Founder & CEO</p>
+                        <div class="social-links">
+                            <a href="#"><i class="bi bi-facebook"></i></a>
+                            <a href="#"><i class="bi bi-twitter"></i></a>
+                            <a href="#"><i class="bi bi-linkedin"></i></a>
+                            <a href="#"><i class="bi bi-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Team Member">
+                    </div>
+                    <div class="team-info">
+                        <h4>Priya Sharma</h4>
+                        <p>Travel Consultant</p>
+                        <div class="social-links">
+                            <a href="#"><i class="bi bi-facebook"></i></a>
+                            <a href="#"><i class="bi bi-twitter"></i></a>
+                            <a href="#"><i class="bi bi-linkedin"></i></a>
+                            <a href="#"><i class="bi bi-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="https://randomuser.me/api/portraits/men/68.jpg" alt="Team Member">
+                    </div>
+                    <div class="team-info">
+                        <h4>Amit Patel</h4>
+                        <p>Tour Operations</p>
+                        <div class="social-links">
+                            <a href="#"><i class="bi bi-facebook"></i></a>
+                            <a href="#"><i class="bi bi-twitter"></i></a>
+                            <a href="#"><i class="bi bi-linkedin"></i></a>
+                            <a href="#"><i class="bi bi-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="https://randomuser.me/api/portraits/women/29.jpg" alt="Team Member">
+                    </div>
+                    <div class="team-info">
+                        <h4>Neha Gupta</h4>
+                        <p>Customer Support</p>
+                        <div class="social-links">
+                            <a href="#"><i class="bi bi-facebook"></i></a>
+                            <a href="#"><i class="bi bi-twitter"></i></a>
+                            <a href="#"><i class="bi bi-linkedin"></i></a>
+                            <a href="#"><i class="bi bi-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="mb-4">Ready to Start Your Next Adventure?</h2>
+                <p class="lead mb-4">Join thousands of travelers who trust us with their dream vacations.</p>
+                <a href="#" class="btn btn-light btn-lg px-5">Book Now</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Counter Animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200;
+        
+        const animateCounters = () => {
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText;
+                const increment = target / speed;
+                
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + increment);
+                    setTimeout(animateCounters, 1);
+                } else {
+                    counter.innerText = target;
+                }
+            });
+        };
+        
+        // Start counter when scrolled to it
+        const counterSection = document.querySelector('.counter-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        observer.observe(counterSection);
+        
+        // Add animation to team cards on scroll
+        const teamCards = document.querySelectorAll('.team-card');
+        const teamObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        teamCards.forEach((card, index) => {
+            card.style.opacity = 0;
+            card.style.transform = 'translateY(50px)';
+            card.style.transition = `all 0.5s ease ${index * 0.1}s`;
+            teamObserver.observe(card);
+        });
+    });
+</script>
+{% endblock %}

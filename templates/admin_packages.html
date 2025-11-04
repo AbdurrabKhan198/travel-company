@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin - Package Management{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-gift text-primary mr-2"></i>Package Management
+                    </h1>
+                    <p class="text-gray-600">Manage featured travel packages</p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="{% url 'admin_inventory' %}" class="btn-secondary">
+                        <i class="fas fa-cogs mr-2"></i>Manage Inventory
+                    </a>
+                    <button onclick="document.getElementById('add-package-modal').classList.remove('hidden')" 
+                            class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Add Package
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Packages Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for package in packages %}
+            <div class="card">
+                <div class="h-48 bg-gradient-to-br from-primary to-secondary relative overflow-hidden">
+                    {% if package.image_url %}
+                        <img src="{{ package.image_url }}" alt="{{ package.destination }}" 
+                             class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center">
+                            <i class="fas fa-image text-white text-6xl opacity-50"></i>
+                        </div>
+                    {% endif %}
+                    <div class="absolute top-4 right-4 bg-white px-3 py-1 rounded-full">
+                        <span class="text-primary font-bold">₹{{ package.price }}</span>
+                    </div>
+                    {% if package.is_featured %}
+                        <div class="absolute top-4 left-4 bg-yellow-400 px-3 py-1 rounded-full">
+                            <span class="text-gray-800 text-xs font-bold">Featured</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">{{ package.destination }}</h3>
+                    <p class="text-gray-600 mb-3">{{ package.title }}</p>
+                    <div class="flex items-center text-gray-500 mb-4 text-sm">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span>{{ package.duration }}</span>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">{{ package.description|truncatewords:15 }}</p>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="editPackage({{ package.id }})" 
+                                class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <form method="POST" action="{% url 'delete_package' package.id %}" 
+                              onsubmit="return confirm('Delete this package?')" class="flex-1">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-3 bg-white rounded-xl shadow-md p-12 text-center">
+                <i class="fas fa-gift text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">No Packages Yet</h3>
+                <p class="text-gray-600 mb-6">Add your first travel package to feature on the homepage</p>
+                <button onclick="document.getElementById('add-package-modal').classList.remove('hidden')" 
+                        class="btn-primary">
+                    <i class="fas fa-plus mr-2"></i>Add Package
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Package Modal -->
+<div id="add-package-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex items-center justify-between">
+            <h3 class="text-2xl font-bold text-gray-800">Add New Package</h3>
+            <button onclick="document.getElementById('add-package-modal').classList.add('hidden')" 
+                    class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <form method="POST" action="{% url 'add_package' %}" class="p-6">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Destination</label>
+                <input type="text" name="destination" required class="input-field" placeholder="e.g., Goa, Dubai">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Package Title</label>
+                <input type="text" name="title" required class="input-field" 
+                       placeholder="e.g., Beach Paradise Getaway">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Description</label>
+                <textarea name="description" required class="input-field" rows="4" 
+                          placeholder="Enter package description..."></textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Price (₹)</label>
+                    <input type="number" name="price" step="0.01" required class="input-field" placeholder="25000">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Duration</label>
+                    <input type="text" name="duration" required class="input-field" placeholder="5 Days 4 Nights">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Image URL (Optional)</label>
+                <input type="url" name="image_url" class="input-field" 
+                       placeholder="https://example.com/image.jpg">
+            </div>
+            
+            <div class="mb-6">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" name="is_featured" value="true" checked>
+                    <span class="text-gray-700 font-semibold">Feature this package on homepage</span>
+                </label>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button type="submit" class="btn-primary flex-1">
+                    <i class="fas fa-plus mr-2"></i>Add Package
+                </button>
+                <button type="button" onclick="document.getElementById('add-package-modal').classList.add('hidden')" 
+                        class="btn-secondary">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

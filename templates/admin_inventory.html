@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-cogs text-primary mr-2"></i>Inventory Management
+                    </h1>
+                    <p class="text-gray-600">Manage available tickets and routes</p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="{% url 'admin_packages' %}" class="btn-secondary">
+                        <i class="fas fa-gift mr-2"></i>Manage Packages
+                    </a>
+                    <button onclick="document.getElementById('add-modal').classList.remove('hidden')" 
+                            class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Add Inventory
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <p class="text-gray-500 text-sm mb-1">Total Routes</p>
+                <p class="text-3xl font-bold text-gray-800">{{ total_routes }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <p class="text-gray-500 text-sm mb-1">Active Inventory</p>
+                <p class="text-3xl font-bold text-green-600">{{ active_inventory }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <p class="text-gray-500 text-sm mb-1">Total Seats</p>
+                <p class="text-3xl font-bold text-blue-600">{{ total_seats }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <p class="text-gray-500 text-sm mb-1">Bookings Today</p>
+                <p class="text-3xl font-bold text-purple-600">{{ today_bookings }}</p>
+            </div>
+        </div>
+
+        <!-- Inventory List -->
+        <div class="bg-white rounded-xl shadow-md">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-bold text-gray-800">Current Inventory</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flight</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Route</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seats</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for inv in inventory_list %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="font-semibold text-gray-800">{{ inv.route.flight_number }}</div>
+                                <div class="text-sm text-gray-500">{{ inv.route.duration }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-800">{{ inv.route.from_location }} → {{ inv.route.to_location }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-800">{{ inv.travel_date|date:"d M Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm">
+                                    <span class="font-semibold {% if inv.available_seats < 20 %}text-red-600{% else %}text-green-600{% endif %}">
+                                        {{ inv.available_seats }}
+                                    </span>
+                                    / {{ inv.total_seats }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-800">₹{{ inv.price }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if inv.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button onclick="editInventory({{ inv.id }})" class="text-primary hover:text-secondary mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form method="POST" action="{% url 'delete_inventory' inv.id %}" class="inline" 
+                                      onsubmit="return confirm('Are you sure?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-600 hover:text-red-800">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-box-open text-6xl mb-4"></i>
+                                <p class="text-xl">No inventory available. Add your first entry!</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Inventory Modal -->
+<div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex items-center justify-between">
+            <h3 class="text-2xl font-bold text-gray-800">Add New Inventory</h3>
+            <button onclick="document.getElementById('add-modal').classList.add('hidden')" 
+                    class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <form method="POST" action="{% url 'add_inventory' %}" class="p-6">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Route</label>
+                <select name="route" required class="input-field">
+                    <option value="">Select Route</option>
+                    {% for route in routes %}
+                        <option value="{{ route.id }}">{{ route.flight_number }} - {{ route.from_location }} → {{ route.to_location }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Travel Date</label>
+                    <input type="date" name="travel_date" required class="input-field">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Price</label>
+                    <input type="number" name="price" step="0.01" required class="input-field" placeholder="5000">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Total Seats</label>
+                    <input type="number" name="total_seats" required class="input-field" value="180">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Status</label>
+                    <select name="is_active" class="input-field">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button type="submit" class="btn-primary flex-1">
+                    <i class="fas fa-plus mr-2"></i>Add Inventory
+                </button>
+                <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" 
+                        class="btn-secondary">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

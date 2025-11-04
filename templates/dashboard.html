@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard - Safar Zone Travels{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Welcome Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                        Welcome, {{ user.username }}! 
+                        <i class="fas fa-hand-wave text-yellow-500"></i>
+                    </h1>
+                    <p class="text-gray-600">Manage your bookings and explore new destinations</p>
+                </div>
+                <div class="hidden md:block">
+                    <i class="fas fa-user-circle text-primary text-6xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Total Bookings</p>
+                        <p class="text-3xl font-bold text-gray-800">{{ total_bookings }}</p>
+                    </div>
+                    <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-ticket-alt text-primary text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Upcoming Trips</p>
+                        <p class="text-3xl font-bold text-green-600">{{ upcoming_count }}</p>
+                    </div>
+                    <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-plane-departure text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Completed Trips</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ completed_count }}</p>
+                    </div>
+                    <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-check-circle text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-xl shadow-md mb-8">
+            <div class="border-b">
+                <div class="flex space-x-8 px-6">
+                    <button onclick="showTab('upcoming')" 
+                            class="tab-button py-4 border-b-2 border-primary text-primary font-semibold">
+                        Upcoming Bookings
+                    </button>
+                    <button onclick="showTab('past')" 
+                            class="tab-button py-4 border-b-2 border-transparent text-gray-600 font-semibold hover:text-primary">
+                        Past Bookings
+                    </button>
+                    <button onclick="showTab('cancelled')" 
+                            class="tab-button py-4 border-b-2 border-transparent text-gray-600 font-semibold hover:text-primary">
+                        Cancelled
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upcoming Bookings -->
+            <div id="upcoming-tab" class="tab-content p-6">
+                {% if upcoming_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in upcoming_bookings %}
+                        <div class="border rounded-xl p-6 hover:shadow-lg transition">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <!-- Booking Info -->
+                                <div class="md:col-span-2">
+                                    <div class="flex items-center space-x-3 mb-3">
+                                        <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-plane text-primary text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">{{ booking.inventory.route.flight_number }}</h3>
+                                            <p class="text-sm text-gray-600">Booking Ref: {{ booking.booking_reference }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex items-center text-gray-700">
+                                            <i class="fas fa-map-marker-alt text-primary w-6"></i>
+                                            <span>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</span>
+                                        </div>
+                                        <div class="flex items-center text-gray-700">
+                                            <i class="fas fa-calendar text-primary w-6"></i>
+                                            <span>{{ booking.inventory.travel_date|date:"d M Y" }}</span>
+                                        </div>
+                                        <div class="flex items-center text-gray-700">
+                                            <i class="fas fa-user text-primary w-6"></i>
+                                            <span>{{ booking.passenger_name }} ({{ booking.seats_booked }} seat{{ booking.seats_booked|pluralize }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Price & Status -->
+                                <div class="text-center md:text-left">
+                                    <p class="text-sm text-gray-600 mb-1">Total Paid</p>
+                                    <p class="text-2xl font-bold text-primary mb-2">₹{{ booking.total_amount }}</p>
+                                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                        {{ booking.status|title }}
+                                    </span>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="flex flex-col space-y-2">
+                                    <button onclick="window.print()" class="btn-secondary text-sm py-2">
+                                        <i class="fas fa-print mr-2"></i>Print Ticket
+                                    </button>
+                                    <button onclick="confirmCancelBooking('{{ booking.id }}')" 
+                                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                                        <i class="fas fa-times mr-2"></i>Cancel
+                                    </button>
+                                    <form id="cancel-form-{{ booking.id }}" method="POST" action="{% url 'cancel_booking' booking.id %}" class="hidden">
+                                        {% csrf_token %}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">No Upcoming Bookings</h3>
+                        <p class="text-gray-600 mb-6">Start planning your next adventure!</p>
+                        <a href="{% url 'homepage' %}" class="btn-primary">
+                            <i class="fas fa-search mr-2"></i>Search Flights
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Past Bookings -->
+            <div id="past-tab" class="tab-content p-6 hidden">
+                {% if past_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in past_bookings %}
+                        <div class="border rounded-xl p-6 bg-gray-50">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="md:col-span-2">
+                                    <h3 class="text-lg font-bold text-gray-800 mb-2">{{ booking.inventory.route.flight_number }}</h3>
+                                    <div class="space-y-1 text-sm text-gray-600">
+                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</p>
+                                        <p><i class="fas fa-calendar text-gray-400 mr-2"></i>{{ booking.inventory.travel_date|date:"d M Y" }}</p>
+                                        <p><i class="fas fa-user text-gray-400 mr-2"></i>{{ booking.passenger_name }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-bold text-gray-800">₹{{ booking.total_amount }}</p>
+                                    <span class="inline-block bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs mt-2">
+                                        Completed
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-history text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">No Past Bookings</h3>
+                        <p class="text-gray-600">Your travel history will appear here</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Cancelled Bookings -->
+            <div id="cancelled-tab" class="tab-content p-6 hidden">
+                {% if cancelled_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in cancelled_bookings %}
+                        <div class="border border-red-200 rounded-xl p-6 bg-red-50">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="md:col-span-2">
+                                    <h3 class="text-lg font-bold text-gray-800 mb-2">{{ booking.inventory.route.flight_number }}</h3>
+                                    <div class="space-y-1 text-sm text-gray-600">
+                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</p>
+                                        <p><i class="fas fa-calendar text-gray-400 mr-2"></i>{{ booking.inventory.travel_date|date:"d M Y" }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-block bg-red-200 text-red-800 px-3 py-1 rounded-full text-xs">
+                                        Cancelled
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-ban text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">No Cancelled Bookings</h3>
+                        <p class="text-gray-600">You haven't cancelled any bookings</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active state from all buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('border-primary', 'text-primary');
+        button.classList.add('border-transparent', 'text-gray-600');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Set active button
+    event.target.classList.add('border-primary', 'text-primary');
+    event.target.classList.remove('border-transparent', 'text-gray-600');
+}
+</script>
+{% endblock %}

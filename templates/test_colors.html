@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Color Test Page{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold text-gray-800 mb-8">Color Test Page</h1>
+    
+    <!-- Primary Colors -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Primary Colors</h2>
+        <div class="flex gap-4 flex-wrap">
+            <div class="bg-primary text-white p-6 rounded-lg">Primary (#38bdf8)</div>
+            <div class="bg-secondary text-white p-6 rounded-lg">Secondary (#0ea5e9)</div>
+            <div class="bg-sky-400 text-white p-6 rounded-lg">Sky 400</div>
+            <div class="bg-sky-500 text-white p-6 rounded-lg">Sky 500</div>
+            <div class="bg-blue-500 text-white p-6 rounded-lg">Blue 500</div>
+        </div>
+    </div>
+    
+    <!-- Buttons -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Button Styles</h2>
+        <div class="flex gap-4 flex-wrap">
+            <button class="btn-primary">Primary Button</button>
+            <button class="btn-secondary">Secondary Button</button>
+            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg">Green Button</button>
+            <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg">Red Button</button>
+        </div>
+    </div>
+    
+    <!-- Cards -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Card Components</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Card 1</h3>
+                <p class="text-gray-600">This is a card with hover effect</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Card 2</h3>
+                <p class="text-gray-600">Another card example</p>
+            </div>
+            <div class="bg-gradient-to-br from-primary to-secondary text-white rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-2">Gradient Card</h3>
+                <p>Beautiful gradient background</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hero Gradient -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Hero Section</h2>
+        <div class="hero-gradient rounded-xl p-12 text-white text-center">
+            <i class="fas fa-plane text-6xl mb-4 animate-float"></i>
+            <h1 class="text-4xl font-bold mb-4">Welcome to Safar Zone Travels</h1>
+            <p class="text-xl opacity-90">Your journey begins here!</p>
+        </div>
+    </div>
+    
+    <!-- Alerts -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Alert Messages</h2>
+        <div class="space-y-4">
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+                Success message
+            </div>
+            <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-lg">
+                Info message
+            </div>
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg">
+                Warning message
+            </div>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                Error message
+            </div>
+        </div>
+    </div>
+    
+    <!-- Badges -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Status Badges</h2>
+        <div class="flex gap-4 flex-wrap">
+            <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold">Active</span>
+            <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-semibold">Confirmed</span>
+            <span class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-semibold">Pending</span>
+            <span class="px-4 py-2 bg-red-100 text-red-800 rounded-full font-semibold">Cancelled</span>
+        </div>
+    </div>
+    
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <p class="text-gray-800">
+            <strong>Note:</strong> If you can see all these colors and styles properly, 
+            Tailwind CSS is working correctly! If not, try:
+        </p>
+        <ul class="mt-4 space-y-2 text-gray-700">
+            <li>• Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)</li>
+            <li>• Clear browser cache</li>
+            <li>• Check browser console for CSS loading errors</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
