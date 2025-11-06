@@ -15,16 +15,52 @@
         :root {
             --primary: #0d6efd;
             --secondary: #0dcaf0;
+            --accent: #6f42c1;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --border-radius: 1rem;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --border-radius: 1rem;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
         }
         
+        /* Smooth scrolling and animations */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+        
+        .animate-on-scroll.animated {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Enhanced navbar */
         .navbar {
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
             box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
         
         .navbar-brand {
@@ -32,12 +68,18 @@
             background: linear-gradient(45deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-brand:hover {
+            transform: scale(1.05);
         }
         
         .nav-link {
             font-weight: 500;
             position: relative;
             margin: 0 8px;
+            transition: all 0.3s ease;
         }
         
         .nav-link:after {
@@ -55,46 +97,248 @@
             width: 100%;
         }
         
+        .nav-link:hover {
+            color: var(--primary) !important;
+            transform: translateY(-2px);
+        }
+        
+        /* Enhanced buttons */
         .btn-primary {
             background: linear-gradient(45deg, var(--primary), var(--secondary));
             border: none;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
         }
         
+        /* Enhanced footer */
         .footer {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .footer:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            pointer-events: none;
+        }
+        
+        .footer > * {
+            position: relative;
+            z-index: 1;
         }
         
         .footer a {
             color: #adb5bd;
             text-decoration: none;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+            position: relative;
         }
         
         .footer a:hover {
             color: #fff;
+            transform: translateX(5px);
         }
         
+        /* Enhanced dropdown */
         .dropdown-menu {
             border: none;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 15px;
             padding: 10px 0;
+            animation: dropdownFade 0.3s ease;
+        }
+        
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .dropdown-item {
-            padding: 8px 20px;
+            padding: 10px 20px;
             font-weight: 500;
+            transition: all 0.3s ease;
         }
         
         .dropdown-item:hover {
-            background: #f8f9fa;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.5rem;
+            }
+            
+            .navbar-nav {
+                text-align: center;
+                padding: 1rem 0;
+            }
+            
+            .nav-link {
+                margin: 0.5rem 0;
+                padding: 0.75rem 1rem;
+                border-radius: 10px;
+                transition: all 0.3s ease;
+            }
+            
+            .nav-link:hover {
+                background: rgba(13, 110, 253, 0.1);
+            }
+            
+            .nav-link:after {
+                display: none;
+            }
+            
+            .btn-group-mobile {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+            
+            .btn-group-mobile .btn {
+                width: 100%;
+            }
+            
+            .footer .row > div {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            
+            .footer .d-flex {
+                justify-content: center;
+            }
+        }
+        
+        /* Loading animations */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Enhanced alerts */
+        .alert {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Utility classes */
+        .shadow-soft {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .shadow-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .shadow-hover:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Enhanced form inputs */
+        .input-field {
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+        }
+        
+        .input-field:focus {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .input-field:hover {
+            border-color: var(--primary);
+        }
+        
+        /* Progress step animations */
+        .progress-step {
+            transition: var(--transition);
+        }
+        
+        .progress-step.active {
+            transform: scale(1.1);
+        }
+        
+        /* Card hover effects */
+        .card-hover {
+            transition: var(--transition);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -163,8 +407,14 @@
                         </li>
                     {% else %}
                         <li class="nav-item ms-3">
-                            <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Login</a>
-                            <a href="{% url 'signup' %}" class="btn btn-primary">Sign Up</a>
+                            <div class="d-none d-lg-block">
+                                <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Login</a>
+                                <a href="{% url 'signup' %}" class="btn btn-primary">Sign Up</a>
+                            </div>
+                            <div class="d-lg-none btn-group-mobile">
+                                <a href="{% url 'login' %}" class="btn btn-outline-primary">Login</a>
+                                <a href="{% url 'signup' %}" class="btn btn-primary">Sign Up</a>
+                            </div>
                         </li>
                     {% endif %}
                 </ul>
@@ -256,6 +506,75 @@
                     var bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 }, 5000);
+            });
+            
+            // Enhanced navbar scroll effect
+            const navbar = document.querySelector('.navbar');
+            const topBar = document.querySelector('.bg-primary');
+            
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+            
+            // Scroll animations for elements
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animated');
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe elements with animate-on-scroll class
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Add loading animation to forms
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function() {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            });
+            
+            // Mobile menu close on link click
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+            const navbarCollapse = document.querySelector('.navbar-collapse');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (navbarCollapse.classList.contains('show')) {
+                        const bsCollapse = new bootstrap.Collapse(navbarCollapse);
+                        bsCollapse.hide();
+                    }
+                });
             });
         });
     </script>

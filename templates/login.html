@@ -1,87 +1,156 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Login - Safar Zone Travels{% endblock %}
-
+{% extends "base.html" %}
 {% block content %}
-<div class="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-primary to-secondary">
-    <div class="max-w-md w-full">
-        <!-- Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-primary to-secondary p-8 text-white text-center">
-                <i class="fas fa-plane-departure text-5xl mb-4"></i>
-                <h2 class="text-3xl font-bold mb-2">Welcome Back!</h2>
-                <p class="text-blue-100">Login to continue your journey</p>
+
+<!-- ===== Login Section ===== -->
+<section class="min-vh-100 d-flex align-items-center justify-content-center position-relative overflow-hidden" 
+         style="background: linear-gradient(135deg,#0ea5e9,#38bdf8);">
+
+  <!-- Floating Decorative Circles -->
+  <div class="bg-circle position-absolute top-0 start-0 translate-middle rounded-circle"></div>
+  <div class="bg-circle position-absolute bottom-0 end-0 translate-middle rounded-circle"></div>
+
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+
+        <!-- Glassmorphic Login Card -->
+        <div class="card border-0 shadow-lg glass-card animate__animated animate__fadeInUp">
+          <div class="card-body p-5">
+
+            <div class="text-center mb-4">
+              <div class="plane-icon mb-3">✈️</div>
+              <h2 class="fw-bold text-sky">Welcome Back</h2>
+              <p class="text-muted small">Login to continue your journey with Safar Zone Travels</p>
             </div>
 
-            <!-- Form -->
-            <div class="p-8">
-                <form method="POST" data-validate>
-                    {% csrf_token %}
-                    
-                    <!-- Username -->
-                    <div class="mb-6">
-                        <label for="username" class="block text-gray-700 font-semibold mb-2">
-                            <i class="fas fa-user text-primary mr-2"></i>Username or Email
-                        </label>
-                        <input type="text" name="username" id="username" required 
-                               class="input-field" placeholder="Enter your username">
-                    </div>
+            <form method="post" action="{% url 'login' %}" id="loginForm" novalidate>
+              {% csrf_token %}
+              <div class="form-floating mb-3">
+                <input type="email" class="form-control" id="username" name="username" placeholder="Email" required>
+                <label for="username">Email address</label>
+              </div>
 
-                    <!-- Password -->
-                    <div class="mb-6">
-                        <label for="password" class="block text-gray-700 font-semibold mb-2">
-                            <i class="fas fa-lock text-primary mr-2"></i>Password
-                        </label>
-                        <input type="password" name="password" id="password" required 
-                               class="input-field" placeholder="Enter your password">
-                    </div>
+              <div class="form-floating mb-4">
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                <label for="password">Password</label>
+              </div>
+              <input type="hidden" name="next" value="{{ request.GET.next }}">
 
-                    <!-- Remember Me & Forgot Password -->
-                    <div class="flex items-center justify-between mb-6">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" name="remember_me" class="rounded">
-                            <span class="text-gray-700 text-sm">Remember me</span>
-                        </label>
-                        <a href="#" class="text-primary text-sm hover:underline">Forgot Password?</a>
-                    </div>
-
-                    <!-- Login Button -->
-                    <button type="submit" class="btn-primary w-full py-3 text-lg">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </button>
-                </form>
-
-                <!-- Divider -->
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-4 bg-white text-gray-500">Or</span>
-                    </div>
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="remember">
+                  <label class="form-check-label small" for="remember">Remember me</label>
                 </div>
+                <a href="#" class="text-sky text-decoration-none small">Forgot Password?</a>
+              </div>
 
-                <!-- OTP Login (Placeholder) -->
-                <button type="button" class="w-full border-2 border-primary text-primary font-semibold py-3 rounded-lg hover:bg-primary hover:text-white transition">
-                    <i class="fas fa-mobile-alt mr-2"></i>Login with OTP
+              <div class="d-grid">
+                <button type="submit" class="btn btn-sky btn-lg fw-semibold shadow-sm" id="loginButton">
+                  <span class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status" aria-hidden="true"></span>
+                  <span id="loginText">Login</span>
                 </button>
+              </div>
+            </form>
 
-                <!-- Sign Up Link -->
-                <p class="text-center text-gray-600 mt-6">
-                    Don't have an account? 
-                    <a href="{% url 'signup' %}" class="text-primary font-semibold hover:underline">Sign Up</a>
-                </p>
-            </div>
+            <p class="text-center mt-4 text-muted">
+              Don’t have an account?
+              <a href="/signup" class="text-sky fw-semibold text-decoration-none">Sign Up</a>
+            </p>
+          </div>
         </div>
 
-        <!-- Back to Home -->
-        <div class="text-center mt-6">
-            <a href="{% url 'homepage' %}" class="text-white hover:text-blue-100 transition">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Homepage
-            </a>
-        </div>
+      </div>
     </div>
-</div>
+  </div>
+</section>
+
+<!-- ===== Custom Styles & Animations ===== -->
+<style>
+  @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
+  .btn-sky { background-color:#0ea5e9; color:#fff; border:none; }
+  .btn-sky:hover { background-color:#0284c7; }
+
+  .text-sky { color:#0ea5e9; }
+
+  .glass-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+  }
+
+  .bg-circle {
+    width: 450px; height: 450px;
+    background: rgba(255,255,255,0.2);
+    filter: blur(100px);
+    z-index: 0;
+  }
+
+  .plane-icon {
+    font-size: 2.5rem;
+    color: #fff;
+    animation: planeFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes planeFloat {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px) rotate(3deg); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Input Styling */
+  .form-control {
+    background-color: rgba(255,255,255,0.8);
+    border: none;
+    border-radius: 10px;
+  }
+  .form-control:focus {
+    background-color: #fff;
+    box-shadow: 0 0 0 0.25rem rgba(56,189,248,0.25);
+  }
+</style>
+
+<!-- ===== Bootstrap & JS Animation ===== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const loginSpinner = document.getElementById('loginSpinner');
+    const loginText = document.getElementById('loginText');
+    
+    loginForm.addEventListener('submit', function(e) {
+      // Client-side validation
+      if (!this.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.add('was-validated');
+        return;
+      }
+      
+      // Show loading state
+      if (loginButton && loginSpinner && loginText) {
+        loginButton.disabled = true;
+        loginSpinner.classList.remove('d-none');
+        loginText.textContent = 'Signing in...';
+      }
+      
+      // Form will submit normally to Django backend
+    });
+    
+    // Add animation to form elements
+    const formGroups = document.querySelectorAll('.form-floating');
+    formGroups.forEach((group, index) => {
+      group.style.opacity = '0';
+      group.style.transform = 'translateY(20px)';
+      group.style.transition = `all 0.5s ease ${index * 0.1}s`;
+      
+      setTimeout(() => {
+        group.style.opacity = '1';
+        group.style.transform = 'translateY(0)';
+      }, 100);
+    });
+  });
+</script>
+
 {% endblock %}

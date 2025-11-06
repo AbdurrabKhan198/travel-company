@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load travel_filters %}
 
 {% block title %}Safar Zone - Explore the World{% endblock %}
 
@@ -169,26 +170,75 @@
             </div>
             <div class="col-lg-6">
                 <div class="search-box animate__animated animate__fadeIn animate__delay-1s">
-                    <h4 class="text-white mb-4">Find Your Perfect Trip</h4>
-                    <form>
+                    <h4 class="text-white mb-4">Find Your Perfect Flight</h4>
+                    <form method="GET" action="{% url 'search_flights' %}">
                         <div class="row g-3">
-                            <div class="col-md-12">
-                                <input type="text" class="form-control" placeholder="Where do you want to go?">
+                            <!-- Route Type Selection -->
+                            <div class="col-12">
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="route_type" id="domestic" value="domestic" checked>
+                                    <label class="btn btn-outline-light" for="domestic">
+                                        <i class="bi bi-house-door"></i> Domestic
+                                    </label>
+                                    <input type="radio" class="btn-check" name="route_type" id="international" value="international">
+                                    <label class="btn btn-outline-light" for="international">
+                                        <i class="bi bi-globe"></i> International
+                                    </label>
+                                </div>
                             </div>
+                            
+                            <!-- From Location -->
                             <div class="col-md-6">
-                                <input type="date" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <select class="form-select">
-                                    <option selected>Travel Type</option>
-                                    <option>Adventure</option>
-                                    <option>Beach</option>
-                                    <option>City Tour</option>
-                                    <option>Honeymoon</option>
+                                <label for="from_location" class="form-label text-white">From</label>
+                                <select class="form-select" name="from_location" id="from_location" required>
+                                    <option value="">Select Origin</option>
+                                    {% for origin in origins %}
+                                        <option value="{{ origin }}">
+                                            {{ origin }}
+                                            {% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                             </div>
+                            
+                            <!-- To Location -->
+                            <div class="col-md-6">
+                                <label for="to_location" class="form-label text-white">To</label>
+                                <select class="form-select" name="to_location" id="to_location" required>
+                                    <option value="">Select Destination</option>
+                                    {% for destination in destinations %}
+                                        <option value="{{ destination }}">
+                                            {{ destination }}
+                                            {% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Travel Date -->
+                            <div class="col-md-6">
+                                <label for="travel_date" class="form-label text-white">Departure Date</label>
+                                <input type="date" class="form-control" name="travel_date" id="travel_date" 
+                                       min="{{ today }}" required>
+                            </div>
+                            
+                            <!-- Number of Passengers -->
+                            <div class="col-md-6">
+                                <label for="passengers" class="form-label text-white">Passengers</label>
+                                <select class="form-select" name="passengers" id="passengers" required>
+                                    <option value="1">1 Adult</option>
+                                    <option value="2">2 Adults</option>
+                                    <option value="3">3 Adults</option>
+                                    <option value="4">4 Adults</option>
+                                    <option value="5">5 Adults</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Search Button -->
                             <div class="col-12">
-                                <button type="submit" class="btn btn-primary w-100">Search Now</button>
+                                <button type="submit" class="btn btn-warning w-100 py-3 fw-bold">
+                                    <i class="bi bi-search"></i> Search Flights
+                                </button>
                             </div>
                         </div>
                     </form>

@@ -1,25 +1,15 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load travel_filters %}
 
-{% block title %}My Dashboard - Safar Zone Travels{% endblock %}
+{% block title %}Dashboard - Travel Agency{% endblock %}
 
 {% block content %}
-<div class="bg-gray-100 py-8">
-    <div class="container mx-auto px-4">
+<div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
         <!-- Welcome Section -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                        Welcome, {{ user.username }}! 
-                        <i class="fas fa-hand-wave text-yellow-500"></i>
-                    </h1>
-                    <p class="text-gray-600">Manage your bookings and explore new destinations</p>
-                </div>
-                <div class="hidden md:block">
-                    <i class="fas fa-user-circle text-primary text-6xl"></i>
-                </div>
-            </div>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+            <p class="text-gray-600">Manage your bookings and plan your next adventure</p>
         </div>
 
         <!-- Stats Cards -->
@@ -27,23 +17,11 @@
             <div class="bg-white rounded-xl shadow-md p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm mb-1">Total Bookings</p>
-                        <p class="text-3xl font-bold text-gray-800">{{ total_bookings }}</p>
+                        <p class="text-gray-500 text-sm mb-1">Active Bookings</p>
+                        <p class="text-3xl font-bold text-primary">{{ upcoming_count }}</p>
                     </div>
                     <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-ticket-alt text-primary text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm mb-1">Upcoming Trips</p>
-                        <p class="text-3xl font-bold text-green-600">{{ upcoming_count }}</p>
-                    </div>
-                    <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-plane-departure text-green-600 text-2xl"></i>
+                        <i class="fas fa-plane-departure text-blue-600 text-2xl"></i>
                     </div>
                 </div>
             </div>
@@ -56,6 +34,18 @@
                     </div>
                     <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
                         <i class="fas fa-check-circle text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Total Spent</p>
+                        <p class="text-3xl font-bold text-green-600">₹{{ total_spent }}</p>
+                    </div>
+                    <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-wallet text-green-600 text-2xl"></i>
                     </div>
                 </div>
             </div>
@@ -101,7 +91,15 @@
                                     <div class="space-y-2 text-sm">
                                         <div class="flex items-center text-gray-700">
                                             <i class="fas fa-map-marker-alt text-primary w-6"></i>
-                                            <span>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</span>
+                                            <span>
+                                                {% with from_code=booking.inventory.route.from_location|get_item:airport_codes %}
+                                                    {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                                                {% endwith %}
+                                                 → 
+                                                {% with to_code=booking.inventory.route.to_location|get_item:airport_codes %}
+                                                    {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                                                {% endwith %}
+                                            </span>
                                         </div>
                                         <div class="flex items-center text-gray-700">
                                             <i class="fas fa-calendar text-primary w-6"></i>
@@ -162,7 +160,15 @@
                                 <div class="md:col-span-2">
                                     <h3 class="text-lg font-bold text-gray-800 mb-2">{{ booking.inventory.route.flight_number }}</h3>
                                     <div class="space-y-1 text-sm text-gray-600">
-                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</p>
+                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>
+                                            {% with from_code=booking.inventory.route.from_location|get_item:airport_codes %}
+                                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                                            {% endwith %}
+                                             → 
+                                            {% with to_code=booking.inventory.route.to_location|get_item:airport_codes %}
+                                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                                            {% endwith %}
+                                        </p>
                                         <p><i class="fas fa-calendar text-gray-400 mr-2"></i>{{ booking.inventory.travel_date|date:"d M Y" }}</p>
                                         <p><i class="fas fa-user text-gray-400 mr-2"></i>{{ booking.passenger_name }}</p>
                                     </div>
@@ -196,7 +202,15 @@
                                 <div class="md:col-span-2">
                                     <h3 class="text-lg font-bold text-gray-800 mb-2">{{ booking.inventory.route.flight_number }}</h3>
                                     <div class="space-y-1 text-sm text-gray-600">
-                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>{{ booking.inventory.route.from_location }} → {{ booking.inventory.route.to_location }}</p>
+                                        <p><i class="fas fa-route text-gray-400 mr-2"></i>
+                                            {% with from_code=booking.inventory.route.from_location|get_item:airport_codes %}
+                                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                                            {% endwith %}
+                                             → 
+                                            {% with to_code=booking.inventory.route.to_location|get_item:airport_codes %}
+                                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                                            {% endwith %}
+                                        </p>
                                         <p><i class="fas fa-calendar text-gray-400 mr-2"></i>{{ booking.inventory.travel_date|date:"d M Y" }}</p>
                                     </div>
                                 </div>

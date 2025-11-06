@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load travel_filters %}
+
+{% block title %}Dashboard - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<!-- Custom CSS -->
+<style>
+  :root {
+    --primary: #0ea5e9;
+    --primary-light: #e0f2fe;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --dark: #1e293b;
+    --light: #f8fafc;
+    --gray: #64748b;
+  }
+  
+  body {
+    background-color: #f1f5f9;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  /* Card Styles */
+  .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Stat Cards */
+  .stat-card {
+    border-left: 4px solid var(--primary);
+    transition: all 0.3s ease;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-3px);
+  }
+  
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  
+  /* Tabs */
+  .nav-tabs {
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .nav-tabs .nav-link {
+    border: none;
+    color: var(--gray);
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-tabs .nav-link.active {
+    color: var(--primary);
+    background: transparent;
+    border: none;
+  }
+  
+  .nav-tabs .nav-link.active:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 3px 3px 0 0;
+  }
+  
+  /* Booking Card */
+  .booking-card {
+    border-left: 4px solid var(--primary);
+    transition: all 0.3s ease;
+  }
+  
+  .booking-card:hover {
+    transform: translateX(5px);
+  }
+  
+  .status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  
+  .status-confirmed {
+    background-color: #dcfce7;
+    color: #16a34a;
+  }
+  
+  .status-cancelled {
+    background-color: #fee2e2;
+    color: #dc2626;
+  }
+  
+  .status-completed {
+    background-color: #e0f2fe;
+    color: #0369a1;
+  }
+  
+  /* Animation Classes */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .stat-card {
+      margin-bottom: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Welcome Header -->
+  <div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="h3 mb-1 text-dark fw-bold">Welcome back, {{ user.first_name|default:user.username }}! 👋</h1>
+          <p class="text-muted mb-0">Here's what's happening with your travel plans</p>
+        </div>
+        <div>
+          <a href="{% url 'homepage' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle me-2"></i>New Booking
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3 mb-md-0 animate__animated animate__fadeInLeft">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-uppercase text-muted mb-2">Upcoming Trips</h6>
+              <h2 class="mb-0 fw-bold">{{ upcoming_count }}</h2>
+            </div>
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+              <i class="bi bi-airplane"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-3 mb-md-0 animate__animated animate__fadeInUp">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-uppercase text-muted mb-2">Completed Trips</h6>
+              <h2 class="mb-0 fw-bold">{{ completed_count }}</h2>
+            </div>
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+              <i class="bi bi-check-circle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 animate__animated animate__fadeInRight">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-uppercase text-muted mb-2">Total Spent</h6>
+              <h2 class="mb-0 fw-bold">₹{{ total_spent|default:0 }}</h2>
+            </div>
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+              <i class="bi bi-wallet2"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bookings Section -->
+  <div class="card animate__animated animate__fadeInUp">
+    <div class="card-body p-0">
+      <ul class="nav nav-tabs" id="bookingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">
+            <i class="bi bi-calendar2-week me-2"></i>Upcoming
+            {% if upcoming_count > 0 %}
+            <span class="badge bg-primary rounded-pill ms-1">{{ upcoming_count }}</span>
+            {% endif %}
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+            <i class="bi bi-clock-history me-2"></i>Past Trips
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">
+            <i class="bi bi-x-circle me-2"></i>Cancelled
+            {% if cancelled_bookings.count > 0 %}
+            <span class="badge bg-danger rounded-pill ms-1">{{ cancelled_bookings.count }}</span>
+            {% endif %}
+          </button>
+        </li>
+      </ul>
+      
+      <div class="tab-content p-4" id="bookingTabsContent">
+        <!-- Upcoming Bookings -->
+        <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+          {% if upcoming_bookings %}
+            <div class="row g-4">
+              {% for booking in upcoming_bookings %}
+              <div class="col-12">
+                <div class="card booking-card h-100 animate__animated animate__fadeIn" style="animation-delay: {{ forloop.counter0|multiply:0.1 }}s">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-3">
+                          <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                            <i class="bi bi-airplane text-primary fs-4"></i>
+                          </div>
+                          <div>
+                            <h5 class="mb-0">
+                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
+                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                              {% endwith %}
+                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
+                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                              {% endwith %}
+                            </h5>
+                            <p class="text-muted mb-0">
+                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"D, M d, Y" }}
+                              <span class="mx-2">•</span>
+                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
+                              <span class="mx-2">•</span>
+                              <span class="status-badge status-{{ booking.status|lower }}">
+                                {{ booking.status|title }}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4 text-md-end">
+                        <div class="d-flex flex-column flex-md-row justify-content-md-end gap-2">
+                          <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-printer me-1"></i> Print
+                          </a>
+                          {% if booking.status == 'confirmed' %}
+                          <button class="btn btn-outline-danger btn-sm" onclick="confirmCancelBooking('{{ booking.id }}')">
+                            <i class="bi bi-x-lg me-1"></i> Cancel
+                          </button>
+                          <form id="cancel-form-{{ booking.id }}" method="POST" action="{% url 'cancel_booking' booking.id %}" class="d-none">
+                            {% csrf_token %}
+                          </form>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5 my-4">
+              <div class="mb-4">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+              </div>
+              <h4 class="text-muted mb-3">No Upcoming Trips</h4>
+              <p class="text-muted mb-4">You don't have any upcoming trips. Start planning your next adventure!</p>
+              <a href="{% url 'homepage' %}" class="btn btn-primary">
+                <i class="bi bi-search me-2"></i>Search Flights
+              </a>
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Past Bookings -->
+        <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+          {% if past_bookings %}
+            <div class="row g-4">
+              {% for booking in past_bookings %}
+              <div class="col-12">
+                <div class="card booking-card h-100">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                            <i class="bi bi-check2-circle text-success fs-4"></i>
+                          </div>
+                          <div>
+                            <h5 class="mb-1">
+                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
+                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                              {% endwith %}
+                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
+                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                              {% endwith %}
+                            </h5>
+                            <p class="text-muted mb-0">
+                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"M d, Y" }}
+                              <span class="mx-2">•</span>
+                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                        <span class="badge bg-success bg-opacity-10 text-success">Completed</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5 my-4">
+              <div class="mb-4">
+                <i class="bi bi-clock-history text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+              </div>
+              <h4 class="text-muted mb-3">No Past Trips</h4>
+              <p class="text-muted">Your completed trips will appear here</p>
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Cancelled Bookings -->
+        <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+          {% if cancelled_bookings %}
+            <div class="row g-4">
+              {% for booking in cancelled_bookings %}
+              <div class="col-12">
+                <div class="card booking-card h-100">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-danger bg-opacity-10 p-3 rounded-3 me-3">
+                            <i class="bi bi-x-circle text-danger fs-4"></i>
+                          </div>
+                          <div>
+                            <h5 class="mb-1">
+                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
+                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                              {% endwith %}
+                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
+                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                              {% endwith %}
+                            </h5>
+                            <p class="text-muted mb-0">
+                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"M d, Y" }}
+                              <span class="mx-2">•</span>
+                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
+                              <span class="mx-2">•</span>
+                              <span class="text-danger">Refund: {% if booking.refund_amount %}₹{{ booking.refund_amount }}{% else %}Not eligible{% endif %}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                        <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5 my-4">
+              <div class="mb-4">
+                <i class="bi bi-emoji-smile text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+              </div>
+              <h4 class="text-muted mb-3">No Cancelled Trips</h4>
+              <p class="text-muted">You haven't cancelled any trips yet</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+
+// Animate elements on scroll
+function animateOnScroll() {
+  const elements = document.querySelectorAll('.animate-on-scroll');
+  elements.forEach(element => {
+    const elementTop = element.getBoundingClientRect().top;
+    const elementVisible = 150;
+    
+    if (elementTop < window.innerHeight - elementVisible) {
+      element.classList.add('animate__animated', 'animate__fadeInUp');
+    }
+  });
+}
+
+// Run animation on page load and scroll
+window.addEventListener('load', animateOnScroll);
+window.addEventListener('scroll', animateOnScroll);
+
+// Confirm booking cancellation
+function confirmCancelBooking(bookingId) {
+  if (confirm('Are you sure you want to cancel this booking?')) {
+    document.getElementById(`cancel-form-${bookingId}`).submit();
+  }
+}
+
+// Add animation to tab content when switching tabs
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+  tab.addEventListener('shown.bs.tab', function (e) {
+    const targetPane = document.querySelector(e.target.dataset.bsTarget);
+    targetPane.classList.add('animate__animated', 'animate__fadeIn');
+    
+    // Remove animation class after it completes to allow re-triggering
+    setTimeout(() => {
+      targetPane.classList.remove('animate__animated', 'animate__fadeIn');
+    }, 500);
+  });
+});
+</script>
+{% endblock %}

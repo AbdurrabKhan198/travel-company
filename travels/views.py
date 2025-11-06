@@ -1,15 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import User
+from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
+from .models import Schedule, Route, Booking, Package, UserProfile
+from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm
 import random
 import string
-
-from .models import Route, Inventory, Booking, Package
+import json
 
 
 def homepage(request):
@@ -20,99 +22,283 @@ def homepage(request):
     origins = Route.objects.values_list('from_location', flat=True).distinct()
     destinations = Route.objects.values_list('to_location', flat=True).distinct()
     
+    # Airport codes dictionary for major cities
+    airport_codes = {
+        'Mumbai': 'BOM',
+        'Delhi': 'DEL',
+        'Bangalore': 'BLR',
+        'Chennai': 'MAA',
+        'Kolkata': 'CCU',
+        'Hyderabad': 'HYD',
+        'Pune': 'PNQ',
+        'Ahmedabad': 'AMD',
+        'Goa': 'GOI',
+        'Kochi': 'COK',
+        'Thiruvananthapuram': 'TRV',
+        'Jaipur': 'JAI',
+        'Lucknow': 'LKO',
+        'Nagpur': 'NAG',
+        'Srinagar': 'SXR',
+        'Dubai': 'DXB',
+        'Singapore': 'SIN',
+        'Bangkok': 'BKK',
+        'London': 'LHR',
+        'New York': 'JFK',
+        'Paris': 'CDG',
+        'Tokyo': 'NRT',
+        'Sydney': 'SYD',
+    }
+    
     context = {
         'packages': packages,
         'origins': origins,
         'destinations': destinations,
         'today': date.today().isoformat(),
+        'airport_codes': airport_codes,
     }
     return render(request, 'index.html', context)
 
 
 def search_flights(request):
-    """Search for available flights"""
-    from_location = request.GET.get('from_location', '')
-    to_location = request.GET.get('to_location', '')
-    travel_date = request.GET.get('travel_date', '')
+    """Search for available flights with enhanced functionality"""
+    from_location = request.GET.get('from_location', '').strip()
+    to_location = request.GET.get('to_location', '').strip()
+    travel_date = request.GET.get('travel_date', '').strip()
     route_type = request.GET.get('route_type', '').strip()
+    passengers = int(request.GET.get('passengers', 1))
     
-    flights = Inventory.objects.select_related('route').filter(
+    # Airport codes dictionary for major cities
+    airport_codes = {
+        'Mumbai': 'BOM',
+        'Delhi': 'DEL',
+        'Bangalore': 'BLR',
+        'Chennai': 'MAA',
+        'Kolkata': 'CCU',
+        'Hyderabad': 'HYD',
+        'Pune': 'PNQ',
+        'Ahmedabad': 'AMD',
+        'Goa': 'GOI',
+        'Kochi': 'COK',
+        'Thiruvananthapuram': 'TRV',
+        'Jaipur': 'JAI',
+        'Lucknow': 'LKO',
+        'Nagpur': 'NAG',
+        'Srinagar': 'SXR',
+        'Dubai': 'DXB',
+        'Singapore': 'SIN',
+        'Bangkok': 'BKK',
+        'London': 'LHR',
+        'New York': 'JFK',
+        'Paris': 'CDG',
+        'Tokyo': 'NRT',
+        'Sydney': 'SYD',
+    }
+    
+    # Validate required fields
+    if not from_location or not to_location:
+        messages.error(request, 'Please select both origin and destination.')
+        return redirect('homepage')
+    
+    if from_location == to_location:
+        messages.error(request, 'Origin and destination cannot be the same.')
+        return redirect('homepage')
+    
+    # Start with base query
+    flights = Schedule.objects.select_related('route').filter(
         route__from_location=from_location,
         route__to_location=to_location,
         is_active=True
     )
+    
+    # Filter by route type if specified
     if route_type and route_type in dict(Route.ROUTE_TYPE_CHOICES):
         flights = flights.filter(route__route_type=route_type)
     
+    # Filter by travel date if specified
     if travel_date:
         try:
             travel_date_obj = datetime.strptime(travel_date, '%Y-%m-%d').date()
-            flights = flights.filter(travel_date=travel_date_obj)
+            if travel_date_obj < timezone.now().date():
+                messages.error(request, 'Please select a future date.')
+                return redirect('homepage')
+            flights = flights.filter(departure_date=travel_date_obj)
         except ValueError:
-            pass
+            messages.error(request, 'Invalid date format.')
+            return redirect('homepage')
     
     # Filter only future dates
-    flights = flights.filter(travel_date__gte=timezone.now().date())
+    flights = flights.filter(departure_date__gte=timezone.now().date())
+    
+    # Filter flights with enough available seats
+    flights = flights.filter(available_seats__gte=passengers)
+    
+    # Order by price and departure date
+    flights = flights.order_by('price', 'departure_date')
+    
+    # Get route information
+    route_info = None
+    if flights.exists():
+        route_info = flights.first().route
+    
+    # Get airport codes for display
+    from_airport_code = airport_codes.get(from_location, '')
+    to_airport_code = airport_codes.get(to_location, '')
     
     context = {
         'flights': flights,
         'from_location': from_location,
         'to_location': to_location,
+        'from_airport_code': from_airport_code,
+        'to_airport_code': to_airport_code,
+        'airport_codes': airport_codes,  # Pass the full dictionary for individual flights
         'travel_date': travel_date,
         'route_type': route_type,
+        'passengers': passengers,
+        'route_info': route_info,
+        'total_flights': flights.count(),
     }
     return render(request, 'search.html', context)
 
 
 @login_required
-def booking_page(request, inventory_id):
-    """Booking page for a specific flight"""
-    inventory = get_object_or_404(Inventory, id=inventory_id)
+def booking_page(request, schedule_id):
+    """Enhanced booking page for a specific flight with multiple passenger support"""
+    schedule = get_object_or_404(Schedule, id=schedule_id)
+    passengers = int(request.GET.get('passengers', 1))
+    
+    # Ensure passengers doesn't exceed available seats
+    if passengers > schedule.available_seats:
+        passengers = schedule.available_seats
+        messages.warning(request, f'Maximum {passengers} passengers can be booked for this flight.')
     
     if request.method == 'POST':
-        # Process booking
-        passenger_name = request.POST.get('passenger_name')
-        passenger_age = request.POST.get('passenger_age')
-        passenger_gender = request.POST.get('passenger_gender')
-        id_type = request.POST.get('id_type')
-        id_last_4_digits = request.POST.get('id_last_4_digits')
-        seats_booked = int(request.POST.get('seats_booked', 1))
+        # Process booking for multiple passengers
+        seats_booked = int(request.POST.get('seats_booked', passengers))
         
         # Check availability
-        if inventory.available_seats < seats_booked:
-            messages.error(request, 'Not enough seats available!')
-            return redirect('booking', inventory_id=inventory_id)
+        if schedule.available_seats < seats_booked:
+            messages.error(request, f'Not enough seats available! Only {schedule.available_seats} seats left.')
+            return redirect('booking', schedule_id=schedule_id)
         
         # Generate booking reference
         booking_ref = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
         
         # Calculate total amount
-        total_amount = inventory.price * seats_booked
+        total_amount = schedule.price * seats_booked
         
-        # Create booking
+        # Get passenger details
+        passenger_names = request.POST.getlist('passenger_name[]')
+        passenger_ages = request.POST.getlist('passenger_age[]')
+        passenger_genders = request.POST.getlist('passenger_gender[]')
+        id_types = request.POST.getlist('id_type[]')
+        id_last_4_digits_list = request.POST.getlist('id_last_4_digits[]')
+        
+        # Validate passenger details
+        if len(passenger_names) != seats_booked:
+            messages.error(request, 'Please fill in all passenger details.')
+            return redirect('booking', schedule_id=schedule_id)
+        
+        # Create booking with primary passenger details
         booking = Booking.objects.create(
             user=request.user,
-            inventory=inventory,
+            schedule=schedule,
             booking_reference=booking_ref,
-            passenger_name=passenger_name,
-            passenger_age=passenger_age,
-            passenger_gender=passenger_gender,
-            id_type=id_type,
-            id_last_4_digits=id_last_4_digits,
+            passenger_name=passenger_names[0],  # Primary passenger
+            passenger_age=passenger_ages[0],
+            passenger_gender=passenger_genders[0],
+            id_type=id_types[0],
+            id_last_4_digits=id_last_4_digits_list[0],
             seats_booked=seats_booked,
             total_amount=total_amount,
             status='confirmed'
         )
         
-        # Update inventory
-        inventory.available_seats -= seats_booked
-        inventory.save()
+        # Store additional passenger details in a JSON field or separate model
+        # For now, we'll store it as a formatted string in the booking
+        additional_passengers = []
+        for i in range(1, seats_booked):
+            additional_passengers.append({
+                'name': passenger_names[i],
+                'age': passenger_ages[i],
+                'gender': passenger_genders[i],
+                'id_type': id_types[i],
+                'id_last_4': id_last_4_digits_list[i]
+            })
         
-        messages.success(request, f'Booking confirmed! Reference: {booking_ref}')
-        return redirect('dashboard')
+        if additional_passengers:
+            booking.additional_passengers = additional_passengers
+            booking.save()
+        
+        # Update schedule
+        schedule.available_seats -= seats_booked
+        schedule.save()
+        
+        # Airport codes dictionary for confirmation page
+        airport_codes = {
+            'Mumbai': 'BOM',
+            'Delhi': 'DEL',
+            'Bangalore': 'BLR',
+            'Chennai': 'MAA',
+            'Kolkata': 'CCU',
+            'Hyderabad': 'HYD',
+            'Pune': 'PNQ',
+            'Ahmedabad': 'AMD',
+            'Goa': 'GOI',
+            'Kochi': 'COK',
+            'Thiruvananthapuram': 'TRV',
+            'Jaipur': 'JAI',
+            'Lucknow': 'LKO',
+            'Nagpur': 'NAG',
+            'Srinagar': 'SXR',
+            'Dubai': 'DXB',
+            'Singapore': 'SIN',
+            'Bangkok': 'BKK',
+            'London': 'LHR',
+            'New York': 'JFK',
+            'Paris': 'CDG',
+            'Tokyo': 'NRT',
+            'Sydney': 'SYD',
+        }
+        
+        # Render confirmation page
+        context = {
+            'booking': booking,
+            'airport_codes': airport_codes,
+        }
+        return render(request, 'booking_confirmation.html', context)
+    
+    # Airport codes dictionary for major cities
+    airport_codes = {
+        'Mumbai': 'BOM',
+        'Delhi': 'DEL',
+        'Bangalore': 'BLR',
+        'Chennai': 'MAA',
+        'Kolkata': 'CCU',
+        'Hyderabad': 'HYD',
+        'Pune': 'PNQ',
+        'Ahmedabad': 'AMD',
+        'Goa': 'GOI',
+        'Kochi': 'COK',
+        'Thiruvananthapuram': 'TRV',
+        'Jaipur': 'JAI',
+        'Lucknow': 'LKO',
+        'Nagpur': 'NAG',
+        'Srinagar': 'SXR',
+        'Dubai': 'DXB',
+        'Singapore': 'SIN',
+        'Bangkok': 'BKK',
+        'London': 'LHR',
+        'New York': 'JFK',
+        'Paris': 'CDG',
+        'Tokyo': 'NRT',
+        'Sydney': 'SYD',
+    }
     
     context = {
         'inventory': inventory,
+        'passengers': passengers,
+        'passenger_range': range(1, passengers + 1),
+        'airport_codes': airport_codes,
     }
     return render(request, 'booking.html', context)
 
@@ -128,19 +314,94 @@ def dashboard(request):
     today = timezone.now().date()
     
     # Get all bookings
-    all_bookings = Booking.objects.filter(user=request.user).select_related('inventory__route')
+    all_bookings = Booking.objects.filter(user=request.user).select_related('schedule__route')
     
     upcoming_bookings = all_bookings.filter(
-        inventory__travel_date__gte=today,
+        schedule__departure_date__gte=today,
         status='confirmed'
     )
     
     past_bookings = all_bookings.filter(
-        inventory__travel_date__lt=today,
+        schedule__departure_date__lt=today,
         status='confirmed'
     )
     
     cancelled_bookings = all_bookings.filter(status='cancelled')
+    
+    # Airport codes dictionary
+    airport_codes = {
+        'Delhi': 'DEL',
+        'Mumbai': 'BOM',
+        'Bangalore': 'BLR',
+        'Chennai': 'MAA',
+        'Kolkata': 'CCU',
+        'Hyderabad': 'HYD',
+        'Pune': 'PNQ',
+        'Ahmedabad': 'AMD',
+        'Jaipur': 'JAI',
+        'Goa': 'GOI',
+        'Kochi': 'COK',
+        'Thiruvananthapuram': 'TRV',
+        'Lucknow': 'LKO',
+        'Guwahati': 'GAU',
+        'New York': 'JFK',
+        'London': 'LHR',
+        'Dubai': 'DXB',
+        'Singapore': 'SIN',
+        'Bangkok': 'BKK',
+        'Paris': 'CDG',
+        'Tokyo': 'NRT',
+        'Sydney': 'SYD',
+        'Toronto': 'YYZ',
+        'Frankfurt': 'FRA',
+        'Amsterdam': 'AMS',
+        'Zurich': 'ZRH',
+        'Vienna': 'VIE',
+        'Brussels': 'BRU',
+        'Copenhagen': 'CPH',
+        'Stockholm': 'ARN',
+        'Oslo': 'OSL',
+        'Helsinki': 'HEL',
+        'Dublin': 'DUB',
+        'Madrid': 'MAD',
+        'Barcelona': 'BCN',
+        'Rome': 'FCO',
+        'Milan': 'MXP',
+        'Munich': 'MUC',
+        'Berlin': 'TXL',
+        'Prague': 'PRG',
+        'Warsaw': 'WAW',
+        'Budapest': 'BUD',
+        'Athens': 'ATH',
+        'Istanbul': 'IST',
+        'Cairo': 'CAI',
+        'Tel Aviv': 'TLV',
+        'Doha': 'DOH',
+        'Kuwait': 'KWI',
+        'Riyadh': 'RUH',
+        'Jeddah': 'JED',
+        'Muscat': 'MCT',
+        'Colombo': 'CMB',
+        'Male': 'MLE',
+        'Kathmandu': 'KTM',
+        'Dhaka': 'DAC',
+        'Karachi': 'KHI',
+        'Lahore': 'LHE',
+        'Islamabad': 'ISB',
+        'Kuala Lumpur': 'KUL',
+        'Jakarta': 'CGK',
+        'Manila': 'MNL',
+        'Ho Chi Minh': 'SGN',
+        'Hanoi': 'HAN',
+        'Hong Kong': 'HKG',
+        'Seoul': 'ICN',
+        'Busan': 'PUS',
+        'Melbourne': 'MEL',
+        'Perth': 'PER',
+        'Brisbane': 'BNE',
+        'Auckland': 'AKL',
+        'Christchurch': 'CHC'
+    }
     
     context = {
         'total_bookings': all_bookings.count(),
@@ -149,8 +410,9 @@ def dashboard(request):
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
         'cancelled_bookings': cancelled_bookings,
+        'airport_codes': airport_codes,
     }
-    return render(request, 'dashboard.html', context)
+    return render(request, 'dashboard_new.html', context)
 
 
 @login_required
@@ -159,73 +421,84 @@ def cancel_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
     if booking.status == 'confirmed':
-        # Return seats to inventory
-        inventory = booking.inventory
-        inventory.available_seats += booking.seats_booked
-        inventory.save()
+        # Return seats to schedule
+        schedule = booking.schedule
+        schedule.available_seats += booking.seats_booked
+        schedule.save()
         
         # Update booking status
         booking.status = 'cancelled'
         booking.save()
-        
-        messages.success(request, 'Booking cancelled successfully!')
+        messages.success(request, 'Your booking has been cancelled.')
     else:
         messages.error(request, 'This booking cannot be cancelled.')
     
     return redirect('dashboard')
 
 
+@require_http_methods(['GET', 'POST'])
 def user_login(request):
-    """Login view"""
+    """Handle user login with email and password"""
     if request.user.is_authenticated:
-        return redirect('homepage')
-    
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        return redirect('dashboard')
         
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            messages.success(request, f'Welcome back, {user.username}!')
-            return redirect('homepage')
+    if request.method == 'POST':
+        form = UserLoginForm(request, data=request.POST)
+        if form.is_valid():
+            email = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, email=email, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.profile.full_name}!')
+                next_url = request.POST.get('next') or 'dashboard'
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Invalid email or password')
         else:
-            messages.error(request, 'Invalid username or password.')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.title()}: {error}")
+    else:
+        form = UserLoginForm()
     
-    return render(request, 'login.html')
+    return render(request, 'login.html', {'form': form})
 
-
+@require_http_methods(['GET', 'POST'])
 def user_signup(request):
-    """Signup view"""
+    """Handle new user registration"""
     if request.user.is_authenticated:
-        return redirect('homepage')
-    
+        return redirect('dashboard')
+        
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-        
-        # Validation
-        if password1 != password2:
-            messages.error(request, 'Passwords do not match!')
-            return redirect('signup')
-        
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists!')
-            return redirect('signup')
-        
-        if User.objects.filter(email=email).exists():
-            messages.error(request, 'Email already registered!')
-            return redirect('signup')
-        
-        # Create user
-        user = User.objects.create_user(username=username, email=email, password=password1)
-        login(request, user)
-        messages.success(request, 'Account created successfully!')
-        return redirect('homepage')
+        form = UserRegisterForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                # Save the user (which also creates the profile)
+                user = form.save()
+                
+                # Log the user in
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, 'Account created successfully! Welcome to Safar Zone Travels.')
+                return redirect('dashboard')
+                
+            except Exception as e:
+                messages.error(request, f'Error creating account: {str(e)}')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error during user registration: {str(e)}')
+        else:
+            # Collect all form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.title()}: {error}")
+    else:
+        form = UserRegisterForm()
     
-    return render(request, 'signup.html')
+    return render(request, 'signup.html', {'form': form})
+    return render(request, 'signup.html', {'form': form})
 
 
 @login_required
@@ -243,72 +516,100 @@ def is_staff_user(user):
 
 @login_required
 @user_passes_test(is_staff_user)
-def admin_inventory(request):
-    """Admin inventory management"""
-    inventory_list = Inventory.objects.select_related('route').all().order_by('-travel_date')
+def admin_schedules(request):
+    """Admin schedule management"""
+    schedule_list = Schedule.objects.select_related('route').all().order_by('-departure_date')
     routes = Route.objects.all()
     
     # Stats
     total_routes = Route.objects.count()
-    active_inventory = Inventory.objects.filter(is_active=True).count()
-    total_seats = Inventory.objects.aggregate(Sum('available_seats'))['available_seats__sum'] or 0
-    today_bookings = Booking.objects.filter(booked_at__date=timezone.now().date()).count()
+    active_schedules = Schedule.objects.filter(is_active=True).count()
+    total_seats = Schedule.objects.aggregate(Sum('available_seats'))['available_seats__sum'] or 0
+    today_bookings = Booking.objects.filter(created_at__date=timezone.now().date()).count()
+    
+    # Airport codes dictionary for display
+    airport_codes = {
+        'Mumbai': 'BOM',
+        'Delhi': 'DEL',
+        'Bangalore': 'BLR',
+        'Chennai': 'MAA',
+        'Kolkata': 'CCU',
+        'Hyderabad': 'HYD',
+        'Pune': 'PNQ',
+        'Ahmedabad': 'AMD',
+        'Goa': 'GOI',
+        'Kochi': 'COK',
+        'Thiruvananthapuram': 'TRV',
+        'Jaipur': 'JAI',
+        'Lucknow': 'LKO',
+        'Nagpur': 'NAG',
+        'Srinagar': 'SXR',
+        'Dubai': 'DXB',
+        'Singapore': 'SIN',
+        'Bangkok': 'BKK',
+        'London': 'LHR',
+        'New York': 'JFK',
+        'Paris': 'CDG',
+        'Tokyo': 'NRT',
+        'Sydney': 'SYD',
+    }
     
     context = {
-        'inventory_list': inventory_list,
+        'schedule_list': schedule_list,
         'routes': routes,
         'total_routes': total_routes,
-        'active_inventory': active_inventory,
+        'active_schedules': active_schedules,
         'total_seats': total_seats,
         'today_bookings': today_bookings,
+        'airport_codes': airport_codes,
     }
-    return render(request, 'admin_inventory.html', context)
+    return render(request, 'admin_schedules.html', context)
 
 
 @login_required
 @user_passes_test(is_staff_user)
-def add_inventory(request):
-    """Add new inventory"""
+def add_schedule(request):
+    """Add new schedule"""
     if request.method == 'POST':
         route_id = request.POST.get('route')
-        travel_date = request.POST.get('travel_date')
-        price = request.POST.get('price')
-        total_seats = request.POST.get('total_seats', 180)
-        is_active = request.POST.get('is_active') == 'true'
+        departure_date = request.POST.get('departure_date')
+        arrival_date = request.POST.get('arrival_date')
+        total_seats = int(request.POST.get('total_seats', 0))
+        price = float(request.POST.get('price', 0))
+        is_active = request.POST.get('is_active') == 'on'
+        notes = request.POST.get('notes', '')
         
         route = get_object_or_404(Route, id=route_id)
         
-        # Check if inventory already exists
-        if Inventory.objects.filter(route=route, travel_date=travel_date).exists():
-            messages.error(request, 'Inventory for this route and date already exists!')
-        else:
-            Inventory.objects.create(
-                route=route,
-                travel_date=travel_date,
-                total_seats=total_seats,
-                available_seats=total_seats,
-                price=price,
-                is_active=is_active
-            )
-            messages.success(request, 'Inventory added successfully!')
+        # Create new schedule
+        Schedule.objects.create(
+            route=route,
+            departure_date=departure_date,
+            arrival_date=arrival_date,
+            total_seats=total_seats,
+            available_seats=total_seats,  # Initially all seats are available
+            price=price,
+            is_active=is_active,
+            notes=notes
+        )
+        messages.success(request, 'Schedule added successfully!')
     
-    return redirect('admin_inventory')
+    return redirect('admin_schedules')
 
 
 @login_required
 @user_passes_test(is_staff_user)
-def delete_inventory(request, inventory_id):
-    """Delete inventory"""
+def delete_schedule(request, schedule_id):
+    """Delete schedule"""
     if request.method == 'POST':
-        inventory = get_object_or_404(Inventory, id=inventory_id)
-        inventory.delete()
-        messages.success(request, 'Inventory deleted successfully!')
+        schedule = get_object_or_404(Schedule, id=schedule_id)
+        schedule.delete()
+        messages.success(request, 'Schedule deleted successfully!')
     
-    return redirect('admin_inventory')
+    return redirect('admin_schedules')
 
 
 @login_required
-@user_passes_test(is_staff_user)
 def admin_packages(request):
     """Admin package management"""
     packages = Package.objects.all().order_by('-is_featured', '-created_at')

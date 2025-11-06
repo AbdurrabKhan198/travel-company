@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load travel_filters %}
 
 {% block title %}Admin - Inventory Management{% endblock %}
 
@@ -74,7 +75,15 @@
                                 <div class="text-sm text-gray-500">{{ inv.route.duration }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-800">{{ inv.route.from_location }} → {{ inv.route.to_location }}</div>
+                                <div class="text-sm text-gray-800">
+                                    {% with from_code=inv.route.from_location|get_item:airport_codes %}
+                                        {{ inv.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                                    {% endwith %}
+                                     → 
+                                    {% with to_code=inv.route.to_location|get_item:airport_codes %}
+                                        {{ inv.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                                    {% endwith %}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-800">{{ inv.travel_date|date:"d M Y" }}</div>
@@ -148,7 +157,16 @@
                 <select name="route" required class="input-field">
                     <option value="">Select Route</option>
                     {% for route in routes %}
-                        <option value="{{ route.id }}">{{ route.flight_number }} - {{ route.from_location }} → {{ route.to_location }}</option>
+                        <option value="{{ route.id }}">
+                            {{ route.flight_number }} - 
+                            {% with from_code=route.from_location|get_item:airport_codes %}
+                                {{ route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
+                            {% endwith %}
+                             → 
+                            {% with to_code=route.to_location|get_item:airport_codes %}
+                                {{ route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
+                            {% endwith %}
+                        </option>
                     {% endfor %}
                 </select>
             </div>

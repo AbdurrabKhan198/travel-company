@@ -107,14 +107,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Search form enhancement
-    const searchForm = document.getElementById('search-form');
+    // Enhanced Search Form Functionality
+    const searchForm = document.querySelector('form[action*="search_flights"]');
     if (searchForm) {
-        const fromInput = document.getElementById('from-location');
-        const toInput = document.getElementById('to-location');
+        const fromInput = document.getElementById('from_location');
+        const toInput = document.getElementById('to_location');
+        const domesticRadio = document.getElementById('domestic');
+        const internationalRadio = document.getElementById('international');
         
+        // Prevent same from/to locations
         if (fromInput && toInput) {
-            // Prevent same from/to locations
             fromInput.addEventListener('change', function() {
                 if (toInput.value === fromInput.value && fromInput.value !== '') {
                     alert('Destination cannot be the same as origin');
@@ -129,6 +131,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+        
+        // Route type change handler
+        function handleRouteTypeChange() {
+            const isInternational = internationalRadio.checked;
+            
+            // Add animation to search box
+            const searchBox = document.querySelector('.search-box');
+            searchBox.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                searchBox.style.transform = 'scale(1)';
+            }, 200);
+            
+            // Update placeholder text based on route type
+            if (fromInput) {
+                fromInput.placeholder = isInternational ? 'Select International Origin' : 'Select Domestic Origin';
+            }
+            if (toInput) {
+                toInput.placeholder = isInternational ? 'Select International Destination' : 'Select Domestic Destination';
+            }
+        }
+        
+        if (domesticRadio) {
+            domesticRadio.addEventListener('change', handleRouteTypeChange);
+        }
+        if (internationalRadio) {
+            internationalRadio.addEventListener('change', handleRouteTypeChange);
+        }
+        
+        // Add loading animation on form submit
+        searchForm.addEventListener('submit', function(e) {
+            const submitBtn = searchForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Searching...';
+            submitBtn.disabled = true;
+            
+            // Re-enable button after 3 seconds (in case of error)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+    }
+    
+    // Enhanced date picker with minimum date validation
+    const travelDateInput = document.getElementById('travel_date');
+    if (travelDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        travelDateInput.setAttribute('min', today);
+        
+        // Add date validation
+        travelDateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const minDate = new Date(today);
+            
+            if (selectedDate < minDate) {
+                alert('Please select a future date');
+                this.value = '';
+            }
+        });
     }
 });
 

@@ -1,6 +1,8 @@
 from django.urls import path
-from . import views
 from django.views.generic import TemplateView
+from django.conf import settings
+from django.conf.urls.static import static
+from . import views
 
 urlpatterns = [
     # Public pages
@@ -20,11 +22,15 @@ urlpatterns = [
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),
     
-    # Admin pages
-    path('admin/inventory/', views.admin_inventory, name='admin_inventory'),
-    path('admin/inventory/add/', views.add_inventory, name='add_inventory'),
-    path('admin/inventory/delete/<int:inventory_id>/', views.delete_inventory, name='delete_inventory'),
+    # Admin pages - Schedules
+    path('admin/schedules/', views.admin_schedules, name='admin_schedules'),
+    path('admin/schedules/add/', views.add_schedule, name='add_schedule'),
+    path('admin/schedules/delete/<int:schedule_id>/', views.delete_schedule, name='delete_schedule'),
     path('admin/packages/', views.admin_packages, name='admin_packages'),
     path('admin/packages/add/', views.add_package, name='add_package'),
     path('admin/packages/delete/<int:package_id>/', views.delete_package, name='delete_package'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
