@@ -6,8 +6,9 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .models import User, UserProfile, Booking, Package, Route, Schedule, BookingPassenger
+from .models import User, UserProfile, Booking, Package, Route, Schedule, BookingPassenger, Contact, Wallet
 from datetime import date
+from decimal import Decimal
 import re
 
 User = get_user_model()
@@ -42,17 +43,19 @@ class UserRegisterForm(UserCreationForm):
         label=_('Aadhar Number'),
         max_length=12,
         min_length=12,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': _('Enter 12-digit Aadhar number'),
             'required': 'required',
-            'pattern': '\d{12}'
+            'pattern': r'\d{12}',
+            'id': 'id_aadhar_number'
         }),
-        help_text=_('12-digit Aadhar number (digits only)'),
+        help_text=_('12-digit Aadhar number (digits only) - Required for security verification'),
         validators=[
             RegexValidator(
-                regex='^\d{12}$',
-                message=_('Aadhar number must be 12 digits')
+                regex=r'^\d{12}$',
+                message=_('Aadhar number must be exactly 12 digits')
             )
         ]
     )
@@ -166,6 +169,17 @@ class UserRegisterForm(UserCreationForm):
                 aadhar_number=self.cleaned_data['aadhar_number']
             )
         return user
+    
+    def clean_aadhar_number(self):
+        aadhar = self.cleaned_data.get('aadhar_number', '').strip()
+        if not aadhar.isdigit():
+            raise ValidationError(_('Aadhar number must contain only digits'))
+        if len(aadhar) != 12:
+            raise ValidationError(_('Aadhar number must be exactly 12 digits'))
+        # Check if aadhar is already registered
+        if UserProfile.objects.filter(aadhar_number=aadhar).exists():
+            raise ValidationError(_('This Aadhar number is already registered. Please use a different number or try logging in.'))
+        return aadhar
 
 
 class UserLoginForm(AuthenticationForm):
@@ -583,11 +597,21 @@ class ContactForm(forms.Form):
         })
     )
     
-    subject = forms.CharField(
-        max_length=200,
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Subject'),
+            'placeholder': _('Your Phone (Optional)'),
+        })
+    )
+    
+    subject = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Subject (Optional)'),
         })
     )
     
@@ -610,3 +634,39 @@ class ContactForm(forms.Form):
         if len(message) < 10:
             raise ValidationError(_('Message is too short. Please provide more details.'))
         return message
+
+class WalletRechargeForm(forms.Form):
+    """Form for recharging wallet balance"""
+    amount = forms.DecimalField(
+        label=_('Recharge Amount'),
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal('100.00'),
+        max_value=Decimal('100000.00'),
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter amount (min ₹100, max ₹1,00,000)'),
+            'step': '0.01',
+            'min': '100',
+            'max': '100000',
+        }),
+        help_text=_('Minimum recharge: ₹100, Maximum: ₹1,00,000')
+    )
+    
+    description = forms.CharField(
+        label=_('Description (Optional)'),
+        required=False,
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Add a note for this recharge'),
+        })
+    )
+    
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        if amount < Decimal('100.00'):
+            raise ValidationError(_('Minimum recharge amount is ₹100'))
+        if amount > Decimal('100000.00'):
+            raise ValidationError(_('Maximum recharge amount is ₹1,00,000'))
+        return amount

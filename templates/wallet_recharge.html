@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recharge Wallet - Safar Zone Travels{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-12">
+    <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8 animate-fade-in-up">
+                <div class="inline-block p-4 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl mb-4 shadow-lg">
+                    <i class="fas fa-wallet text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                    Recharge <span class="gradient-text">OD Wallet</span>
+                </h1>
+                <p class="text-xl text-gray-600">Add funds to your wallet for instant bookings</p>
+            </div>
+
+            <!-- Current Balance Card -->
+            <div class="bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-6 text-white mb-8 animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/90 mb-1">Current Balance</p>
+                        <h2 class="text-5xl font-bold mb-2">₹{{ wallet_balance|floatformat:2 }}</h2>
+                        <p class="text-white/80 text-sm">Max Balance: ₹{{ max_balance|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-wallet text-white text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recharge Form -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.2s;">
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Amount Field -->
+                    <div>
+                        <label for="{{ form.amount.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-rupee-sign mr-2 text-sky-500"></i>Recharge Amount
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {% for error in form.amount.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.amount.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.amount.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Quick Amount Buttons -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            <i class="fas fa-bolt mr-2 text-amber-500"></i>Quick Recharge
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <button type="button" onclick="setAmount(500)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                                ₹500
+                            </button>
+                            <button type="button" onclick="setAmount(1000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                                ₹1,000
+                            </button>
+                            <button type="button" onclick="setAmount(5000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                                ₹5,000
+                            </button>
+                            <button type="button" onclick="setAmount(10000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                                ₹10,000
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Description Field -->
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-comment mr-2 text-sky-500"></i>{{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {% for error in form.description.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Recharge Wallet</span>
+                        </button>
+                    </div>
+
+                    <!-- Back Link -->
+                    <div class="text-center pt-4">
+                        <a href="{% url 'dashboard' %}" class="text-sky-600 hover:text-sky-700 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info Card -->
+            <div class="mt-8 bg-blue-50 border-l-4 border-blue-500 rounded-xl p-6 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-bold text-blue-900 mb-2">About OD Wallet</h3>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Minimum recharge: ₹100</li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Maximum balance: ₹1,00,000</li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Use wallet balance to book tickets instantly</li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>All transactions are recorded in history</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setAmount(amount) {
+    document.getElementById('{{ form.amount.id_for_label }}').value = amount;
+}
+</script>
+{% endblock %}
+

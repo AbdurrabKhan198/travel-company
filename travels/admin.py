@@ -9,7 +9,7 @@ from django.contrib import messages
 
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
-    Package, PackageImage
+    Package, PackageImage, Contact, Wallet, WalletTransaction
 )
 
 class UserProfileInline(admin.StackedInline):
@@ -50,8 +50,8 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'full_name', 'aadhar_number', 'city', 'country', 'date_of_birth')
-    search_fields = ('user__email', 'full_name', 'aadhar_number', 'city', 'country', 'id_number')
+    list_display = ('user', 'full_name', 'aadhar_number', 'id_type', 'city', 'country', 'date_of_birth', 'has_pdfs')
+    search_fields = ('user__email', 'full_name', 'aadhar_number', 'id_number', 'city', 'country')
     list_filter = ('gender', 'country', 'city', 'id_type')
     fieldsets = (
         ('Personal Information', {
@@ -61,16 +61,20 @@ class UserProfileAdmin(admin.ModelAdmin):
             'fields': ('address', 'city', 'state', 'country', 'pincode')
         }),
         ('Identification', {
-            'fields': ('id_type', 'id_number', 'aadhar_number'),
+            'fields': ('aadhar_number', 'id_type', 'id_number'),
             'classes': ('collapse',)
+        }),
+        ('PDF Documents', {
+            'fields': ('id_document_pdf', 'passport_pdf', 'other_documents'),
+            'classes': ('collapse',),
+            'description': 'User uploaded PDF documents'
         }),
         ('System Information', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
-    readonly_fields = ('created_at', 'updated_at')
-    readonly_fields = ('created_at', 'updated_at', 'profile_picture_preview')
+    readonly_fields = ('created_at', 'updated_at', 'profile_picture_preview', 'has_pdfs')
     
     def profile_picture_preview(self, obj):
         if obj.profile_picture:
@@ -80,6 +84,17 @@ class UserProfileAdmin(admin.ModelAdmin):
             )
         return "No image"
     profile_picture_preview.short_description = 'Profile Picture Preview'
+    
+    def has_pdfs(self, obj):
+        pdfs = []
+        if obj.id_document_pdf:
+            pdfs.append(format_html('<a href="{}" target="_blank">ID Document</a>', obj.id_document_pdf.url))
+        if obj.passport_pdf:
+            pdfs.append(format_html('<a href="{}" target="_blank">Passport</a>', obj.passport_pdf.url))
+        if obj.other_documents:
+            pdfs.append(format_html('<a href="{}" target="_blank">Other</a>', obj.other_documents.url))
+        return format_html('<br>'.join(pdfs)) if pdfs else "No PDFs"
+    has_pdfs.short_description = 'PDF Documents'
 
 class ScheduleInline(admin.TabularInline):
     model = Schedule
@@ -89,11 +104,34 @@ class ScheduleInline(admin.TabularInline):
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'base_price', 'is_active')
-    list_filter = ('transport_type', 'route_type', 'is_active')
+    list_display = ('name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'base_price', 'is_non_refundable', 'is_active')
+    list_filter = ('transport_type', 'route_type', 'is_active', 'is_non_refundable')
     search_fields = ('name', 'from_location', 'to_location', 'carrier_number')
     inlines = [ScheduleInline]
     readonly_fields = ('created_at', 'updated_at', 'duration_formatted')
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'from_location', 'to_location', 'transport_type', 'carrier_number', 'route_type')
+        }),
+        ('Schedule', {
+            'fields': ('departure_time', 'arrival_time', 'duration')
+        }),
+        ('Terminal Information', {
+            'fields': ('departure_terminal', 'arrival_terminal')
+        }),
+        ('Pricing & Status', {
+            'fields': ('base_price', 'is_non_refundable', 'is_active')
+        }),
+        ('Additional Information', {
+            'fields': ('description', 'amenities'),
+            'classes': ('collapse',)
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at', 'duration_formatted'),
+            'classes': ('collapse',)
+        }),
+    )
     
     def duration_formatted(self, obj):
         return obj.formatted_duration
@@ -243,4 +281,141 @@ class PackageImageAdmin(admin.ModelAdmin):
             )
         return "No image"
     preview_image.short_description = 'Preview'
+
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'status', 'created_at', 'is_new_badge')
+    list_filter = ('status', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at', 'updated_at', 'ip_address', 'user_agent')
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Contact Information', {
+            'fields': ('name', 'email', 'phone', 'subject', 'message')
+        }),
+        ('Status & Management', {
+            'fields': ('status', 'admin_notes')
+        }),
+        ('System Information', {
+            'fields': ('ip_address', 'user_agent', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def is_new_badge(self, obj):
+        if obj.is_new:
+            return format_html(
+                '<span style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">NEW</span>'
+            )
+        return format_html(
+            '<span style="background-color: #6b7280; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">{}</span>',
+            obj.get_status_display()
+        )
+    is_new_badge.short_description = 'Status'
+    
+    actions = ['mark_as_read', 'mark_as_replied', 'mark_as_closed']
+    
+    def mark_as_read(self, request, queryset):
+        queryset.update(status=Contact.Status.READ)
+        self.message_user(request, f'{queryset.count()} inquiry(s) marked as read.')
+    mark_as_read.short_description = 'Mark selected as read'
+    
+    def mark_as_replied(self, request, queryset):
+        queryset.update(status=Contact.Status.REPLIED)
+        self.message_user(request, f'{queryset.count()} inquiry(s) marked as replied.')
+    mark_as_replied.short_description = 'Mark selected as replied'
+    
+    def mark_as_closed(self, request, queryset):
+        queryset.update(status=Contact.Status.CLOSED)
+        self.message_user(request, f'{queryset.count()} inquiry(s) marked as closed.')
+    mark_as_closed.short_description = 'Mark selected as closed'
+
+class WalletTransactionInline(admin.TabularInline):
+    model = WalletTransaction
+    extra = 0
+    readonly_fields = ('transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at')
+    can_delete = False
+    
+    def has_add_permission(self, request, obj):
+        return False
+
+@admin.register(Wallet)
+class WalletAdmin(admin.ModelAdmin):
+    list_display = ('user_email', 'balance', 'is_active', 'max_balance', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name')
+    readonly_fields = ('created_at', 'updated_at', 'user_email', 'transaction_count')
+    inlines = [WalletTransactionInline]
+    date_hierarchy = 'created_at'
+    actions = ['activate_wallets', 'deactivate_wallets']
+    
+    fieldsets = (
+        ('Wallet Information', {
+            'fields': ('user_email', 'balance', 'max_balance', 'is_active')
+        }),
+        ('Statistics', {
+            'fields': ('transaction_count',),
+            'classes': ('collapse',)
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def user_email(self, obj):
+        return obj.user.email if obj.user else 'N/A'
+    user_email.short_description = 'User'
+    
+    def transaction_count(self, obj):
+        return obj.transactions.count()
+    transaction_count.short_description = 'Total Transactions'
+    
+    def activate_wallets(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"{updated} wallet(s) activated.")
+    activate_wallets.short_description = "Activate selected wallets"
+    
+    def deactivate_wallets(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"{updated} wallet(s) deactivated.")
+    deactivate_wallets.short_description = "Deactivate selected wallets"
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(admin.ModelAdmin):
+    list_display = ('wallet_user', 'transaction_type', 'amount_display', 'balance_after', 'reference_id', 'created_at')
+    list_filter = ('transaction_type', 'created_at')
+    search_fields = ('wallet__user__email', 'description', 'reference_id')
+    readonly_fields = ('wallet', 'transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at', 'updated_at', 'is_credit_display')
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Transaction Information', {
+            'fields': ('wallet', 'transaction_type', 'amount', 'balance_after', 'is_credit_display')
+        }),
+        ('Details', {
+            'fields': ('description', 'reference_id')
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def wallet_user(self, obj):
+        return obj.wallet.user.email if obj.wallet and obj.wallet.user else 'N/A'
+    wallet_user.short_description = 'User'
+    
+    def amount_display(self, obj):
+        if obj.amount > 0:
+            return format_html('<span style="color: green;">+₹{}</span>', obj.amount)
+        else:
+            return format_html('<span style="color: red;">-₹{}</span>', abs(obj.amount))
+    amount_display.short_description = 'Amount'
+    
+    def is_credit_display(self, obj):
+        return "Credit" if obj.is_credit else "Debit"
+    is_credit_display.short_description = 'Type'
 

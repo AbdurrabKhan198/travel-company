@@ -3,10 +3,13 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Per
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import transaction
 from django.core.validators import MinLengthValidator, RegexValidator, MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from datetime import datetime, date
+from django.utils.text import slugify
+from datetime import datetime, date, timedelta
+from decimal import Decimal
 import uuid
 
 class TimestampedModel(models.Model):
@@ -127,6 +130,38 @@ class UserProfile(TimestampedModel):
         blank=True,
         help_text=_('ID number of the selected ID type')
     )
+    aadhar_number = models.CharField(
+        _('Aadhar Number'),
+        max_length=12,
+        unique=True,
+        null=True,
+        blank=True,
+        validators=[MinLengthValidator(12)],
+        help_text=_('12-digit Aadhar number for security verification')
+    )
+    
+    # PDF Documents
+    id_document_pdf = models.FileField(
+        _('ID Document PDF'),
+        upload_to='user_documents/id/',
+        blank=True,
+        null=True,
+        help_text=_('Upload your ID document (Aadhar, Passport, etc.) as PDF')
+    )
+    passport_pdf = models.FileField(
+        _('Passport PDF'),
+        upload_to='user_documents/passport/',
+        blank=True,
+        null=True,
+        help_text=_('Upload your passport copy as PDF')
+    )
+    other_documents = models.FileField(
+        _('Other Documents PDF'),
+        upload_to='user_documents/other/',
+        blank=True,
+        null=True,
+        help_text=_('Upload any other relevant documents as PDF')
+    )
     
     class Meta:
         verbose_name = _('user profile')
@@ -145,23 +180,67 @@ class UserProfile(TimestampedModel):
     def clean(self):
         if self.date_of_birth and self.date_of_birth > date.today():
             raise ValidationError({'date_of_birth': _('Date of birth cannot be in the future')})
+        if self.aadhar_number and not self.aadhar_number.isdigit():
+            raise ValidationError({'aadhar_number': _('Aadhar number must contain only digits')})
+        if self.aadhar_number and len(self.aadhar_number) != 12:
+            raise ValidationError({'aadhar_number': _('Aadhar number must be exactly 12 digits')})
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Automatically create UserProfile when a User is created"""
+    if created:
+        # Create profile with default values
+        try:
+            UserProfile.objects.get_or_create(
+                user=instance,
+                defaults={
+                    'full_name': instance.get_full_name() or instance.email.split('@')[0]
+                }
+            )
+        except Exception as e:
+            # Log error but don't fail user creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error creating user profile: {str(e)}')
+
+class OTPVerification(models.Model):
+    """Model to store OTP for email verification during signup"""
+    email = models.EmailField(_('email address'), null=True, blank=True)
+    aadhar_number = models.CharField(max_length=12, blank=True, null=True)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_verified = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    full_name = models.CharField(max_length=100)
-    aadhar_number = models.CharField(
-        max_length=12,
-        validators=[MinLengthValidator(12)],
-        unique=True,
-        help_text='12-digit Aadhar number'
-    )
-    date_of_birth = models.DateField(null=True, blank=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
-    address = models.TextField(blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    state = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, default='India')
-    pincode = models.CharField(max_length=10, blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    class Meta:
+        verbose_name = _('OTP Verification')
+        verbose_name_plural = _('OTP Verifications')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['email', 'is_verified'], name='otp_email_idx'),
+        ]
+    
+    def __str__(self):
+        return f"OTP for {self.email}"
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    def is_valid(self):
+        return not self.is_expired() and not self.is_verified and self.attempts < 3
+    
+    def verify(self, entered_otp):
+        """Verify the entered OTP"""
+        if not self.is_valid():
+            return False
+        self.attempts += 1
+        if self.otp == entered_otp:
+            self.is_verified = True
+            self.save()
+            return True
+        self.save()
+        return False
 
 class Route(TimestampedModel):
     """Travel routes available in the system"""
@@ -191,6 +270,12 @@ class Route(TimestampedModel):
     description = models.TextField(_('description'), blank=True)
     amenities = models.JSONField(_('amenities'), default=dict, blank=True,
                                help_text=_('JSON of available amenities (e.g., {"wifi": true, "meals": true})'))
+    departure_terminal = models.CharField(_('departure terminal'), max_length=20, 
+                                         help_text=_('Terminal number/name for departure (e.g., T1, T2, Terminal A)'))
+    arrival_terminal = models.CharField(_('arrival terminal'), max_length=20,
+                                       help_text=_('Terminal number/name for arrival (e.g., T1, T2, Terminal A)'))
+    is_non_refundable = models.BooleanField(_('non-refundable'), default=False,
+                                           help_text=_('Mark this route as non-refundable'))
     
     class Meta:
         verbose_name = _('route')
@@ -214,6 +299,41 @@ class Route(TimestampedModel):
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         return f"{hours}h {minutes}m" if hours else f"{minutes}m"
+    
+    def calculate_arrival_date(self, departure_date):
+        """Calculate arrival date based on departure date and duration"""
+        if not departure_date:
+            return None
+        
+        # Calculate arrival datetime
+        departure_datetime = datetime.combine(departure_date, self.departure_time)
+        arrival_datetime = departure_datetime + self.duration
+        
+        return arrival_datetime.date()
+    
+    def get_available_dates(self, start_date=None, end_date=None, min_seats=1):
+        """Get all available dates for this route within a date range"""
+        if not start_date:
+            start_date = date.today()
+        if not end_date:
+            end_date = start_date + timedelta(days=60)
+        
+        schedules = self.schedules.filter(
+            departure_date__gte=start_date,
+            departure_date__lte=end_date,
+            available_seats__gte=min_seats,
+            is_active=True
+        ).order_by('departure_date')
+        
+        return schedules
+    
+    def is_available_on_date(self, check_date, min_seats=1):
+        """Check if route has available seats on a specific date"""
+        return self.schedules.filter(
+            departure_date=check_date,
+            available_seats__gte=min_seats,
+            is_active=True
+        ).exists()
 
 class Schedule(TimestampedModel):
     """Schedule for a specific route on specific dates"""
@@ -261,6 +381,50 @@ class Schedule(TimestampedModel):
         self.available_seats += seats
         self.save()
         return True
+    
+    @property
+    def departure_datetime(self):
+        """Get full departure datetime combining date and time"""
+        if self.departure_date and self.route.departure_time:
+            return datetime.combine(self.departure_date, self.route.departure_time)
+        return None
+    
+    @property
+    def arrival_datetime(self):
+        """Get full arrival datetime combining date and time"""
+        if self.arrival_date and self.route.arrival_time:
+            return datetime.combine(self.arrival_date, self.route.arrival_time)
+        return None
+    
+    @property
+    def is_past(self):
+        """Check if this schedule is in the past"""
+        if not self.departure_date:
+            return False
+        return self.departure_date < date.today()
+    
+    @property
+    def is_today(self):
+        """Check if this schedule is today"""
+        if not self.departure_date:
+            return False
+        return self.departure_date == date.today()
+    
+    @property
+    def days_until_departure(self):
+        """Get number of days until departure"""
+        if not self.departure_date:
+            return None
+        delta = self.departure_date - date.today()
+        return delta.days
+    
+    def get_price_for_passengers(self, num_passengers=1):
+        """Calculate total price for multiple passengers"""
+        return self.price * Decimal(str(num_passengers))
+    
+    def can_book(self, num_seats=1):
+        """Check if specified number of seats can be booked"""
+        return self.is_available and self.available_seats >= num_seats
 
 class Booking(TimestampedModel):
     """User travel bookings"""
@@ -362,6 +526,25 @@ class Booking(TimestampedModel):
         """Calculate the total amount including taxes and discounts"""
         self.total_amount = (self.base_fare + self.tax_amount - self.discount_amount).quantize(Decimal('0.01'))
     
+    def calculate_for_passengers(self, num_passengers=1):
+        """Calculate booking amounts for multiple passengers"""
+        if not self.schedule:
+            return
+        
+        # Base fare per passenger
+        fare_per_passenger = self.schedule.price
+        self.base_fare = fare_per_passenger * Decimal(str(num_passengers))
+        
+        # Calculate tax (typically 5-18% of base fare)
+        tax_rate = Decimal('0.12')  # 12% GST
+        self.tax_amount = (self.base_fare * tax_rate).quantize(Decimal('0.01'))
+        
+        # Apply discount if any (can be customized)
+        self.discount_amount = Decimal('0.00')
+        
+        # Calculate total
+        self.calculate_total()
+    
     @property
     def is_upcoming(self):
         """Check if the booking is for a future date"""
@@ -374,14 +557,14 @@ class Booking(TimestampedModel):
             
         self.status = self.Status.CANCELLED
         if refund_amount is not None:
-            self.refund_amount = refund_amount
             if refund_amount < self.total_amount:
                 self.payment_status = self.PaymentStatus.PARTIALLY_REFUNDED
             else:
                 self.payment_status = self.PaymentStatus.REFUNDED
         
-        # Release the seats back to inventory
-        self.schedule.cancel_booking(seats=1)  # Assuming 1 seat per booking for simplicity
+        # Release the seats back to inventory (number of passengers)
+        num_passengers = self.passengers.count() or 1
+        self.schedule.cancel_booking(seats=num_passengers)
         self.save()
         return True
     
@@ -389,14 +572,48 @@ class Booking(TimestampedModel):
         """Confirm the booking"""
         if self.status != self.Status.PENDING:
             return False
+        
+        # Get number of passengers
+        num_passengers = self.passengers.count() or 1
             
         # Attempt to book the seats
-        if not self.schedule.book_seats(seats=1):  # Assuming 1 seat per booking for simplicity
+        if not self.schedule.book_seats(seats=num_passengers):
             return False
             
         self.status = self.Status.CONFIRMED
+        self.payment_status = self.PaymentStatus.PAID
         self.save()
         return True
+    
+    @property
+    def num_passengers(self):
+        """Get number of passengers in this booking"""
+        return self.passengers.count()
+    
+    @property
+    def flight_info(self):
+        """Get formatted flight information"""
+        if not self.schedule:
+            return "N/A"
+        route = self.schedule.route
+        return f"{route.carrier_number} - {route.from_location} to {route.to_location}"
+    
+    @property
+    def ticket_date(self):
+        """Get the ticket/booking date"""
+        return self.created_at.date() if self.created_at else None
+    
+    @property
+    def travel_date(self):
+        """Get the travel/departure date"""
+        return self.schedule.departure_date if self.schedule else None
+    
+    @property
+    def is_upcoming_travel(self):
+        """Check if travel is in the future"""
+        if not self.travel_date:
+            return False
+        return self.travel_date >= date.today() and self.status == self.Status.CONFIRMED
 
 class Package(TimestampedModel):
     """Travel packages featured on the platform"""
@@ -459,7 +676,7 @@ class Package(TimestampedModel):
         if not self.meta_title:
             self.meta_title = f"{self.title} - {self.destination} | Safar Zone Travels"
         if not self.meta_description:
-            self.meta_description = self.short_description[:160]  # Truncate to 160 chars for SEO
+            self.meta_description = self.short_description[:160]  # Truncate to 120 chars for SEO
         super().save(*args, **kwargs)
     
     @property
@@ -504,12 +721,19 @@ class PackageImage(models.Model):
 class BookingPassenger(models.Model):
     """Passenger details for a booking"""
     class PassengerType(models.TextChoices):
-        ADULT = 'adult', _('Adult')
-        CHILD = 'child', _('Child (2-12 years)')
+        ADULT = 'adult', _('Adult (12+ years)')
+        CHILD = 'child', _('Child (2-11 years)')
         INFANT = 'infant', _('Infant (0-2 years)')
         SENIOR = 'senior', _('Senior Citizen (60+ years)')
     
+    class Title(models.TextChoices):
+        MR = 'Mr', _('Mr')
+        MRS = 'Mrs', _('Mrs')
+        MISS = 'Miss', _('Miss')
+        MASTER = 'Master', _('Master')
+    
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
+    title = models.CharField(_('title'), max_length=10, choices=Title.choices, default=Title.MR)
     first_name = models.CharField(_('first name'), max_length=100)
     last_name = models.CharField(_('last name'), max_length=100)
     date_of_birth = models.DateField(_('date of birth'))
@@ -531,13 +755,197 @@ class BookingPassenger(models.Model):
         verbose_name_plural = _('passengers')
     
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
+        return f"{self.get_title_display()} {self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
     
     @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.get_title_display()} {self.first_name} {self.last_name}"
+    
+    @property
+    def full_name_with_title(self):
+        """Return full name with title prefix"""
+        return f"{self.get_title_display()} {self.first_name} {self.last_name}"
     
     @property
     def age(self):
         today = date.today()
         return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
+    
+    @property
+    def is_passport_valid(self):
+        """Check if passport is valid (not expired)"""
+        if not self.passport_expiry:
+            return True  # If no expiry date, assume valid
+        return self.passport_expiry > date.today()
+    
+    @property
+    def passport_expires_soon(self):
+        """Check if passport expires within 6 months"""
+        if not self.passport_expiry:
+            return False
+        six_months_later = date.today() + timedelta(days=180)
+        return self.passport_expiry <= six_months_later
+    
+    def clean(self):
+        """Validate passenger data"""
+        errors = {}
+        
+        # Check passport expiry
+        if self.passport_expiry and self.passport_expiry < date.today():
+            errors['passport_expiry'] = _('Passport has expired')
+        
+        # Check date of birth
+        if self.date_of_birth and self.date_of_birth > date.today():
+            errors['date_of_birth'] = _('Date of birth cannot be in the future')
+        
+        if errors:
+            raise ValidationError(errors)
+
+class Contact(TimestampedModel):
+    """Contact form submissions"""
+    class Status(models.TextChoices):
+        NEW = 'new', _('New')
+        READ = 'read', _('Read')
+        REPLIED = 'replied', _('Replied')
+        CLOSED = 'closed', _('Closed')
+    
+    name = models.CharField(_('name'), max_length=100)
+    email = models.EmailField(_('email address'))
+    phone = models.CharField(_('phone number'), max_length=20, blank=True)
+    subject = models.CharField(_('subject'), max_length=200, blank=True)
+    message = models.TextField(_('message'))
+    status = models.CharField(
+        _('status'), 
+        max_length=20, 
+        choices=Status.choices, 
+        default=Status.NEW
+    )
+    ip_address = models.GenericIPAddressField(_('IP address'), null=True, blank=True)
+    user_agent = models.TextField(_('user agent'), blank=True)
+    admin_notes = models.TextField(_('admin notes'), blank=True, help_text=_('Internal notes for admin'))
+    
+    class Meta:
+        verbose_name = _('contact inquiry')
+        verbose_name_plural = _('contact inquiries')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status'], name='contact_status_idx'),
+            models.Index(fields=['email'], name='contact_email_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.email} ({self.get_status_display()})"
+    
+    @property
+    def is_new(self):
+        """Check if inquiry is new"""
+        return self.status == self.Status.NEW
+    
+    @property
+    def is_read(self):
+        """Check if inquiry has been read"""
+        return self.status in [self.Status.READ, self.Status.REPLIED, self.Status.CLOSED]
+
+class Wallet(TimestampedModel):
+    """Wallet for OD (Organizational Discount) users - Admin controlled access"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    is_active = models.BooleanField(_('active'), default=False, help_text=_('Only admin can enable/disable wallet access'))
+    max_balance = models.DecimalField(_('maximum balance'), max_digits=10, decimal_places=2, default=100000, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit'))
+    
+    class Meta:
+        verbose_name = _('wallet')
+        verbose_name_plural = _('wallets')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Wallet - {self.user.email} (₹{self.balance})"
+    
+    def can_use(self):
+        """Check if wallet can be used (active and has balance)"""
+        return self.is_active and self.balance > 0
+    
+    def add_balance(self, amount, transaction_type='recharge', description='', reference_id=None):
+        """Add balance to wallet and create transaction record"""
+        if amount <= 0:
+            raise ValidationError(_('Amount must be greater than zero'))
+        
+        if (self.balance + amount) > self.max_balance:
+            raise ValidationError(_(f'Balance cannot exceed maximum limit of ₹{self.max_balance}'))
+        
+        self.balance += amount
+        self.save()
+        
+        # Create transaction record
+        WalletTransaction.objects.create(
+            wallet=self,
+            transaction_type=transaction_type,
+            amount=amount,
+            balance_after=self.balance,
+            description=description,
+            reference_id=reference_id
+        )
+        
+        return self.balance
+    
+    def deduct_balance(self, amount, transaction_type='payment', description='', reference_id=None):
+        """Deduct balance from wallet and create transaction record"""
+        if amount <= 0:
+            raise ValidationError(_('Amount must be greater than zero'))
+        
+        if amount > self.balance:
+            raise ValidationError(_('Insufficient wallet balance'))
+        
+        if not self.is_active:
+            raise ValidationError(_('Wallet is not active'))
+        
+        self.balance -= amount
+        self.save()
+        
+        # Create transaction record (negative amount for deduction)
+        WalletTransaction.objects.create(
+            wallet=self,
+            transaction_type=transaction_type,
+            amount=-amount,
+            balance_after=self.balance,
+            description=description,
+            reference_id=reference_id
+        )
+        
+        return self.balance
+
+class WalletTransaction(TimestampedModel):
+    """Transaction history for wallet"""
+    class TransactionType(models.TextChoices):
+        RECHARGE = 'recharge', _('Recharge')
+        PAYMENT = 'payment', _('Payment')
+        REFUND = 'refund', _('Refund')
+        ADJUSTMENT = 'adjustment', _('Admin Adjustment')
+    
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(_('transaction type'), max_length=20, choices=TransactionType.choices)
+    amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2, help_text=_('Positive for credit, negative for debit'))
+    balance_after = models.DecimalField(_('balance after'), max_digits=10, decimal_places=2)
+    description = models.TextField(_('description'), blank=True)
+    reference_id = models.CharField(_('reference ID'), max_length=100, blank=True, null=True, help_text=_('Booking reference, payment ID, etc.'))
+    
+    class Meta:
+        verbose_name = _('wallet transaction')
+        verbose_name_plural = _('wallet transactions')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['wallet', 'created_at'], name='wallet_transaction_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.wallet.user.email}"
+    
+    @property
+    def is_credit(self):
+        """Check if transaction is a credit (positive amount)"""
+        return self.amount > 0
+    
+    @property
+    def is_debit(self):
+        """Check if transaction is a debit (negative amount)"""
+        return self.amount < 0

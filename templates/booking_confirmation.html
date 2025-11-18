@@ -3,260 +3,283 @@
 
 {% block title %}Booking Confirmed - Travel Agency{% endblock %}
 
+{% block extra_css %}
+<style>
+    @keyframes confetti {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #f0f0f0;
+        animation: confetti 3s linear forwards;
+    }
+    
+    @keyframes success-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    .success-icon {
+        animation: success-pulse 2s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
-    <div class="container mx-auto px-4 py-8">
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-12">
+    <!-- Success Animation -->
+    <div class="fixed inset-0 pointer-events-none z-50" id="confetti-container"></div>
+    
+    <div class="container mx-auto px-4">
         <!-- Success Header -->
-        <div class="text-center mb-8 animate-fade-in">
-            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <i class="fas fa-check-circle text-green-500 text-4xl"></i>
+        <div class="text-center mb-12 animate-fade-in-up">
+            <div class="inline-block p-6 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full mb-6 shadow-2xl success-icon">
+                <i class="fas fa-check text-white text-5xl"></i>
             </div>
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
-            <p class="text-gray-600 text-lg">Your flight has been successfully booked</p>
+            <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+                Booking <span class="gradient-text">Confirmed!</span>
+            </h1>
+            <p class="text-xl text-gray-600">Your flight has been successfully booked</p>
         </div>
 
         <!-- Booking Reference Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 animate-slide-up">
-            <div class="text-center">
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">Booking Reference</h2>
-                <div class="bg-gray-100 rounded-xl p-6 inline-block">
-                    <p class="text-3xl font-bold text-primary font-mono tracking-wider">{{ booking.booking_reference }}</p>
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="bg-white rounded-2xl shadow-xl p-8 text-center animate-fade-in-up" style="animation-delay: 0.1s;">
+                <p class="text-sm text-gray-600 mb-3 font-medium">Booking Reference</p>
+                <div class="inline-block px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl mb-4">
+                    <p class="text-3xl font-bold text-white font-mono tracking-wider">{{ booking.booking_reference }}</p>
                 </div>
-                <p class="text-gray-600 mt-4">Please save this reference for future use</p>
+                <p class="text-gray-600">
+                    <i class="fas fa-info-circle mr-2 text-sky-500"></i>
+                    Please save this reference for future use
+                </p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Flight Details -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 animate-slide-up">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-primary bg-opacity-10 rounded-full p-3 mr-4">
-                            <i class="fas fa-plane text-primary text-xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800">Flight Details</h2>
+        <div class="max-w-6xl mx-auto grid lg:grid-cols-3 gap-8">
+            <!-- Left: Flight & Passenger Details -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Flight Details Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.2s;">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-plane text-sky-500 mr-3"></i>
+                            Flight Details
+                        </h2>
+                        <span class="px-4 py-2 bg-sky-100 text-sky-700 rounded-full text-sm font-semibold">
+                            {{ booking.schedule.route.route_type|title }}
+                        </span>
                     </div>
 
                     <!-- Flight Route -->
-                    <div class="mb-8">
-                        <div class="flex items-center justify-between mb-6">
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-gray-800">{{ booking.inventory.route.from_location }}</div>
-                                <div class="text-primary font-semibold">
-                                    {% with from_code=booking.inventory.route.from_location|get_item:airport_codes %}
-                                        {% if from_code %}{{ from_code }}{% endif %}
-                                    {% endwith %}
+                    <div class="mb-8 p-6 bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="text-center flex-1">
+                                <div class="text-3xl font-bold text-gray-900 mb-1">{{ booking.schedule.route.from_location }}</div>
+                                {% if booking.schedule.route.from_location in airport_codes %}
+                                <div class="text-sky-600 font-semibold text-sm">
+                                    {{ airport_codes|get_item:booking.schedule.route.from_location }}
                                 </div>
-                                <div class="text-sm text-gray-600 mt-2">Departure</div>
+                                {% endif %}
+                                <div class="text-xs text-gray-600 mt-2">Departure</div>
+                                <div class="text-lg font-semibold text-gray-700 mt-2">
+                                    {{ booking.schedule.route.departure_time|time:"H:i" }}
+                                </div>
                             </div>
                             
-                            <div class="flex-1 mx-8">
-                                <div class="border-t-2 border-dashed border-gray-300 relative">
-                                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4">
-                                        <i class="fas fa-plane text-primary text-xl"></i>
+                            <div class="flex-1 mx-8 relative">
+                                <div class="absolute inset-0 flex items-center">
+                                    <div class="w-full border-t-2 border-dashed border-gray-300"></div>
+                                </div>
+                                <div class="relative flex justify-center">
+                                    <div class="bg-white p-3 rounded-full shadow-lg">
+                                        <i class="fas fa-plane text-sky-500 text-xl"></i>
                                     </div>
                                 </div>
                                 <div class="text-center mt-4">
-                                    <div class="text-sm text-gray-600">{{ booking.inventory.route.flight_number }}</div>
-                                    <div class="text-xs text-gray-500">{{ booking.inventory.route.duration }}</div>
+                                    <div class="text-sm font-semibold text-gray-700">{{ booking.schedule.route.carrier_number }}</div>
+                                    <div class="text-xs text-gray-500">{{ booking.schedule.route.formatted_duration }}</div>
                                 </div>
                             </div>
                             
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-gray-800">{{ booking.inventory.route.to_location }}</div>
-                                <div class="text-primary font-semibold">
-                                    {% with to_code=booking.inventory.route.to_location|get_item:airport_codes %}
-                                        {% if to_code %}{{ to_code }}{% endif %}
-                                    {% endwith %}
+                            <div class="text-center flex-1">
+                                <div class="text-3xl font-bold text-gray-900 mb-1">{{ booking.schedule.route.to_location }}</div>
+                                {% if booking.schedule.route.to_location in airport_codes %}
+                                <div class="text-sky-600 font-semibold text-sm">
+                                    {{ airport_codes|get_item:booking.schedule.route.to_location }}
                                 </div>
-                                <div class="text-sm text-gray-600 mt-2">Arrival</div>
+                                {% endif %}
+                                <div class="text-xs text-gray-600 mt-2">Arrival</div>
+                                <div class="text-lg font-semibold text-gray-700 mt-2">
+                                    {{ booking.schedule.route.arrival_time|time:"H:i" }}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Flight Information -->
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <div class="text-sm text-gray-600 mb-1">Travel Date</div>
-                            <div class="text-lg font-semibold text-gray-800">{{ booking.inventory.travel_date|date:"l, d F Y" }}</div>
+                    <!-- Flight Information Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <p class="text-xs text-gray-600 mb-1">Travel Date</p>
+                            <p class="font-bold text-gray-900">{{ booking.schedule.departure_date|date:"d M Y" }}</p>
                         </div>
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <div class="text-sm text-gray-600 mb-1">Flight Type</div>
-                            <div class="text-lg font-semibold text-gray-800">{{ booking.inventory.route.flight_type|title }}</div>
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <p class="text-xs text-gray-600 mb-1">Route Type</p>
+                            <p class="font-bold text-gray-900">{{ booking.schedule.route.route_type|title }}</p>
                         </div>
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <div class="text-sm text-gray-600 mb-1">Aircraft</div>
-                            <div class="text-lg font-semibold text-gray-800">Boeing 737-800</div>
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <p class="text-xs text-gray-600 mb-1">Departure</p>
+                            <p class="font-bold text-gray-900">{{ booking.schedule.route.departure_time|time:"H:i" }}</p>
                         </div>
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <div class="text-sm text-gray-600 mb-1">Airline</div>
-                            <div class="text-lg font-semibold text-gray-800">SkyWings Airlines</div>
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <p class="text-xs text-gray-600 mb-1">Arrival</p>
+                            <p class="font-bold text-gray-900">{{ booking.schedule.route.arrival_time|time:"H:i" }}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Passenger Details -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 animate-slide-up">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-blue-100 rounded-full p-3 mr-4">
-                            <i class="fas fa-users text-blue-600 text-xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800">Passenger Information</h2>
-                    </div>
+                <!-- Passenger Details Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.3s;">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-users text-sky-500 mr-3"></i>
+                        Passenger Information
+                    </h2>
 
-                    <!-- Primary Passenger -->
-                    <div class="mb-6">
-                        <div class="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-lg font-semibold text-gray-800">Primary Passenger</h3>
-                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">Lead</span>
+                    <div class="space-y-4">
+                        {% for passenger in booking.passengers.all %}
+                        <div class="p-6 rounded-xl {% if forloop.first %}bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200{% else %}bg-gray-50{% endif %}">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-gray-900">
+                                    {% if forloop.first %}
+                                        <i class="fas fa-crown text-yellow-500 mr-2"></i>Primary Passenger
+                                    {% else %}
+                                        Passenger {{ forloop.counter }}
+                                    {% endif %}
+                                </h3>
+                                {% if forloop.first %}
+                                <span class="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-semibold">Lead</span>
+                                {% endif %}
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid md:grid-cols-2 gap-4">
                                 <div>
-                                    <div class="text-sm text-gray-600">Name</div>
-                                    <div class="font-semibold text-gray-800">{{ booking.passenger_name }}</div>
+                                    <p class="text-xs text-gray-600 mb-1">Full Name</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.full_name }}</p>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-gray-600">Age</div>
-                                    <div class="font-semibold text-gray-800">{{ booking.passenger_age }}</div>
+                                    <p class="text-xs text-gray-600 mb-1">Date of Birth</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.date_of_birth|date:"d M Y" }}</p>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-gray-600">Gender</div>
-                                    <div class="font-semibold text-gray-800">{{ booking.passenger_gender|title }}</div>
+                                    <p class="text-xs text-gray-600 mb-1">Gender</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.get_gender_display }}</p>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-gray-600">ID Type</div>
-                                    <div class="font-semibold text-gray-800">{{ booking.id_type|upper }}</div>
+                                    <p class="text-xs text-gray-600 mb-1">Nationality</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.nationality }}</p>
                                 </div>
+                                {% if passenger.passport_number %}
+                                <div>
+                                    <p class="text-xs text-gray-600 mb-1">Passport Number</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.passport_number }}</p>
+                                </div>
+                                {% endif %}
+                                {% if passenger.passport_expiry %}
+                                <div>
+                                    <p class="text-xs text-gray-600 mb-1">Passport Expiry</p>
+                                    <p class="font-semibold text-gray-900">{{ passenger.passport_expiry|date:"d M Y" }}</p>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-
-                    <!-- Additional Passengers -->
-                    {% if booking.additional_passengers %}
-                        <div class="space-y-4">
-                            {% for passenger in booking.additional_passengers %}
-                            <div class="bg-gray-50 rounded-xl p-6">
-                                <h3 class="text-lg font-semibold text-gray-800 mb-3">Passenger {{ forloop.counter|add:1 }}</h3>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div class="text-sm text-gray-600">Name</div>
-                                        <div class="font-semibold text-gray-800">{{ passenger.name }}</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm text-gray-600">Age</div>
-                                        <div class="font-semibold text-gray-800">{{ passenger.age }}</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm text-gray-600">Gender</div>
-                                        <div class="font-semibold text-gray-800">{{ passenger.gender|title }}</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm text-gray-600">ID Type</div>
-                                        <div class="font-semibold text-gray-800">{{ passenger.id_type|upper }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
             </div>
 
-            <!-- Booking Summary -->
+            <!-- Right: Summary & Actions -->
             <div class="lg:col-span-1">
                 <!-- Price Breakdown -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 animate-slide-up">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-green-100 rounded-full p-3 mr-4">
-                            <i class="fas fa-receipt text-green-600 text-xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800">Price Breakdown</h2>
-                    </div>
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 sticky top-24 animate-fade-in-up" style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-receipt text-sky-500 mr-3"></i>
+                        Price Breakdown
+                    </h2>
 
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Base Fare</span>
-                            <span class="font-semibold">₹{{ booking.inventory.price }}</span>
+                    <div class="space-y-4 mb-6">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700">Base Fare</span>
+                            <span class="font-bold text-gray-900">₹{{ booking.base_fare|floatformat:2 }}</span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Passengers</span>
-                            <span class="font-semibold">{{ booking.seats_booked }} × ₹{{ booking.inventory.price }}</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700">Passengers</span>
+                            <span class="font-bold text-gray-900">{{ booking.passengers.count }}</span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Taxes & Fees</span>
-                            <span class="font-semibold">₹{{ booking.total_amount|floatformat:2|slice:"-3" }}0</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-700">Taxes (18% GST)</span>
+                            <span class="font-bold text-gray-900">₹{{ booking.tax_amount|floatformat:2 }}</span>
                         </div>
-                        <hr class="border-gray-200">
-                        <div class="flex justify-between items-center text-lg font-bold text-gray-800">
-                            <span>Total Amount</span>
-                            <span class="text-primary">₹{{ booking.total_amount }}</span>
+                        {% if booking.discount_amount > 0 %}
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg border-2 border-green-200">
+                            <span class="text-green-700">Discount</span>
+                            <span class="font-bold text-green-700">-₹{{ booking.discount_amount|floatformat:2 }}</span>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Booking Features -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 animate-slide-up">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">What's Included</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-green-600 text-sm"></i>
+                        {% endif %}
+                        <div class="border-t-2 border-gray-200 pt-4">
+                            <div class="flex justify-between items-center p-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl">
+                                <span class="text-white font-bold text-lg">Total</span>
+                                <span class="text-white font-bold text-2xl">₹{{ booking.total_amount|floatformat:2 }}</span>
                             </div>
-                            <span class="text-gray-700">Instant confirmation</span>
                         </div>
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-green-600 text-sm"></i>
-                            </div>
-                            <span class="text-gray-700">E-ticket sent to email</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-green-600 text-sm"></i>
-                            </div>
-                            <span class="text-gray-700">24/7 customer support</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-green-600 text-sm"></i>
-                            </div>
-                            <span class="text-gray-700">Easy cancellation</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-green-600 text-sm"></i>
-                            </div>
-                            <span class="text-gray-700">Secure booking</span>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-sm text-gray-600">Payment Status</span>
+                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                                <i class="fas fa-check-circle mr-1"></i>{{ booking.get_payment_status_display }}
+                            </span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="space-y-4">
-                    <button onclick="window.print()" class="btn-primary w-full py-3">
-                        <i class="fas fa-print mr-2"></i>Print Confirmation
-                    </button>
-                    <a href="{% url 'dashboard' %}" class="btn-secondary w-full block text-center py-3">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Go to Dashboard
+                    
+                    <!-- Download PDF Button -->
+                    {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
+                    <a href="{% url 'download_ticket_pdf' booking.id %}" 
+                       class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3 mb-4">
+                        <i class="fas fa-download"></i>
+                        <span>Download Ticket PDF</span>
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'dashboard' %}" 
+                       class="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Dashboard</span>
                     </a>
                 </div>
-            </div>
-        </div>
 
-        <!-- Important Information -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-6 mt-8 animate-slide-up">
-            <div class="flex items-start">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-info-circle text-yellow-400 text-xl"></i>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-lg font-semibold text-yellow-800">Important Information</h3>
-                    <div class="mt-2 text-yellow-700">
-                        <p class="mb-2">• Please arrive at the airport at least 2 hours before domestic flights and 3 hours before international flights.</p>
-                        <p class="mb-2">• Carry a valid photo ID and your booking reference for check-in.</p>
-                        <p class="mb-2">• Check-in opens 24 hours before departure and closes 1 hour before departure.</p>
-                        <p>• Baggage allowance: 15kg check-in and 7kg cabin baggage per passenger.</p>
+                <!-- What's Included -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.5s;">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">What's Included</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">Flight Ticket</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">Seat Selection</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">24/7 Support</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -264,75 +287,23 @@
     </div>
 </div>
 
-<style>
-    @keyframes fade-in {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes slide-up {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .animate-fade-in {
-        animation: fade-in 0.6s ease-out;
-    }
-    
-    .animate-slide-up {
-        animation: slide-up 0.8s ease-out;
-    }
-    
-    .animate-pulse {
-        animation: pulse 2s infinite;
-    }
-    
-    @media print {
-        .no-print { display: none !important; }
-        .bg-gradient-to-br { background: white !important; }
-        .shadow-lg { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
-    }
-</style>
-
 <script>
-    // Add some interactive elements
-    document.addEventListener('DOMContentLoaded', function() {
-        // Animate elements on scroll
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        });
-
-        // Observe all animated elements
-        document.querySelectorAll('.animate-slide-up').forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(30px)';
-            el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-            observer.observe(el);
-        });
-
-        // Add click-to-copy functionality for booking reference
-        const bookingRef = document.querySelector('.font-mono');
-        if (bookingRef) {
-            bookingRef.style.cursor = 'pointer';
-            bookingRef.title = 'Click to copy';
-            bookingRef.addEventListener('click', function() {
-                navigator.clipboard.writeText(this.textContent).then(() => {
-                    // Show temporary success message
-                    const originalText = this.textContent;
-                    this.textContent = 'Copied!';
-                    this.style.color = '#10b981';
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                        this.style.color = '';
-                    }, 2000);
-                });
-            });
+    // Confetti animation
+    function createConfetti() {
+        const colors = ['#38bdf8', '#0ea5e9', '#0284c7', '#10b981', '#f59e0b', '#ef4444'];
+        const container = document.getElementById('confetti-container');
+        
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 3 + 's';
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            container.appendChild(confetti);
         }
-    });
+    }
+    
+    createConfetti();
 </script>
 {% endblock %}

@@ -142,3 +142,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'homepage'
 LOGOUT_REDIRECT_URL = 'homepage'
+
+# Razorpay Payment Gateway Settings
+# Get your keys from https://dashboard.razorpay.com/app/keys
+RAZORPAY_KEY_ID = 'rzp_test_xxxxxxxxxxxxx'  # Replace with your Razorpay Key ID
+RAZORPAY_KEY_SECRET = 'xxxxxxxxxxxxxxxxxxxxx'  # Replace with your Razorpay Key Secret
+
+# Email Configuration
+# For development, emails will be printed to console
+# For production, configure SMTP settings below
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
+# EMAIL_HOST = 'smtp.gmail.com'  # Gmail SMTP
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'your-email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'your-app-password'
+DEFAULT_FROM_EMAIL = 'noreply@safarzone.com'

@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load travel_filters %}
+
+{% block title %}Review Booking - Safar Zone Travels{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-12">
+    <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span class="font-bold text-gray-800">Flight Details</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-green-500 mx-4"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span class="font-bold text-gray-800">Passenger Info</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-primary mx-4"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold shadow-lg">3</div>
+                        <span class="font-bold text-gray-800">Review & Confirm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                    Review Your <span class="gradient-text">Booking</span>
+                </h1>
+                <p class="text-xl text-gray-600">Please review all details before confirming</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Left: Booking Details -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Flight Details Card -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-gradient-to-br from-sky-400 to-blue-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-plane text-white text-xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Flight Details</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div>
+                                    <p class="text-sm text-gray-600">Route</p>
+                                    <p class="text-lg font-bold text-gray-900">
+                                        {{ schedule.route.from_location }} 
+                                        <i class="fas fa-arrow-right mx-2 text-sky-500"></i>
+                                        {{ schedule.route.to_location }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-600">Flight Number</p>
+                                    <p class="text-lg font-bold text-sky-600">{{ schedule.route.carrier_number }}</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-gray-50 rounded-xl">
+                                    <p class="text-sm text-gray-600 mb-1">Departure</p>
+                                    <p class="text-lg font-bold text-gray-900">{{ schedule.departure_date|date:"d M Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ schedule.route.departure_time|time:"H:i" }}</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-xl">
+                                    <p class="text-sm text-gray-600 mb-1">Arrival</p>
+                                    <p class="text-lg font-bold text-gray-900">{{ schedule.arrival_date|date:"d M Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ schedule.route.arrival_time|time:"H:i" }}</p>
+                                </div>
+                            </div>
+
+                            <div class="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-500">
+                                <p class="text-sm text-gray-600 mb-1">Duration</p>
+                                <p class="text-lg font-bold text-gray-900">{{ schedule.route.formatted_duration }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passenger Details Card -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-gradient-to-br from-purple-400 to-indigo-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-users text-white text-xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Passenger Details</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            {% for passenger in passenger_data %}
+                            <div class="p-6 border-2 border-gray-100 rounded-xl hover:border-sky-300 transition-all duration-300">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">
+                                            {{ forloop.counter }}
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-bold text-gray-900">
+                                                {{ passenger.title }} {{ passenger.first_name }} {{ passenger.last_name }}
+                                            </h3>
+                                            <p class="text-sm text-gray-600 capitalize">
+                                                {{ passenger.passenger_type }} • {{ passenger.gender|default:"N/A" }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-semibold capitalize">
+                                        {{ passenger.passenger_type }}
+                                    </span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p class="text-gray-600">Date of Birth</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.dob|date:"d M Y" }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Nationality</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.nationality|default:"Indian" }}</p>
+                                    </div>
+                                    {% if passenger.passport_number %}
+                                    <div>
+                                        <p class="text-gray-600">Passport Number</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.passport_number }}</p>
+                                    </div>
+                                    {% if passenger.passport_expiry %}
+                                    <div>
+                                        <p class="text-gray-600">Passport Expiry</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.passport_expiry|date:"d M Y" }}</p>
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-gradient-to-br from-green-400 to-emerald-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-envelope text-white text-xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Contact Information</h2>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-gray-50 rounded-xl">
+                                <p class="text-sm text-gray-600 mb-1">Email</p>
+                                <p class="font-semibold text-gray-900">{{ booking_data.contact_email }}</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-xl">
+                                <p class="text-sm text-gray-600 mb-1">Phone</p>
+                                <p class="font-semibold text-gray-900">{{ booking_data.contact_phone }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Price Summary -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 sticky top-24">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-receipt text-sky-500 mr-3"></i>
+                            Price Summary
+                        </h2>
+
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                <span class="text-gray-700">Adults ({{ booking_data.adult_count }})</span>
+                                <span class="font-bold text-gray-900">₹{{ schedule.price|floatformat:2 }} × {{ booking_data.adult_count }}</span>
+                            </div>
+                            {% if booking_data.child_count > 0 %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                <span class="text-gray-700">Children ({{ booking_data.child_count }})</span>
+                                <span class="font-bold text-gray-900">₹{{ schedule.price|multiply:0.75|floatformat:2 }} × {{ booking_data.child_count }}</span>
+                            </div>
+                            {% endif %}
+                            {% if booking_data.infant_count > 0 %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                <span class="text-gray-700">Infants ({{ booking_data.infant_count }})</span>
+                                <span class="font-bold text-gray-900">₹{{ schedule.price|multiply:0.10|floatformat:2 }} × {{ booking_data.infant_count }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                <span class="text-gray-700">Base Fare</span>
+                                <span class="font-bold text-gray-900">₹{{ booking_data.base_fare|floatformat:2 }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                <span class="text-gray-700">Taxes & Fees (18% GST)</span>
+                                <span class="font-bold text-gray-900">₹{{ booking_data.tax_amount|floatformat:2 }}</span>
+                            </div>
+                            <div class="border-t-2 border-gray-200 pt-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xl font-bold text-gray-900">Total Amount</span>
+                                    <span class="text-3xl font-bold text-sky-600">₹{{ booking_data.total_amount|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <form method="POST" action="{% url 'booking' schedule.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="confirm_booking">
+                            <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3 mb-4">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Confirm & Proceed to Payment</span>
+                            </button>
+                        </form>
+
+                        <a href="{% url 'booking' schedule.id %}" class="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Edit Details</span>
+                        </a>
+
+                        <!-- Important Notes -->
+                        <div class="mt-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-xl">
+                            <p class="text-sm text-amber-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <strong>Important:</strong> Please review all details carefully. Once confirmed, changes may incur fees.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

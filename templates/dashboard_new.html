@@ -5,364 +5,264 @@
 {% block title %}Dashboard - Safar Zone Travels{% endblock %}
 
 {% block extra_css %}
-<!-- Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<!-- Animate.css -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-<!-- Custom CSS -->
 <style>
-  :root {
-    --primary: #0ea5e9;
-    --primary-light: #e0f2fe;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --dark: #1e293b;
-    --light: #f8fafc;
-    --gray: #64748b;
-  }
-  
-  body {
-    background-color: #f1f5f9;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  }
-  
-  /* Card Styles */
-  .card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
-    overflow: hidden;
-  }
-  
-  .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Stat Cards */
-  .stat-card {
-    border-left: 4px solid var(--primary);
-    transition: all 0.3s ease;
-  }
-  
-  .stat-card:hover {
-    transform: translateY(-3px);
-  }
-  
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-  }
-  
-  /* Tabs */
-  .nav-tabs {
-    border-bottom: 2px solid #e2e8f0;
-  }
-  
-  .nav-tabs .nav-link {
-    border: none;
-    color: var(--gray);
-    font-weight: 500;
-    padding: 1rem 1.5rem;
-    position: relative;
-    transition: all 0.3s ease;
-  }
-  
-  .nav-tabs .nav-link.active {
-    color: var(--primary);
-    background: transparent;
-    border: none;
-  }
-  
-  .nav-tabs .nav-link.active:after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: var(--primary);
-    border-radius: 3px 3px 0 0;
-  }
-  
-  /* Booking Card */
-  .booking-card {
-    border-left: 4px solid var(--primary);
-    transition: all 0.3s ease;
-  }
-  
-  .booking-card:hover {
-    transform: translateX(5px);
-  }
-  
-  .status-badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 50px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: capitalize;
-  }
-  
-  .status-confirmed {
-    background-color: #dcfce7;
-    color: #16a34a;
-  }
-  
-  .status-cancelled {
-    background-color: #fee2e2;
-    color: #dc2626;
-  }
-  
-  .status-completed {
-    background-color: #e0f2fe;
-    color: #0369a1;
-  }
-  
-  /* Animation Classes */
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-in-out;
-  }
-  
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes slideUp {
+    @keyframes slideInFromRight {
     from { 
       opacity: 0;
-      transform: translateY(20px);
+            transform: translateX(30px);
     }
     to { 
       opacity: 1;
-      transform: translateY(0);
+            transform: translateX(0);
+        }
     }
-  }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .stat-card {
-      margin-bottom: 1rem;
-    }
+    
+    .slide-in-right {
+        animation: slideInFromRight 0.5s ease-out;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8">
+    <div class="container mx-auto px-4">
   <!-- Welcome Header -->
-  <div class="row mb-4 animate__animated animate__fadeIn">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
+        <div class="mb-8 animate-fade-in-up">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="h3 mb-1 text-dark fw-bold">Welcome back, {{ user.first_name|default:user.username }}! 👋</h1>
-          <p class="text-muted mb-0">Here's what's happening with your travel plans</p>
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+                        Welcome back, <span class="gradient-text">{% if user.profile %}{{ user.profile.full_name|default:user.email }}{% else %}{{ user.email }}{% endif %}!</span> 👋
+                    </h1>
+                    <p class="text-xl text-gray-600">Here's what's happening with your travel plans</p>
         </div>
-        <div>
-          <a href="{% url 'homepage' %}" class="btn btn-primary btn-lg">
-            <i class="bi bi-plus-circle me-2"></i>New Booking
-          </a>
-        </div>
-      </div>
+                <a href="{% url 'homepage' %}" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2">
+                    <i class="fas fa-plus"></i>
+                    <span>New Booking</span>
+                </a>
     </div>
   </div>
   
   <!-- Stats Cards -->
-  <div class="row mb-4">
-    <div class="col-md-4 mb-3 mb-md-0 animate__animated animate__fadeInLeft">
-      <div class="card stat-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Upcoming Trips -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-sky-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up">
+                <div class="flex items-center justify-between">
             <div>
-              <h6 class="text-uppercase text-muted mb-2">Upcoming Trips</h6>
-              <h2 class="mb-0 fw-bold">{{ upcoming_count }}</h2>
+                        <p class="text-sm text-gray-600 font-medium mb-1">Upcoming Trips</p>
+                        <h2 class="text-4xl font-bold text-gray-900">{{ upcoming_count }}</h2>
+                        <p class="text-xs text-gray-500 mt-2">Bookings confirmed</p>
             </div>
-            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-              <i class="bi bi-airplane"></i>
+                    <div class="w-16 h-16 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-plane text-white text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+            <!-- Completed Trips -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-green-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="flex items-center justify-between">
+            <div>
+                        <p class="text-sm text-gray-600 font-medium mb-1">Completed Trips</p>
+                        <h2 class="text-4xl font-bold text-gray-900">{{ completed_count }}</h2>
+                        <p class="text-xs text-gray-500 mt-2">Journeys completed</p>
+                    </div>
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-check-circle text-white text-2xl"></i>
+                    </div>
+                </div>
             </div>
+
+            <!-- Total Spent -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-yellow-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 font-medium mb-1">Total Spent</p>
+                        <h2 class="text-4xl font-bold text-gray-900">₹{{ total_spent|floatformat:0 }}</h2>
+                        <p class="text-xs text-gray-500 mt-2">All time spending</p>
+            </div>
+                    <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-rupee-sign text-white text-2xl"></i>
           </div>
         </div>
       </div>
     </div>
     
-    <div class="col-md-4 mb-3 mb-md-0 animate__animated animate__fadeInUp">
-      <div class="card stat-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
+        <!-- Wallet Card (OD) - Only show if user has wallet access -->
+        {% if has_wallet_access %}
+        <div class="mb-8 animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-6 text-white">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h6 class="text-uppercase text-muted mb-2">Completed Trips</h6>
-              <h2 class="mb-0 fw-bold">{{ completed_count }}</h2>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-wallet text-2xl"></i>
+                            <h3 class="text-2xl font-bold">OD Wallet</h3>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">ACTIVE</span>
             </div>
-            <div class="stat-icon bg-success bg-opacity-10 text-success">
-              <i class="bi bi-check-circle"></i>
+                        <p class="text-white/90 mb-1">Available Balance</p>
+                        <h2 class="text-5xl font-bold mb-2">₹{{ wallet_balance|floatformat:2 }}</h2>
+                        <p class="text-white/80 text-sm">Use your wallet balance to book tickets instantly</p>
             </div>
+                    <div class="flex flex-col gap-3 w-full md:w-auto">
+                        <a href="{% url 'wallet_recharge' %}" class="px-6 py-3 bg-white text-orange-600 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Recharge Wallet</span>
+                        </a>
+                        <a href="{% url 'wallet_history' %}" class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl shadow-lg hover:bg-white/30 transition-all duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-history"></i>
+                            <span>Transaction History</span>
+                        </a>
           </div>
         </div>
       </div>
     </div>
-    
-    <div class="col-md-4 animate__animated animate__fadeInRight">
-      <div class="card stat-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="text-uppercase text-muted mb-2">Total Spent</h6>
-              <h2 class="mb-0 fw-bold">₹{{ total_spent|default:0 }}</h2>
-            </div>
-            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-              <i class="bi bi-wallet2"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        {% endif %}
   
   <!-- Bookings Section -->
-  <div class="card animate__animated animate__fadeInUp">
-    <div class="card-body p-0">
-      <ul class="nav nav-tabs" id="bookingTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">
-            <i class="bi bi-calendar2-week me-2"></i>Upcoming
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in-up" style="animation-delay: 0.3s;">
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 bg-gray-50">
+                <div class="flex space-x-1 p-2">
+                    <button onclick="showTab('upcoming')" id="tab-upcoming" class="tab-button active flex-1 px-6 py-4 text-center font-semibold text-gray-700 hover:text-sky-600 transition-all rounded-lg hover:bg-white">
+                        <i class="fas fa-calendar-alt mr-2"></i>Upcoming
             {% if upcoming_count > 0 %}
-            <span class="badge bg-primary rounded-pill ms-1">{{ upcoming_count }}</span>
+                        <span class="ml-2 px-2 py-1 bg-sky-500 text-white text-xs rounded-full">{{ upcoming_count }}</span>
             {% endif %}
           </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
-            <i class="bi bi-clock-history me-2"></i>Past Trips
+                    <button onclick="showTab('past')" id="tab-past" class="tab-button flex-1 px-6 py-4 text-center font-semibold text-gray-700 hover:text-green-600 transition-all rounded-lg hover:bg-white">
+                        <i class="fas fa-clock mr-2"></i>Past Trips
+                        {% if completed_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full">{{ completed_count }}</span>
+                        {% endif %}
           </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">
-            <i class="bi bi-x-circle me-2"></i>Cancelled
+                    <button onclick="showTab('cancelled')" id="tab-cancelled" class="tab-button flex-1 px-6 py-4 text-center font-semibold text-gray-700 hover:text-red-600 transition-all rounded-lg hover:bg-white">
+                        <i class="fas fa-times-circle mr-2"></i>Cancelled
             {% if cancelled_bookings.count > 0 %}
-            <span class="badge bg-danger rounded-pill ms-1">{{ cancelled_bookings.count }}</span>
+                        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">{{ cancelled_bookings.count }}</span>
             {% endif %}
           </button>
-        </li>
-      </ul>
+                </div>
+            </div>
       
-      <div class="tab-content p-4" id="bookingTabsContent">
+            <!-- Tab Content -->
+            <div class="p-6">
         <!-- Upcoming Bookings -->
-        <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                <div id="content-upcoming" class="tab-content">
           {% if upcoming_bookings %}
-            <div class="row g-4">
+                    <div class="space-y-4">
               {% for booking in upcoming_bookings %}
-              <div class="col-12">
-                <div class="card booking-card h-100 animate__animated animate__fadeIn" style="animation-delay: {{ forloop.counter0|multiply:0.1 }}s">
-                  <div class="card-body">
-                    <div class="row align-items-center">
-                      <div class="col-md-8">
-                        <div class="d-flex align-items-center mb-3">
-                          <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
-                            <i class="bi bi-airplane text-primary fs-4"></i>
+                        <div class="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-6 border-l-4 border-sky-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-x-1 slide-in-right" style="animation-delay: {{ forloop.counter0|multiply:0.1 }}s">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4 mb-4">
+                                        <div class="w-14 h-14 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <i class="fas fa-plane text-white text-xl"></i>
                           </div>
-                          <div>
-                            <h5 class="mb-0">
-                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
-                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
-                              {% endwith %}
-                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
-                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
-                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
-                              {% endwith %}
-                            </h5>
-                            <p class="text-muted mb-0">
-                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"D, M d, Y" }}
-                              <span class="mx-2">•</span>
-                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
-                              <span class="mx-2">•</span>
-                              <span class="status-badge status-{{ booking.status|lower }}">
-                                {{ booking.status|title }}
+                                        <div class="flex-1">
+                                            <h3 class="text-xl font-bold text-gray-900 mb-1">
+                                                {{ booking.schedule.route.from_location }}
+                                                {% if booking.schedule.route.from_location in airport_codes %}
+                                                <span class="text-sky-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.from_location }})</span>
+                                                {% endif %}
+                                                <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                                {{ booking.schedule.route.to_location }}
+                                                {% if booking.schedule.route.to_location in airport_codes %}
+                                                <span class="text-sky-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.to_location }})</span>
+                                                {% endif %}
+                                            </h3>
+                                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                                <span><i class="fas fa-calendar-alt mr-1 text-sky-500"></i>{{ booking.schedule.departure_date|date:"D, M d, Y" }}</span>
+                                                <span><i class="fas fa-clock mr-1 text-sky-500"></i>{{ booking.schedule.route.departure_time|time:"H:i" }}</span>
+                                                <span><i class="fas fa-users mr-1 text-sky-500"></i>{{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}</span>
+                                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                                    <i class="fas fa-check-circle mr-1"></i>{{ booking.get_status_display }}
                               </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ml-18">
+                                        <p class="text-sm text-gray-600 mb-2">
+                                            <span class="font-semibold">Booking Ref:</span> 
+                                            <span class="font-mono text-sky-600">{{ booking.booking_reference }}</span>
+                                        </p>
+                                        <p class="text-lg font-bold text-gray-900">
+                                            <i class="fas fa-rupee-sign mr-1 text-sky-500"></i>{{ booking.total_amount|floatformat:2 }}
                             </p>
                           </div>
                         </div>
-                      </div>
-                      <div class="col-md-4 text-md-end">
-                        <div class="d-flex flex-column flex-md-row justify-content-md-end gap-2">
-                          <a href="#" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-printer me-1"></i> Print
-                          </a>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
+                                    <button onclick="viewTicketPDF('{{ booking.id }}', '{% url 'download_ticket_pdf' booking.id %}')" class="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-eye"></i>
+                                        <span>View PDF</span>
+                                    </button>
+                                    {% endif %}
                           {% if booking.status == 'confirmed' %}
-                          <button class="btn btn-outline-danger btn-sm" onclick="confirmCancelBooking('{{ booking.id }}')">
-                            <i class="bi bi-x-lg me-1"></i> Cancel
+                                    <button onclick="confirmCancelBooking('{{ booking.id }}')" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-times"></i>
+                                        <span>Cancel</span>
                           </button>
-                          <form id="cancel-form-{{ booking.id }}" method="POST" action="{% url 'cancel_booking' booking.id %}" class="d-none">
+                                    <form id="cancel-form-{{ booking.id }}" method="POST" action="{% url 'cancel_booking' booking.id %}" class="hidden">
                             {% csrf_token %}
                           </form>
                           {% endif %}
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
               {% endfor %}
             </div>
           {% else %}
-            <div class="text-center py-5 my-4">
-              <div class="mb-4">
-                <i class="bi bi-calendar-x text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-calendar-times text-gray-400 text-4xl"></i>
               </div>
-              <h4 class="text-muted mb-3">No Upcoming Trips</h4>
-              <p class="text-muted mb-4">You don't have any upcoming trips. Start planning your next adventure!</p>
-              <a href="{% url 'homepage' %}" class="btn btn-primary">
-                <i class="bi bi-search me-2"></i>Search Flights
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">No Upcoming Trips</h3>
+                        <p class="text-gray-600 mb-6">You don't have any upcoming trips. Start planning your next adventure!</p>
+                        <a href="{% url 'homepage' %}" class="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-search mr-2"></i>Search Flights
               </a>
             </div>
           {% endif %}
         </div>
         
         <!-- Past Bookings -->
-        <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                <div id="content-past" class="tab-content hidden">
           {% if past_bookings %}
-            <div class="row g-4">
+                    <div class="space-y-4">
               {% for booking in past_bookings %}
-              <div class="col-12">
-                <div class="card booking-card h-100">
-                  <div class="card-body">
-                    <div class="row align-items-center">
-                      <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                          <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
-                            <i class="bi bi-check2-circle text-success fs-4"></i>
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-x-1">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4 mb-4">
+                                        <div class="w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <i class="fas fa-check-circle text-white text-xl"></i>
                           </div>
-                          <div>
-                            <h5 class="mb-1">
-                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
-                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
-                              {% endwith %}
-                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
-                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
-                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
-                              {% endwith %}
-                            </h5>
-                            <p class="text-muted mb-0">
-                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"M d, Y" }}
-                              <span class="mx-2">•</span>
-                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
-                            </p>
+                                        <div class="flex-1">
+                                            <h3 class="text-xl font-bold text-gray-900 mb-1">
+                                                {{ booking.schedule.route.from_location }}
+                                                {% if booking.schedule.route.from_location in airport_codes %}
+                                                <span class="text-green-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.from_location }})</span>
+                                                {% endif %}
+                                                <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                                {{ booking.schedule.route.to_location }}
+                                                {% if booking.schedule.route.to_location in airport_codes %}
+                                                <span class="text-green-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.to_location }})</span>
+                                                {% endif %}
+                                            </h3>
+                                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                                <span><i class="fas fa-calendar-alt mr-1 text-green-500"></i>{{ booking.schedule.departure_date|date:"D, M d, Y" }}</span>
+                                                <span><i class="fas fa-users mr-1 text-green-500"></i>{{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}</span>
+                                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Completed</span>
                           </div>
                         </div>
                       </div>
-                      <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                        <span class="badge bg-success bg-opacity-10 text-success">Completed</span>
-                      </div>
+                                    <div class="ml-18">
+                                        <p class="text-sm text-gray-600 mb-2">
+                                            <span class="font-semibold">Booking Ref:</span> 
+                                            <span class="font-mono text-green-600">{{ booking.booking_reference }}</span>
+                                        </p>
+                                        <p class="text-lg font-bold text-gray-900">
+                                            <i class="fas fa-rupee-sign mr-1 text-green-500"></i>{{ booking.total_amount|floatformat:2 }}
+                                        </p>
                     </div>
                   </div>
                 </div>
@@ -370,53 +270,51 @@
               {% endfor %}
             </div>
           {% else %}
-            <div class="text-center py-5 my-4">
-              <div class="mb-4">
-                <i class="bi bi-clock-history text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-history text-gray-400 text-4xl"></i>
               </div>
-              <h4 class="text-muted mb-3">No Past Trips</h4>
-              <p class="text-muted">Your completed trips will appear here</p>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">No Past Trips</h3>
+                        <p class="text-gray-600">You haven't completed any trips yet.</p>
             </div>
           {% endif %}
         </div>
         
         <!-- Cancelled Bookings -->
-        <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                <div id="content-cancelled" class="tab-content hidden">
           {% if cancelled_bookings %}
-            <div class="row g-4">
+                    <div class="space-y-4">
               {% for booking in cancelled_bookings %}
-              <div class="col-12">
-                <div class="card booking-card h-100">
-                  <div class="card-body">
-                    <div class="row align-items-center">
-                      <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                          <div class="bg-danger bg-opacity-10 p-3 rounded-3 me-3">
-                            <i class="bi bi-x-circle text-danger fs-4"></i>
+                        <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-x-1">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4 mb-4">
+                                        <div class="w-14 h-14 bg-gradient-to-br from-red-400 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <i class="fas fa-times-circle text-white text-xl"></i>
                           </div>
-                          <div>
-                            <h5 class="mb-1">
-                              {% with from_code=airport_codes|get_item:booking.inventory.route.from_location %}
-                                {{ booking.inventory.route.from_location }}{% if from_code %} ({{ from_code }}){% endif %}
-                              {% endwith %}
-                              <i class="bi bi-arrow-right mx-2 text-muted"></i>
-                              {% with to_code=airport_codes|get_item:booking.inventory.route.to_location %}
-                                {{ booking.inventory.route.to_location }}{% if to_code %} ({{ to_code }}){% endif %}
-                              {% endwith %}
-                            </h5>
-                            <p class="text-muted mb-0">
-                              <i class="bi bi-calendar3 me-1"></i> {{ booking.inventory.travel_date|date:"M d, Y" }}
-                              <span class="mx-2">•</span>
-                              <i class="bi bi-person me-1"></i> {{ booking.passenger_name }}
-                              <span class="mx-2">•</span>
-                              <span class="text-danger">Refund: {% if booking.refund_amount %}₹{{ booking.refund_amount }}{% else %}Not eligible{% endif %}</span>
-                            </p>
+                                        <div class="flex-1">
+                                            <h3 class="text-xl font-bold text-gray-900 mb-1">
+                                                {{ booking.schedule.route.from_location }}
+                                                {% if booking.schedule.route.from_location in airport_codes %}
+                                                <span class="text-red-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.from_location }})</span>
+                                                {% endif %}
+                                                <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                                {{ booking.schedule.route.to_location }}
+                                                {% if booking.schedule.route.to_location in airport_codes %}
+                                                <span class="text-red-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.to_location }})</span>
+                                                {% endif %}
+                                            </h3>
+                                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                                <span><i class="fas fa-calendar-alt mr-1 text-red-500"></i>{{ booking.schedule.departure_date|date:"D, M d, Y" }}</span>
+                                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">Cancelled</span>
                           </div>
                         </div>
                       </div>
-                      <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                        <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
-                      </div>
+                                    <div class="ml-18">
+                                        <p class="text-sm text-gray-600 mb-2">
+                                            <span class="font-semibold">Booking Ref:</span> 
+                                            <span class="font-mono text-red-600">{{ booking.booking_reference }}</span>
+                                        </p>
                     </div>
                   </div>
                 </div>
@@ -424,66 +322,542 @@
               {% endfor %}
             </div>
           {% else %}
-            <div class="text-center py-5 my-4">
-              <div class="mb-4">
-                <i class="bi bi-emoji-smile text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-ban text-gray-400 text-4xl"></i>
               </div>
-              <h4 class="text-muted mb-3">No Cancelled Trips</h4>
-              <p class="text-muted">You haven't cancelled any trips yet</p>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">No Cancelled Bookings</h3>
+                        <p class="text-gray-600">Great! You haven't cancelled any bookings.</p>
             </div>
           {% endif %}
         </div>
       </div>
     </div>
+
+        <!-- PDF Documents Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 animate-fade-in-up" style="animation-delay: 0.4s;">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <div class="bg-gradient-to-br from-purple-400 to-indigo-600 rounded-full p-3 mr-4">
+                        <i class="fas fa-file-pdf text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">My Documents</h2>
+                        <p class="text-gray-600">Manage your PDF documents</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- ID Document PDF -->
+                <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-purple-400 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-id-card text-purple-500 mr-2"></i>
+                            ID Document
+                        </h3>
+                    </div>
+                    {% if user.profile and user.profile.id_document_pdf %}
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">ID Document.pdf</p>
+                                        <p class="text-xs text-gray-500">Uploaded</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{{ user.profile.id_document_pdf.url }}" target="_blank" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-eye"></i>
+                                <span>View</span>
+                            </a>
+                            <button onclick="editPDF('id_document', '{{ user.profile.id_document_pdf.url }}')" class="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button onclick="deletePDF('id_document')" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <i class="fas fa-file-upload text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500 mb-4">No document uploaded</p>
+                        <button onclick="uploadPDF('id_document')" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-all duration-200">
+                            <i class="fas fa-upload mr-2"></i>Upload PDF
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Passport PDF -->
+                <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-purple-400 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-passport text-blue-500 mr-2"></i>
+                            Passport
+                        </h3>
+                    </div>
+                    {% if user.profile and user.profile.passport_pdf %}
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Passport.pdf</p>
+                                        <p class="text-xs text-gray-500">Uploaded</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{{ user.profile.passport_pdf.url }}" target="_blank" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-eye"></i>
+                                <span>View</span>
+                            </a>
+                            <button onclick="editPDF('passport', '{{ user.profile.passport_pdf.url }}')" class="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button onclick="deletePDF('passport')" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <i class="fas fa-file-upload text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500 mb-4">No document uploaded</p>
+                        <button onclick="uploadPDF('passport')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200">
+                            <i class="fas fa-upload mr-2"></i>Upload PDF
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Other Documents PDF -->
+                <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-purple-400 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-file-alt text-green-500 mr-2"></i>
+                            Other Documents
+                        </h3>
+                    </div>
+                    {% if user.profile and user.profile.other_documents %}
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Document.pdf</p>
+                                        <p class="text-xs text-gray-500">Uploaded</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{{ user.profile.other_documents.url }}" target="_blank" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-eye"></i>
+                                <span>View</span>
+                            </a>
+                            <button onclick="editPDF('other_documents', '{{ user.profile.other_documents.url }}')" class="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button onclick="deletePDF('other_documents')" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <i class="fas fa-file-upload text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500 mb-4">No document uploaded</p>
+                        <button onclick="uploadPDF('other_documents')" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-all duration-200">
+                            <i class="fas fa-upload mr-2"></i>Upload PDF
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket PDF View Modal -->
+<div id="ticketPDFModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-2xl font-bold text-gray-900">Ticket PDF</h3>
+            <button onclick="closeTicketPDFModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-hidden p-6">
+            <embed id="ticketPDFFrame" src="" type="application/pdf" class="w-full h-full border-2 border-gray-200 rounded-lg" style="min-height: 500px;">
+            <p class="text-center text-gray-500 mt-4" id="pdfErrorMsg" style="display: none;">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Unable to display PDF. <a href="#" id="pdfDirectLink" class="text-sky-600 hover:underline">Click here to open in new tab</a>
+            </p>
+        </div>
+        <div class="p-6 border-t border-gray-200">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                <button onclick="downloadTicketPDF()" class="px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-download"></i>
+                    <span>Download</span>
+                </button>
+                <button onclick="printTicketPDF()" class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-print"></i>
+                    <span>Print (No Fare)</span>
+                </button>
+                <button onclick="editFare()" class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-edit"></i>
+                    <span>Edit Fare</span>
+                </button>
+                <button onclick="emailTicketWithFare()" class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email (With Fare)</span>
+                </button>
+                <button onclick="emailTicketWithoutFare()" class="px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-envelope-open"></i>
+                    <span>Email (No Fare)</span>
+                </button>
+                <button onclick="closeTicketPDFModal()" class="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                    <i class="fas fa-times mr-2"></i>
+                    <span>Close</span>
+                </button>
+      </div>
+    </div>
   </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<!-- Bootstrap JS Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- PDF Upload/Edit Modal -->
+<div id="pdfModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-900" id="modalTitle">Upload PDF</h3>
+            <button onclick="closePDFModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <form id="pdfUploadForm" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="pdf_type" id="pdfType">
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Select PDF File
+                </label>
+                <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" required 
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300">
+                <p class="text-xs text-gray-500 mt-2">Maximum file size: 10MB</p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closePDFModal()" class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200">
+                    <i class="fas fa-upload mr-2"></i>Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
-// Initialize tooltips
-var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-  return new bootstrap.Tooltip(tooltipTriggerEl)
-});
-
-// Animate elements on scroll
-function animateOnScroll() {
-  const elements = document.querySelectorAll('.animate-on-scroll');
-  elements.forEach(element => {
-    const elementTop = element.getBoundingClientRect().top;
-    const elementVisible = 150;
-    
-    if (elementTop < window.innerHeight - elementVisible) {
-      element.classList.add('animate__animated', 'animate__fadeInUp');
+    function showTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active', 'bg-white', 'text-sky-600', 'text-green-600', 'text-red-600');
+            button.classList.add('text-gray-700');
+        });
+        
+        // Show selected tab content
+        document.getElementById('content-' + tabName).classList.remove('hidden');
+        
+        // Add active class to selected tab
+        const activeTab = document.getElementById('tab-' + tabName);
+        activeTab.classList.add('active', 'bg-white');
+        if (tabName === 'upcoming') {
+            activeTab.classList.add('text-sky-600');
+        } else if (tabName === 'past') {
+            activeTab.classList.add('text-green-600');
+        } else if (tabName === 'cancelled') {
+            activeTab.classList.add('text-red-600');
+        }
     }
-  });
-}
-
-// Run animation on page load and scroll
-window.addEventListener('load', animateOnScroll);
-window.addEventListener('scroll', animateOnScroll);
-
-// Confirm booking cancellation
-function confirmCancelBooking(bookingId) {
-  if (confirm('Are you sure you want to cancel this booking?')) {
-    document.getElementById(`cancel-form-${bookingId}`).submit();
-  }
-}
-
-// Add animation to tab content when switching tabs
-document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
-  tab.addEventListener('shown.bs.tab', function (e) {
-    const targetPane = document.querySelector(e.target.dataset.bsTarget);
-    targetPane.classList.add('animate__animated', 'animate__fadeIn');
     
-    // Remove animation class after it completes to allow re-triggering
-    setTimeout(() => {
-      targetPane.classList.remove('animate__animated', 'animate__fadeIn');
-    }, 500);
+    function confirmCancelBooking(bookingId) {
+        if (confirm('Are you sure you want to cancel this booking?')) {
+            document.getElementById('cancel-form-' + bookingId).submit();
+        }
+    }
+
+    // Ticket PDF View Functions
+    let currentTicketPDFUrl = '';
+    let currentBookingId = '';
+
+    function viewTicketPDF(bookingId, pdfUrl) {
+        currentBookingId = bookingId;
+        currentTicketPDFUrl = pdfUrl;
+        // Add ?view=true to the URL for inline viewing
+        const viewUrl = pdfUrl + (pdfUrl.includes('?') ? '&' : '?') + 'view=true';
+        const pdfFrame = document.getElementById('ticketPDFFrame');
+        const errorMsg = document.getElementById('pdfErrorMsg');
+        const directLink = document.getElementById('pdfDirectLink');
+        
+        // Set up direct link as fallback
+        directLink.href = pdfUrl;
+        directLink.onclick = function(e) {
+            e.preventDefault();
+            window.open(pdfUrl, '_blank');
+        };
+        
+        // Try to load PDF
+        pdfFrame.src = viewUrl;
+        errorMsg.style.display = 'none';
+        
+        // Show error message if PDF fails to load after 3 seconds
+        setTimeout(function() {
+            pdfFrame.onerror = function() {
+                errorMsg.style.display = 'block';
+            };
+        }, 3000);
+        
+        document.getElementById('ticketPDFModal').classList.remove('hidden');
+        document.getElementById('ticketPDFModal').classList.add('flex');
+    }
+
+    function closeTicketPDFModal() {
+        document.getElementById('ticketPDFModal').classList.add('hidden');
+        document.getElementById('ticketPDFModal').classList.remove('flex');
+        const pdfFrame = document.getElementById('ticketPDFFrame');
+        pdfFrame.src = '';
+        document.getElementById('pdfErrorMsg').style.display = 'none';
+    }
+
+    function downloadTicketPDF() {
+        if (currentTicketPDFUrl) {
+            window.open(currentTicketPDFUrl, '_blank');
+        }
+    }
+
+    function printTicketPDF() {
+        if (currentBookingId) {
+            const printUrl = `/ticket/${currentBookingId}/print/`;
+            const printWindow = window.open(printUrl, '_blank');
+            if (printWindow) {
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
+        }
+    }
+
+    function emailTicketWithFare() {
+        if (!currentBookingId) return;
+        
+        const email = prompt('Enter email address to send ticket:', '{{ request.user.email }}');
+        if (!email) return;
+        
+        if (!email.includes('@')) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('hide_fare', 'false');
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch(`/ticket/${currentBookingId}/email/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert(data.message || 'Failed to send email.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while sending email.');
+        });
+    }
+
+    function emailTicketWithoutFare() {
+        if (!currentBookingId) return;
+        
+        const email = prompt('Enter email address to send ticket:', '{{ request.user.email }}');
+        if (!email) return;
+        
+        if (!email.includes('@')) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('hide_fare', 'true');
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch(`/ticket/${currentBookingId}/email/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert(data.message || 'Failed to send email.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while sending email.');
+        });
+    }
+
+    function editFare() {
+        if (!currentBookingId) return;
+        
+        const baseFare = prompt('Enter new base fare:', '');
+        if (baseFare === null) return;
+        
+        const taxAmount = prompt('Enter new tax amount:', '');
+        if (taxAmount === null) return;
+        
+        if (isNaN(baseFare) || isNaN(taxAmount) || parseFloat(baseFare) < 0 || parseFloat(taxAmount) < 0) {
+            alert('Please enter valid positive numbers.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('base_fare', baseFare);
+        formData.append('tax_amount', taxAmount);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch(`/ticket/${currentBookingId}/edit-fare/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message + (data.new_total ? '\nNew Total: ₹' + data.new_total : ''));
+                // Reload page to show updated fare
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message || 'Failed to update fare.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating fare.');
+        });
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('ticketPDFModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeTicketPDFModal();
+        }
+    });
+
+    // PDF Management Functions
+    function uploadPDF(pdfType) {
+        document.getElementById('modalTitle').textContent = 'Upload PDF Document';
+        document.getElementById('pdfType').value = pdfType;
+        document.getElementById('pdfFile').value = '';
+        document.getElementById('pdfFile').required = true;
+        document.getElementById('pdfModal').classList.remove('hidden');
+        document.getElementById('pdfModal').classList.add('flex');
+    }
+
+    function editPDF(pdfType, currentUrl) {
+        document.getElementById('modalTitle').textContent = 'Edit/Replace PDF Document';
+        document.getElementById('pdfType').value = pdfType;
+        document.getElementById('pdfFile').value = '';
+        document.getElementById('pdfFile').required = true;
+        document.getElementById('pdfModal').classList.remove('hidden');
+        document.getElementById('pdfModal').classList.add('flex');
+    }
+
+    function deletePDF(pdfType) {
+        if (confirm('Are you sure you want to delete this PDF document?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "delete_profile_pdf" %}';
+            
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = '{{ csrf_token }}';
+            form.appendChild(csrf);
+            
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'pdf_type';
+            typeInput.value = pdfType;
+            form.appendChild(typeInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function closePDFModal() {
+        document.getElementById('pdfModal').classList.add('hidden');
+        document.getElementById('pdfModal').classList.remove('flex');
+        document.getElementById('pdfUploadForm').reset();
+    }
+
+    // Handle PDF form submission
+    document.getElementById('pdfUploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+        submitBtn.disabled = true;
+
+        fetch('{% url "upload_profile_pdf" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to upload PDF');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while uploading the PDF');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
   });
 });
 </script>

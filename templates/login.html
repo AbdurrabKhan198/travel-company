@@ -1,156 +1,128 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ===== Login Section ===== -->
-<section class="min-vh-100 d-flex align-items-center justify-content-center position-relative overflow-hidden" 
-         style="background: linear-gradient(135deg,#0ea5e9,#38bdf8);">
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 relative overflow-hidden">
+    <!-- Animated Background -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-float" style="animation-delay: 4s;"></div>
+    </div>
 
-  <!-- Floating Decorative Circles -->
-  <div class="bg-circle position-absolute top-0 start-0 translate-middle rounded-circle"></div>
-  <div class="bg-circle position-absolute bottom-0 end-0 translate-middle rounded-circle"></div>
-
-  <div class="container position-relative" style="z-index: 2;">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-5">
-
-        <!-- Glassmorphic Login Card -->
-        <div class="card border-0 shadow-lg glass-card animate__animated animate__fadeInUp">
-          <div class="card-body p-5">
-
-            <div class="text-center mb-4">
-              <div class="plane-icon mb-3">✈️</div>
-              <h2 class="fw-bold text-sky">Welcome Back</h2>
-              <p class="text-muted small">Login to continue your journey with Safar Zone Travels</p>
+    <div class="max-w-md w-full space-y-8 relative z-10 animate-fade-in-up">
+        <!-- Logo & Header -->
+        <div class="text-center">
+            <div class="inline-block p-4 bg-white/20 backdrop-blur-md rounded-2xl mb-6 shadow-lg">
+                <i class="fas fa-plane text-white text-4xl animate-float"></i>
             </div>
-
-            <form method="post" action="{% url 'login' %}" id="loginForm" novalidate>
-              {% csrf_token %}
-              <div class="form-floating mb-3">
-                <input type="email" class="form-control" id="username" name="username" placeholder="Email" required>
-                <label for="username">Email address</label>
-              </div>
-
-              <div class="form-floating mb-4">
-                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-                <label for="password">Password</label>
-              </div>
-              <input type="hidden" name="next" value="{{ request.GET.next }}">
-
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="remember">
-                  <label class="form-check-label small" for="remember">Remember me</label>
-                </div>
-                <a href="#" class="text-sky text-decoration-none small">Forgot Password?</a>
-              </div>
-
-              <div class="d-grid">
-                <button type="submit" class="btn btn-sky btn-lg fw-semibold shadow-sm" id="loginButton">
-                  <span class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status" aria-hidden="true"></span>
-                  <span id="loginText">Login</span>
-                </button>
-              </div>
-            </form>
-
-            <p class="text-center mt-4 text-muted">
-              Don’t have an account?
-              <a href="/signup" class="text-sky fw-semibold text-decoration-none">Sign Up</a>
-            </p>
-          </div>
+            <h2 class="text-4xl font-bold text-white mb-2">Welcome Back</h2>
+            <p class="text-white/90">Login to continue your journey with Safar Zone</p>
         </div>
 
-      </div>
+        <!-- Login Card -->
+        <div class="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+            <form method="post" action="{% url 'login' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Email Field -->
+                <div>
+                    <label for="username" class="block text-sm font-semibold text-white mb-2">
+                        <i class="fas fa-envelope mr-2"></i>Email Address
+                    </label>
+                    <input type="email" 
+                           id="username" 
+                           name="username" 
+                           required
+                           class="w-full px-4 py-3 rounded-xl bg-white/90 backdrop-blur-md border-2 border-white/30 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-gray-800 placeholder-gray-500"
+                           placeholder="your@email.com">
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-white mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               required
+                               class="w-full px-4 py-3 rounded-xl bg-white/90 backdrop-blur-md border-2 border-white/30 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-gray-800 placeholder-gray-500"
+                               placeholder="Enter your password">
+                        <button type="button" 
+                                onclick="togglePassword()"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye" id="password-toggle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" 
+                               id="remember"
+                               class="w-4 h-4 rounded border-white/30 bg-white/20 text-sky-600 focus:ring-2 focus:ring-white/30">
+                        <span class="text-white/90 text-sm">Remember me</span>
+                    </label>
+                    <a href="#" class="text-white/90 hover:text-white text-sm font-medium transition-colors">
+                        Forgot Password?
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Login</span>
+                </button>
+            </form>
+
+            <!-- Sign Up Link -->
+            <div class="mt-6 text-center">
+                <p class="text-white/80">
+                    Don't have an account?
+                    <a href="{% url 'signup' %}" class="text-white font-semibold hover:underline ml-1">
+                        Sign Up
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Social Login (Optional) -->
+        <div class="text-center">
+            <p class="text-white/80 mb-4 text-sm">Or continue with</p>
+            <div class="flex justify-center space-x-4">
+                <button class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110">
+                    <i class="fab fa-google text-white"></i>
+                </button>
+                <button class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110">
+                    <i class="fab fa-facebook text-white"></i>
+                </button>
+                <button class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110">
+                    <i class="fab fa-apple text-white"></i>
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
-</section>
+</div>
 
-<!-- ===== Custom Styles & Animations ===== -->
-<style>
-  @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
-
-  .btn-sky { background-color:#0ea5e9; color:#fff; border:none; }
-  .btn-sky:hover { background-color:#0284c7; }
-
-  .text-sky { color:#0ea5e9; }
-
-  .glass-card {
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
-  }
-
-  .bg-circle {
-    width: 450px; height: 450px;
-    background: rgba(255,255,255,0.2);
-    filter: blur(100px);
-    z-index: 0;
-  }
-
-  .plane-icon {
-    font-size: 2.5rem;
-    color: #fff;
-    animation: planeFloat 4s ease-in-out infinite;
-  }
-
-  @keyframes planeFloat {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-10px) rotate(3deg); }
-    100% { transform: translateY(0); }
-  }
-
-  /* Input Styling */
-  .form-control {
-    background-color: rgba(255,255,255,0.8);
-    border: none;
-    border-radius: 10px;
-  }
-  .form-control:focus {
-    background-color: #fff;
-    box-shadow: 0 0 0 0.25rem rgba(56,189,248,0.25);
-  }
-</style>
-
-<!-- ===== Bootstrap & JS Animation ===== -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const loginForm = document.getElementById('loginForm');
-    const loginButton = document.getElementById('loginButton');
-    const loginSpinner = document.getElementById('loginSpinner');
-    const loginText = document.getElementById('loginText');
-    
-    loginForm.addEventListener('submit', function(e) {
-      // Client-side validation
-      if (!this.checkValidity()) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.classList.add('was-validated');
-        return;
-      }
-      
-      // Show loading state
-      if (loginButton && loginSpinner && loginText) {
-        loginButton.disabled = true;
-        loginSpinner.classList.remove('d-none');
-        loginText.textContent = 'Signing in...';
-      }
-      
-      // Form will submit normally to Django backend
-    });
-    
-    // Add animation to form elements
-    const formGroups = document.querySelectorAll('.form-floating');
-    formGroups.forEach((group, index) => {
-      group.style.opacity = '0';
-      group.style.transform = 'translateY(20px)';
-      group.style.transition = `all 0.5s ease ${index * 0.1}s`;
-      
-      setTimeout(() => {
-        group.style.opacity = '1';
-        group.style.transform = 'translateY(0)';
-      }, 100);
-    });
-  });
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const passwordToggle = document.getElementById('password-toggle');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordToggle.classList.remove('fa-eye');
+            passwordToggle.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            passwordToggle.classList.remove('fa-eye-slash');
+            passwordToggle.classList.add('fa-eye');
+        }
+    }
 </script>
-
 {% endblock %}
