@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
@@ -11,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf import settings
 from decimal import Decimal
-from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, Wallet, WalletTransaction
+from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, Wallet, WalletTransaction, GroupRequest
 from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm
 import random
 import string
@@ -337,12 +338,31 @@ def search_flights(request):
     from_location = request.GET.get('from_location', '').strip()
     to_location = request.GET.get('to_location', '').strip()
     travel_date = request.GET.get('travel_date', '').strip()
+    return_date = request.GET.get('return_date', '').strip()
     route_type = request.GET.get('route_type', '').strip()
+    trip_type = request.GET.get('trip_type', 'one_way').strip()
     
+    # Get passenger counts (adults, children, infants)
     try:
-        passengers = int(request.GET.get('passengers', 1))
+        adults = int(request.GET.get('adults', 1))
+        children = int(request.GET.get('children', 0))
+        infants = int(request.GET.get('infants', 0))
     except (ValueError, TypeError):
-        passengers = 1
+        adults = 1
+        children = 0
+        infants = 0
+    
+    # Validate at least 1 adult
+    if adults < 1:
+        adults = 1
+    
+    # Validate infants don't exceed adults
+    if infants > adults:
+        messages.error(request, 'Number of infants cannot exceed number of adults.')
+        return redirect('homepage')
+    
+    # Calculate total passengers for seat availability check
+    passengers = adults + children  # Infants don't need seats
     
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
@@ -407,6 +427,49 @@ def search_flights(request):
     # Order by price and departure date
     flights = flights.order_by('price', 'departure_date')
     
+    # Search for return flights if trip_type is 'return'
+    return_flights = None
+    if trip_type == 'return' and return_date:
+        try:
+            return_date_obj = datetime.strptime(return_date, '%Y-%m-%d').date()
+            if return_date_obj < timezone.now().date():
+                messages.error(request, 'Return date must be in the future.')
+                return redirect('homepage')
+            
+            # Validate return date is after departure date
+            if travel_date:
+                travel_date_obj = datetime.strptime(travel_date, '%Y-%m-%d').date()
+                if return_date_obj <= travel_date_obj:
+                    messages.error(request, 'Return date must be after departure date.')
+                    return redirect('homepage')
+            
+            # Search for return flights (reverse route: to_location -> from_location)
+            return_base_flights = Schedule.objects.select_related('route').filter(
+                route__from_location__iexact=to_location,
+                route__to_location__iexact=from_location,
+                is_active=True
+            )
+            
+            # Apply route type filter if specified
+            if route_type and route_type in dict(Route.ROUTE_TYPE_CHOICES):
+                return_base_flights = return_base_flights.filter(route__route_type=route_type)
+            
+            # Filter by return date
+            return_flights = return_base_flights.filter(departure_date=return_date_obj)
+            
+            # Filter only future dates
+            return_flights = return_flights.filter(departure_date__gte=timezone.now().date())
+            
+            # Filter flights with enough available seats
+            return_flights = return_flights.filter(available_seats__gte=passengers)
+            
+            # Order by price and departure date
+            return_flights = return_flights.order_by('price', 'departure_date')
+            
+        except ValueError:
+            messages.error(request, 'Invalid return date format.')
+            return redirect('homepage')
+    
     # Get route information
     route_info = None
     if flights.exists():
@@ -416,18 +479,29 @@ def search_flights(request):
     from_airport_code = airport_codes.get(from_location, '')
     to_airport_code = airport_codes.get(to_location, '')
     
+    # Get travel class if provided
+    travel_class = request.GET.get('travel_class', 'economy').strip()
+    
     context = {
         'flights': flights,
+        'return_flights': return_flights,
         'from_location': from_location,
         'to_location': to_location,
         'from_airport_code': from_airport_code,
         'to_airport_code': to_airport_code,
         'airport_codes': airport_codes,  # Pass the full dictionary for individual flights
         'travel_date': travel_date,
+        'return_date': return_date,
+        'trip_type': trip_type,
         'route_type': route_type,
-        'passengers': passengers,
+        'passengers': passengers,  # Total passengers (adults + children) for seat availability
+        'adults': adults,
+        'children': children,
+        'infants': infants,
+        'travel_class': travel_class,
         'route_info': route_info,
         'total_flights': flights.count(),
+        'total_return_flights': return_flights.count() if return_flights else 0,
     }
     return render(request, 'search.html', context)
 
@@ -436,7 +510,41 @@ def search_flights(request):
 def booking_page(request, schedule_id):
     """B2B Booking page for a specific flight with multiple passenger support"""
     schedule = get_object_or_404(Schedule, id=schedule_id)
-    passengers = int(request.GET.get('passengers', 1))
+    
+    # Get passenger counts (adults, children, infants)
+    try:
+        adults = int(request.GET.get('adults', request.GET.get('passengers', 1)))
+        children = int(request.GET.get('children', 0))
+        infants = int(request.GET.get('infants', 0))
+    except (ValueError, TypeError):
+        adults = 1
+        children = 0
+        infants = 0
+    
+    # Validate at least 1 adult
+    if adults < 1:
+        adults = 1
+    
+    # Validate infants don't exceed adults
+    if infants > adults:
+        messages.error(request, 'Number of infants cannot exceed number of adults.')
+        return redirect('search_flights')
+    
+    # Calculate total passengers for seat availability (infants don't need seats)
+    passengers = adults + children
+    
+    return_schedule_id = request.GET.get('return_schedule_id', None)
+    trip_type = request.GET.get('trip_type', 'one_way')
+    travel_class = request.GET.get('travel_class', 'economy')
+    
+    # Get return schedule if provided
+    return_schedule = None
+    if return_schedule_id and trip_type == 'return':
+        try:
+            return_schedule = Schedule.objects.get(id=return_schedule_id)
+        except Schedule.DoesNotExist:
+            messages.error(request, 'Return flight not found.')
+            return redirect('search_flights')
     
     # Ensure passengers doesn't exceed available seats
     if passengers > schedule.available_seats:
@@ -449,12 +557,27 @@ def booking_page(request, schedule_id):
             return handle_booking_confirmation(request, schedule_id)
         
         # Process booking form submission - redirect to review
-        seats_booked = int(request.POST.get('seats_booked', passengers))
+        # seats_booked = adults + children (infants don't need seats)
+        seats_booked = adults + children
         
         # Check availability
         if schedule.available_seats < seats_booked:
             messages.error(request, f'Not enough seats available! Only {schedule.available_seats} seats left.')
-            return redirect('booking', schedule_id=schedule_id)
+            # Preserve passenger counts in redirect
+            from urllib.parse import urlencode
+            redirect_params = {
+                'adults': adults,
+                'children': children,
+                'infants': infants,
+            }
+            if return_schedule_id:
+                redirect_params['return_schedule_id'] = return_schedule_id
+            if trip_type:
+                redirect_params['trip_type'] = trip_type
+            if travel_class:
+                redirect_params['travel_class'] = travel_class
+            redirect_url = f"{reverse('booking', args=[schedule_id])}?{urlencode(redirect_params)}"
+            return redirect(redirect_url)
         
         # Get passenger details
         passenger_titles = request.POST.getlist('passenger_title[]')
@@ -469,14 +592,64 @@ def booking_page(request, schedule_id):
         contact_email = request.POST.get('contact_email', request.user.email)
         contact_phone = request.POST.get('contact_phone', '')
         
-        # Validate passenger details
-        if len(passenger_first_names) != seats_booked:
-            messages.error(request, 'Please fill in all passenger details.')
-            return redirect('booking', schedule_id=schedule_id)
+        # Validate passenger details - check all required fields
+        validation_errors = []
+        
+        # Check if we have the right number of passenger forms
+        expected_passengers = adults + children + infants
+        if len(passenger_first_names) != expected_passengers:
+            validation_errors.append(f'Expected {expected_passengers} passengers but got {len(passenger_first_names)} forms.')
+        
+        # Validate each passenger's required fields
+        max_index = max(len(passenger_first_names), len(passenger_last_names), len(passenger_dobs), 
+                       len(passenger_genders), len(passenger_titles), len(nationalities))
+        
+        for i in range(expected_passengers):
+            if i >= len(passenger_first_names) or not passenger_first_names[i] or not passenger_first_names[i].strip():
+                validation_errors.append(f'Passenger {i+1}: First name is required.')
+            if i >= len(passenger_last_names) or not passenger_last_names[i] or not passenger_last_names[i].strip():
+                validation_errors.append(f'Passenger {i+1}: Last name is required.')
+            if i >= len(passenger_dobs) or not passenger_dobs[i] or not passenger_dobs[i].strip():
+                validation_errors.append(f'Passenger {i+1}: Date of birth is required.')
+            if i >= len(passenger_genders) or not passenger_genders[i] or not passenger_genders[i].strip():
+                validation_errors.append(f'Passenger {i+1}: Gender is required.')
+            if i >= len(passenger_titles) or not passenger_titles[i] or not passenger_titles[i].strip():
+                validation_errors.append(f'Passenger {i+1}: Title is required.')
+            if i >= len(nationalities) or not nationalities[i] or not nationalities[i].strip():
+                validation_errors.append(f'Passenger {i+1}: Nationality is required.')
+        
+        # Validate contact information
+        if not contact_email or not contact_email.strip():
+            validation_errors.append('Contact email is required.')
+        if not contact_phone or not contact_phone.strip():
+            validation_errors.append('Contact phone is required.')
+        
+        if validation_errors:
+            error_msg = 'Please fill in all required fields. ' + ' '.join(validation_errors[:3])
+            if len(validation_errors) > 3:
+                error_msg += f' (and {len(validation_errors) - 3} more)'
+            messages.error(request, error_msg)
+            # Preserve adults/children/infants counts in redirect
+            from urllib.parse import urlencode
+            redirect_params = {
+                'adults': adults,
+                'children': children,
+                'infants': infants,
+            }
+            if return_schedule_id:
+                redirect_params['return_schedule_id'] = return_schedule_id
+            if trip_type:
+                redirect_params['trip_type'] = trip_type
+            if travel_class:
+                redirect_params['travel_class'] = travel_class
+            redirect_url = f"{reverse('booking', args=[schedule_id])}?{urlencode(redirect_params)}"
+            return redirect(redirect_url)
         
         # Store passenger data in session for review page
+        # Include ALL passengers: adults + children + infants
+        total_passengers = adults + children + infants
         passenger_data = []
-        for i in range(seats_booked):
+        for i in range(total_passengers):
             passenger_data.append({
                 'title': passenger_titles[i] if i < len(passenger_titles) else 'Mr',
                 'first_name': passenger_first_names[i],
@@ -489,25 +662,53 @@ def booking_page(request, schedule_id):
                 'nationality': nationalities[i] if i < len(nationalities) else 'Indian',
             })
         
+        # Get return schedule if provided
+        return_schedule_id = request.POST.get('return_schedule_id', return_schedule_id)
+        return_schedule = None
+        if return_schedule_id and trip_type == 'return':
+            try:
+                return_schedule = Schedule.objects.get(id=return_schedule_id)
+                # Check return flight availability
+                if return_schedule.available_seats < seats_booked:
+                    messages.error(request, f'Not enough seats available on return flight! Only {return_schedule.available_seats} seats left.')
+                    return redirect('booking', schedule_id=schedule_id)
+            except Schedule.DoesNotExist:
+                messages.error(request, 'Return flight not found.')
+                return redirect('booking', schedule_id=schedule_id)
+        
         # Calculate amounts (different prices for adult/child/infant)
         base_fare = Decimal('0')
         adult_count = sum(1 for p in passenger_data if p['passenger_type'] == 'adult')
         child_count = sum(1 for p in passenger_data if p['passenger_type'] == 'child')
         infant_count = sum(1 for p in passenger_data if p['passenger_type'] == 'infant')
         
-        # Pricing: Adult = full price, Child = 75% of adult, Infant = 10% of adult
-        adult_price = schedule.price
-        child_price = schedule.price * Decimal('0.75')
-        infant_price = schedule.price * Decimal('0.10')
+        # Pricing: Use specific fares from Schedule model, fallback to calculated prices if not set
+        adult_price = schedule.get_fare_for_passenger_type('adult')
+        child_price = schedule.get_fare_for_passenger_type('child')
+        infant_price = schedule.get_fare_for_passenger_type('infant')
         
-        base_fare = (adult_price * adult_count) + (child_price * child_count) + (infant_price * infant_count)
+        # Outbound flight fare
+        outbound_fare = (adult_price * adult_count) + (child_price * child_count) + (infant_price * infant_count)
+        
+        # Return flight fare (if return trip)
+        return_fare = Decimal('0')
+        if return_schedule:
+            return_adult_price = return_schedule.get_fare_for_passenger_type('adult')
+            return_child_price = return_schedule.get_fare_for_passenger_type('child')
+            return_infant_price = return_schedule.get_fare_for_passenger_type('infant')
+            return_fare = (return_adult_price * adult_count) + (return_child_price * child_count) + (return_infant_price * infant_count)
+        
+        base_fare = outbound_fare + return_fare
         tax_amount = base_fare * Decimal('0.18')  # 18% GST
         total_amount = base_fare + tax_amount
         
         # Store in session for review
         request.session['booking_data'] = {
             'schedule_id': schedule_id,
-            'seats_booked': seats_booked,
+            'return_schedule_id': return_schedule_id if return_schedule else None,
+            'trip_type': trip_type,
+            'seats_booked': seats_booked,  # For seat availability (adults + children only)
+            'total_passengers': total_passengers,  # Total including infants
             'passenger_data': passenger_data,
             'contact_email': contact_email,
             'contact_phone': contact_phone,
@@ -517,21 +718,70 @@ def booking_page(request, schedule_id):
             'adult_count': adult_count,
             'child_count': child_count,
             'infant_count': infant_count,
+            'outbound_fare': str(outbound_fare),
+            'return_fare': str(return_fare) if return_schedule else '0',
+            'adult_fare_per_passenger': str(adult_price),
+            'child_fare_per_passenger': str(child_price),
+            'infant_fare_per_passenger': str(infant_price),
+            'return_adult_fare_per_passenger': str(return_adult_price) if return_schedule else '0',
+            'return_child_fare_per_passenger': str(return_child_price) if return_schedule else '0',
+            'return_infant_fare_per_passenger': str(return_infant_price) if return_schedule else '0',
         }
         
         # Redirect to review page
         return redirect('review_booking', schedule_id=schedule_id)
     
+    # Get return schedule if provided
+    return_schedule = None
+    if return_schedule_id and trip_type == 'return':
+        try:
+            return_schedule = Schedule.objects.get(id=return_schedule_id)
+        except Schedule.DoesNotExist:
+            pass
+    
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
     
+    # Get fare information
+    adult_fare = schedule.get_fare_for_passenger_type('adult')
+    child_fare = schedule.get_fare_for_passenger_type('child')
+    infant_fare = schedule.get_fare_for_passenger_type('infant')
+    
+    return_adult_fare = None
+    return_child_fare = None
+    return_infant_fare = None
+    if return_schedule:
+        return_adult_fare = return_schedule.get_fare_for_passenger_type('adult')
+        return_child_fare = return_schedule.get_fare_for_passenger_type('child')
+        return_infant_fare = return_schedule.get_fare_for_passenger_type('infant')
+    
+    # Create separate ranges for each passenger type
+    adult_range = range(1, adults + 1) if adults > 0 else []
+    child_range = range(1, children + 1) if children > 0 else []
+    infant_range = range(1, infants + 1) if infants > 0 else []
+    
     context = {
         'schedule': schedule,
-        'passengers': passengers,
+        'return_schedule': return_schedule,
+        'trip_type': trip_type,
+        'passengers': passengers,  # Total for seat availability
+        'adults': adults,
+        'children': children,
+        'infants': infants,
+        'travel_class': travel_class,
         'passenger_range': range(1, passengers + 1),
+        'adult_range': adult_range,
+        'child_range': child_range,
+        'infant_range': infant_range,
         'airport_codes': airport_codes,
         'today': date.today().isoformat(),
         'user': request.user,
+        'adult_fare': adult_fare,
+        'child_fare': child_fare,
+        'infant_fare': infant_fare,
+        'return_adult_fare': return_adult_fare,
+        'return_child_fare': return_child_fare,
+        'return_infant_fare': return_infant_fare,
     }
     return render(request, 'booking.html', context)
 
@@ -546,11 +796,23 @@ def review_booking(request, schedule_id):
         messages.error(request, 'Please complete the booking form first.')
         return redirect('booking', schedule_id=schedule_id)
     
+    # Get return schedule if it's a return trip
+    return_schedule = None
+    trip_type = booking_data.get('trip_type', 'one_way')
+    return_schedule_id = booking_data.get('return_schedule_id')
+    if return_schedule_id and trip_type == 'return':
+        try:
+            return_schedule = Schedule.objects.get(id=return_schedule_id)
+        except Schedule.DoesNotExist:
+            pass
+    
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
     
     context = {
         'schedule': schedule,
+        'return_schedule': return_schedule,
+        'trip_type': trip_type,
         'booking_data': booking_data,
         'airport_codes': airport_codes,
         'passenger_data': booking_data.get('passenger_data', []),
@@ -574,10 +836,27 @@ def handle_booking_confirmation(request, schedule_id):
         messages.error(request, f'Not enough seats available! Only {schedule.available_seats} seats left.')
         return redirect('booking', schedule_id=schedule_id)
     
+    # Get return schedule if it's a return trip
+    return_schedule = None
+    trip_type = booking_data.get('trip_type', 'one_way')
+    return_schedule_id = booking_data.get('return_schedule_id')
+    if return_schedule_id and trip_type == 'return':
+        try:
+            return_schedule = Schedule.objects.get(id=return_schedule_id)
+            # Check return flight availability
+            if return_schedule.available_seats < seats_booked:
+                messages.error(request, f'Not enough seats available on return flight! Only {return_schedule.available_seats} seats left.')
+                return redirect('booking', schedule_id=schedule_id)
+        except Schedule.DoesNotExist:
+            messages.error(request, 'Return flight not found.')
+            return redirect('booking', schedule_id=schedule_id)
+    
     # Create booking (PENDING status until payment)
     booking = Booking.objects.create(
         user=request.user,
         schedule=schedule,
+        return_schedule=return_schedule,
+        trip_type=trip_type,
         contact_email=booking_data.get('contact_email', request.user.email),
         contact_phone=booking_data.get('contact_phone', ''),
         base_fare=Decimal(booking_data.get('base_fare', '0')),
@@ -664,6 +943,11 @@ def dashboard(request):
         user=request.user,
         defaults={'full_name': request.user.get_full_name() or request.user.email.split('@')[0]}
     )
+    
+    # Fix any profiles with invalid full_name (like "NONE None" or empty)
+    if not profile.full_name or profile.full_name.strip() == '' or profile.full_name.lower() in ['none none', 'none']:
+        profile.full_name = request.user.get_full_name() or request.user.email.split('@')[0] or request.user.username
+        profile.save()
     
     today = timezone.now().date()
     
@@ -784,6 +1068,23 @@ def payment_page(request, booking_id):
         except Exception as e:
             messages.error(request, f'Wallet payment failed: {str(e)}')
     
+    # Handle skip payment (for testing)
+    if request.method == 'POST' and request.POST.get('payment_method') == 'skip':
+        # For testing: confirm booking without payment
+        booking.payment_status = Booking.PaymentStatus.PAID
+        booking.status = Booking.Status.CONFIRMED
+        
+        # Update schedule - reduce available seats
+        seats_booked = booking.passengers.count() or 1
+        if booking.schedule.available_seats >= seats_booked:
+            booking.schedule.available_seats -= seats_booked
+            booking.schedule.save()
+        
+        booking.save()
+        
+        messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment skipped for testing)')
+        return redirect('booking_confirmation', booking_id=booking.id)
+    
     # Get wallet information for payment page
     wallet = None
     wallet_balance = Decimal('0')
@@ -795,166 +1096,169 @@ def payment_page(request, booking_id):
     except Wallet.DoesNotExist:
         pass
     
+    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
     # Check if Razorpay is configured
-    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    # razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    # razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
     
-    # If Razorpay keys are not configured, skip payment and confirm booking directly
-    if not razorpay_key_id or not razorpay_key_secret or razorpay_key_id == 'rzp_test_xxxxxxxxxxxxx' or razorpay_key_secret == 'xxxxxxxxxxxxxxxxxxxxx':
-        # Skip payment gateway - directly confirm booking
-        booking.payment_status = Booking.PaymentStatus.PAID
-        booking.status = Booking.Status.CONFIRMED
-        
-        # Update schedule - reduce available seats
-        seats_booked = booking.passengers.count() or 1
-        if booking.schedule.available_seats >= seats_booked:
-            booking.schedule.available_seats -= seats_booked
-            booking.schedule.save()
-        
-        booking.save()
-        
-        messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway not configured - booking confirmed directly)')
-        return redirect('booking_confirmation', booking_id=booking.id)
-    
-    # Initialize Razorpay client
-    try:
-        client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    except Exception as e:
-        # If Razorpay initialization fails, skip payment and confirm directly
-        booking.payment_status = Booking.PaymentStatus.PAID
-        booking.status = Booking.Status.CONFIRMED
-        
-        seats_booked = booking.passengers.count() or 1
-        if booking.schedule.available_seats >= seats_booked:
-            booking.schedule.available_seats -= seats_booked
-            booking.schedule.save()
-        
-        booking.save()
-        
-        messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway unavailable - booking confirmed directly)')
-        return redirect('booking_confirmation', booking_id=booking.id)
-    
-    # Create order
-    amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
-    order_data = {
-        'amount': amount_in_paise,
-        'currency': 'INR',
-        'receipt': booking.booking_reference,
-        'notes': {
-            'booking_id': booking.id,
-            'booking_reference': booking.booking_reference,
-        }
-    }
-    
-    try:
-        razorpay_order = client.order.create(data=order_data)
-        order_id = razorpay_order['id']
-        
-        # Store order_id in booking
-        if not booking.notes:
-            booking.notes = json.dumps({'razorpay_order_id': order_id})
-        else:
-            notes = json.loads(booking.notes) if booking.notes else {}
-            notes['razorpay_order_id'] = order_id
-            booking.notes = json.dumps(notes)
-        booking.save()
-        
-    except Exception as e:
-        # If order creation fails, skip payment and confirm directly
-        booking.payment_status = Booking.PaymentStatus.PAID
-        booking.status = Booking.Status.CONFIRMED
-        
-        seats_booked = booking.passengers.count() or 1
-        if booking.schedule.available_seats >= seats_booked:
-            booking.schedule.available_seats -= seats_booked
-            booking.schedule.save()
-        
-        booking.save()
-        
-        messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway error - booking confirmed directly)')
-        return redirect('booking_confirmation', booking_id=booking.id)
-    
+    # Always show payment page with wallet option (if available)
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
     
     context = {
         'booking': booking,
-        'razorpay_key_id': razorpay_key_id,
-        'order_id': order_id,
-        'amount': amount_in_paise,
         'airport_codes': airport_codes,
         'wallet': wallet,
         'wallet_balance': wallet_balance,
         'can_use_wallet': can_use_wallet,
     }
     return render(request, 'payment.html', context)
+    
+    # ========== COMMENTED RAZORPAY CODE (UNCOMMENT WHEN READY FOR PRODUCTION) ==========
+    # # Initialize Razorpay client
+    # try:
+    #     client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    # except Exception as e:
+    #     # If Razorpay initialization fails, skip payment and confirm directly
+    #     booking.payment_status = Booking.PaymentStatus.PAID
+    #     booking.status = Booking.Status.CONFIRMED
+    #     
+    #     seats_booked = booking.passengers.count() or 1
+    #     if booking.schedule.available_seats >= seats_booked:
+    #         booking.schedule.available_seats -= seats_booked
+    #         booking.schedule.save()
+    #     
+    #     booking.save()
+    #     
+    #     messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway unavailable - booking confirmed directly)')
+    #     return redirect('booking_confirmation', booking_id=booking.id)
+    # 
+    # # Create order
+    # amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
+    # order_data = {
+    #     'amount': amount_in_paise,
+    #     'currency': 'INR',
+    #     'receipt': booking.booking_reference,
+    #     'notes': {
+    #         'booking_id': booking.id,
+    #         'booking_reference': booking.booking_reference,
+    #     }
+    # }
+    # 
+    # try:
+    #     razorpay_order = client.order.create(data=order_data)
+    #     order_id = razorpay_order['id']
+    #     
+    #     # Store order_id in booking
+    #     if not booking.notes:
+    #         booking.notes = json.dumps({'razorpay_order_id': order_id})
+    #     else:
+    #         notes = json.loads(booking.notes) if booking.notes else {}
+    #         notes['razorpay_order_id'] = order_id
+    #         booking.notes = json.dumps(notes)
+    #     booking.save()
+    #     
+    # except Exception as e:
+    #     # If order creation fails, skip payment and confirm directly
+    #     booking.payment_status = Booking.PaymentStatus.PAID
+    #     booking.status = Booking.Status.CONFIRMED
+    #     
+    #     seats_booked = booking.passengers.count() or 1
+    #     if booking.schedule.available_seats >= seats_booked:
+    #         booking.schedule.available_seats -= seats_booked
+    #         booking.schedule.save()
+    #     
+    #     booking.save()
+    #     
+    #     messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway error - booking confirmed directly)')
+    #     return redirect('booking_confirmation', booking_id=booking.id)
+    # 
+    # # Get comprehensive airport codes
+    # airport_codes = get_airport_codes()
+    # 
+    # context = {
+    #     'booking': booking,
+    #     'razorpay_key_id': razorpay_key_id,
+    #     'order_id': order_id,
+    #     'amount': amount_in_paise,
+    #     'airport_codes': airport_codes,
+    #     'wallet': wallet,
+    #     'wallet_balance': wallet_balance,
+    #     'can_use_wallet': can_use_wallet,
+    # }
+    # return render(request, 'payment.html', context)
 
 
 @login_required
 @require_POST
 def payment_success(request):
     """Handle successful payment callback"""
-    payment_id = request.POST.get('razorpay_payment_id')
-    order_id = request.POST.get('razorpay_order_id')
-    signature = request.POST.get('razorpay_signature')
+    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
+    # payment_id = request.POST.get('razorpay_payment_id')
+    # order_id = request.POST.get('razorpay_order_id')
+    # signature = request.POST.get('razorpay_signature')
+    # 
+    # # Verify payment signature
+    # razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', 'rzp_test_xxxxxxxxxxxxx')
+    # razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', 'xxxxxxxxxxxxxxxxxxxxx')
+    # client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    # 
+    # try:
+    #     # Find booking by order_id
+    #     bookings = Booking.objects.filter(notes__icontains=order_id)
+    #     booking = None
+    #     for b in bookings:
+    #         try:
+    #             notes = json.loads(b.notes) if b.notes else {}
+    #             if notes.get('razorpay_order_id') == order_id:
+    #                 booking = b
+    #                 break
+    #         except:
+    #             continue
+    #     
+    #     if not booking:
+    #         messages.error(request, 'Booking not found.')
+    #         return redirect('dashboard')
+    #     
+    #     # Verify signature
+    #     params_dict = {
+    #         'razorpay_order_id': order_id,
+    #         'razorpay_payment_id': payment_id,
+    #         'razorpay_signature': signature
+    #     }
+    #     
+    #     client.utility.verify_payment_signature(params_dict)
+    #     
+    #     # Update booking status
+    #     booking.payment_status = Booking.PaymentStatus.PAID
+    #     booking.status = Booking.Status.CONFIRMED
+    #     
+    #     # Update notes with payment info
+    #     notes = json.loads(booking.notes) if booking.notes else {}
+    #     notes['razorpay_payment_id'] = payment_id
+    #     notes['razorpay_order_id'] = order_id
+    #     booking.notes = json.dumps(notes)
+    #     
+    #     # Update schedule - reduce available seats
+    #     seats_booked = booking.passengers.count()
+    #     booking.schedule.available_seats -= seats_booked
+    #     booking.schedule.save()
+    #     
+    #     booking.save()
+    #     
+    #     messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
+    #     return redirect('booking_confirmation', booking_id=booking.id)
+    #     
+    # except razorpay.errors.SignatureVerificationError:
+    #     messages.error(request, 'Payment verification failed.')
+    #     return redirect('payment_failed')
+    # except Exception as e:
+    #     messages.error(request, f'Payment processing error: {str(e)}')
+    #     return redirect('payment_failed')
     
-    # Verify payment signature
-    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', 'rzp_test_xxxxxxxxxxxxx')
-    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', 'xxxxxxxxxxxxxxxxxxxxx')
-    client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    
-    try:
-        # Find booking by order_id
-        bookings = Booking.objects.filter(notes__icontains=order_id)
-        booking = None
-        for b in bookings:
-            try:
-                notes = json.loads(b.notes) if b.notes else {}
-                if notes.get('razorpay_order_id') == order_id:
-                    booking = b
-                    break
-            except:
-                continue
-        
-        if not booking:
-            messages.error(request, 'Booking not found.')
-            return redirect('dashboard')
-        
-        # Verify signature
-        params_dict = {
-            'razorpay_order_id': order_id,
-            'razorpay_payment_id': payment_id,
-            'razorpay_signature': signature
-        }
-        
-        client.utility.verify_payment_signature(params_dict)
-        
-        # Update booking status
-        booking.payment_status = Booking.PaymentStatus.PAID
-        booking.status = Booking.Status.CONFIRMED
-        
-        # Update notes with payment info
-        notes = json.loads(booking.notes) if booking.notes else {}
-        notes['razorpay_payment_id'] = payment_id
-        notes['razorpay_order_id'] = order_id
-        booking.notes = json.dumps(notes)
-        
-        # Update schedule - reduce available seats
-        seats_booked = booking.passengers.count()
-        booking.schedule.available_seats -= seats_booked
-        booking.schedule.save()
-        
-        booking.save()
-        
-        messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
-        return redirect('booking_confirmation', booking_id=booking.id)
-        
-    except razorpay.errors.SignatureVerificationError:
-        messages.error(request, 'Payment verification failed.')
-        return redirect('payment_failed')
-    except Exception as e:
-        messages.error(request, f'Payment processing error: {str(e)}')
-        return redirect('payment_failed')
+    # FOR TESTING: Direct confirmation without payment gateway
+    messages.info(request, 'Payment gateway is disabled for testing. Please use the booking flow directly.')
+    return redirect('dashboard')
 
 
 @login_required
@@ -964,7 +1268,7 @@ def payment_failed(request):
 
 @login_required
 def wallet_recharge(request):
-    """Wallet recharge page"""
+    """Wallet recharge page with Razorpay payment gateway"""
     # Get or create wallet for user
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     
@@ -972,27 +1276,149 @@ def wallet_recharge(request):
         messages.info(request, 'Your wallet is not activated. Please contact admin to activate your wallet.')
         return redirect('dashboard')
     
+    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
+    # Handle successful payment callback
+    # if request.method == 'POST' and request.POST.get('razorpay_payment_id'):
+    #     payment_id = request.POST.get('razorpay_payment_id')
+    #     order_id = request.POST.get('razorpay_order_id')
+    #     signature = request.POST.get('razorpay_signature')
+    #     amount = request.POST.get('amount')
+    #     
+    #     # Verify payment signature
+    #     razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    #     razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    #     
+    #     if not razorpay_key_id or not razorpay_key_secret:
+    #         messages.error(request, 'Payment gateway not configured.')
+    #         return redirect('wallet_recharge')
+    #     
+    #     try:
+    #         client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    #         
+    #         # Verify signature
+    #         params_dict = {
+    #             'razorpay_order_id': order_id,
+    #             'razorpay_payment_id': payment_id,
+    #             'razorpay_signature': signature
+    #         }
+    #         
+    #         client.utility.verify_payment_signature(params_dict)
+    #         
+    #         # Get amount from session or order
+    #         recharge_amount = Decimal(request.session.get('wallet_recharge_amount', amount)) / 100 if amount else Decimal('0')
+    #         description = request.session.get('wallet_recharge_description', 'Wallet Recharge via UPI/Card')
+    #         
+    #         # Check if adding this amount would exceed max balance
+    #         if (wallet.balance + recharge_amount) > wallet.max_balance:
+    #             messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
+    #         else:
+    #             # Add balance to wallet
+    #             wallet.add_balance(
+    #                 amount=recharge_amount,
+    #                 transaction_type='recharge',
+    #                 description=description,
+    #                 reference_id=payment_id
+    #             )
+    #             messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
+    #             
+    #             # Clear session
+    #             if 'wallet_recharge_amount' in request.session:
+    #                 del request.session['wallet_recharge_amount']
+    #             if 'wallet_recharge_description' in request.session:
+    #                 del request.session['wallet_recharge_description']
+    #             
+    #             return redirect('wallet_history')
+    #             
+    #     except razorpay.errors.SignatureVerificationError:
+    #         messages.error(request, 'Payment verification failed. Please try again.')
+    #     except Exception as e:
+    #         messages.error(request, f'Recharge failed: {str(e)}')
+    
+    # Handle form submission - FOR TESTING: Directly add balance without payment gateway
     if request.method == 'POST':
         form = WalletRechargeForm(request.POST)
         if form.is_valid():
             amount = form.cleaned_data['amount']
-            description = form.cleaned_data.get('description', 'Wallet Recharge')
+            description = form.cleaned_data.get('description', 'Wallet Recharge (Testing Mode)')
             
-            try:
-                # Check if adding this amount would exceed max balance
-                if (wallet.balance + amount) > wallet.max_balance:
-                    messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
-                else:
-                    # Add balance to wallet
-                    wallet.add_balance(
-                        amount=amount,
-                        transaction_type='recharge',
-                        description=description
-                    )
-                    messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
-                    return redirect('wallet_history')
-            except Exception as e:
-                messages.error(request, f'Recharge failed: {str(e)}')
+            # Check if adding this amount would exceed max balance
+            if (wallet.balance + amount) > wallet.max_balance:
+                messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
+                form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+            else:
+                # FOR TESTING: Directly add balance without payment gateway
+                wallet.add_balance(
+                    amount=amount,
+                    transaction_type='recharge',
+                    description=description,
+                    reference_id=f'TEST_{int(timezone.now().timestamp())}'
+                )
+                messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance} (Testing mode - no payment gateway)')
+                return redirect('wallet_history')
+        else:
+            form = WalletRechargeForm()
+    
+    # ========== COMMENTED RAZORPAY CODE (UNCOMMENT WHEN READY FOR PRODUCTION) ==========
+    # # Handle form submission - create Razorpay order
+    # elif request.method == 'POST':
+    #     form = WalletRechargeForm(request.POST)
+    #     if form.is_valid():
+    #         amount = form.cleaned_data['amount']
+    #         description = form.cleaned_data.get('description', 'Wallet Recharge')
+    #         
+    #         # Check if adding this amount would exceed max balance
+    #         if (wallet.balance + amount) > wallet.max_balance:
+    #             messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
+    #             form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+    #         else:
+    #             # Store in session for after payment
+    #             request.session['wallet_recharge_amount'] = str(amount)
+    #             request.session['wallet_recharge_description'] = description
+    #             
+    #             # Initialize Razorpay client
+    #             razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    #             razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    #             
+    #             if not razorpay_key_id or not razorpay_key_secret:
+    #                 messages.error(request, 'Payment gateway not configured. Please contact support.')
+    #                 form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+    #             else:
+    #                 try:
+    #                     client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    #                     
+    #                     # Create order
+    #                     amount_in_paise = int(amount * 100)  # Convert to paise
+    #                     order_data = {
+    #                         'amount': amount_in_paise,
+    #                         'currency': 'INR',
+    #                         'receipt': f'WALLET_{request.user.id}_{int(timezone.now().timestamp())}',
+    #                         'notes': {
+    #                             'user_id': request.user.id,
+    #                             'type': 'wallet_recharge',
+    #                             'description': description,
+    #                         }
+    #                     }
+    #                     
+    #                     razorpay_order = client.order.create(data=order_data)
+    #                     order_id = razorpay_order['id']
+    #                     
+    #                     context = {
+    #                         'form': form,
+    #                         'wallet': wallet,
+    #                         'wallet_balance': wallet.balance,
+    #                         'max_balance': wallet.max_balance,
+    #                         'razorpay_key_id': razorpay_key_id,
+    #                         'order_id': order_id,
+    #                         'amount': amount_in_paise,
+    #                         'recharge_amount': amount,
+    #                     }
+    #                     return render(request, 'wallet_recharge.html', context)
+    #                     
+    #                 except Exception as e:
+    #                     messages.error(request, f'Payment gateway error: {str(e)}')
+    #                     form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+    #     else:
+    #         form = WalletRechargeForm()
     else:
         form = WalletRechargeForm()
     
@@ -1022,6 +1448,113 @@ def wallet_history(request):
         return redirect('dashboard')
     
     return render(request, 'wallet_history.html', context)
+
+@login_required
+def group_request(request):
+    """Group booking request form for B2B customers (more than 9 passengers)"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            contact_name = request.POST.get('contact_name', '').strip()
+            contact_email = request.POST.get('contact_email', '').strip()
+            contact_phone = request.POST.get('contact_phone', '').strip()
+            company_name = request.POST.get('company_name', '').strip()
+            origin = request.POST.get('origin', '').strip()
+            destination = request.POST.get('destination', '').strip()
+            departure_date_str = request.POST.get('departure_date', '').strip()
+            return_date_str = request.POST.get('return_date', '').strip()
+            trip_type = request.POST.get('trip_type', 'one_way')
+            travel_class = request.POST.get('travel_class', 'economy')
+            number_of_passengers = int(request.POST.get('number_of_passengers', 10))
+            adults = int(request.POST.get('adults', 0))
+            children = int(request.POST.get('children', 0))
+            infants = int(request.POST.get('infants', 0))
+            special_requirements = request.POST.get('special_requirements', '').strip()
+            additional_notes = request.POST.get('additional_notes', '').strip()
+            
+            # Validation
+            if not contact_name or not contact_email or not contact_phone:
+                messages.error(request, 'Please fill in all required contact fields.')
+                return redirect('group_request')
+            
+            if not origin or not destination:
+                messages.error(request, 'Please specify origin and destination.')
+                return redirect('group_request')
+            
+            if not departure_date_str:
+                messages.error(request, 'Please select a departure date.')
+                return redirect('group_request')
+            
+            if number_of_passengers < 10:
+                messages.error(request, 'Group requests require at least 10 passengers.')
+                return redirect('group_request')
+            
+            # Parse dates
+            departure_date = datetime.strptime(departure_date_str, '%Y-%m-%d').date()
+            return_date = None
+            if return_date_str and trip_type == 'return':
+                return_date = datetime.strptime(return_date_str, '%Y-%m-%d').date()
+                if return_date <= departure_date:
+                    messages.error(request, 'Return date must be after departure date.')
+                    return redirect('group_request')
+            
+            if departure_date < date.today():
+                messages.error(request, 'Departure date cannot be in the past.')
+                return redirect('group_request')
+            
+            # Create group request
+            group_request_obj = GroupRequest.objects.create(
+                user=request.user,
+                contact_name=contact_name,
+                contact_email=contact_email,
+                contact_phone=contact_phone,
+                company_name=company_name,
+                origin=origin,
+                destination=destination,
+                departure_date=departure_date,
+                return_date=return_date,
+                trip_type=trip_type,
+                travel_class=travel_class,
+                number_of_passengers=number_of_passengers,
+                adults=adults,
+                children=children,
+                infants=infants,
+                special_requirements=special_requirements,
+                additional_notes=additional_notes,
+                status=GroupRequest.Status.PENDING
+            )
+            
+            # Redirect to thank you page
+            return redirect('group_request_thanks', request_id=group_request_obj.id)
+            
+        except ValueError as e:
+            messages.error(request, f'Invalid input: {str(e)}')
+            return redirect('group_request')
+        except Exception as e:
+            messages.error(request, f'An error occurred: {str(e)}')
+            return redirect('group_request')
+    
+    # GET request - show form
+    airport_codes = get_airport_codes()
+    today = date.today().strftime('%Y-%m-%d')
+    min_return_date = (date.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    context = {
+        'airport_codes': airport_codes,
+        'today': today,
+        'min_return_date': min_return_date,
+    }
+    return render(request, 'group_request.html', context)
+
+@login_required
+def group_request_thanks(request, request_id):
+    """Thank you page after submitting group request"""
+    group_request_obj = get_object_or_404(GroupRequest, id=request_id, user=request.user)
+    
+    context = {
+        'group_request': group_request_obj,
+    }
+    return render(request, 'group_request_thanks.html', context)
 
 @login_required
 @require_POST
@@ -1149,9 +1682,9 @@ def _generate_ticket_pdf(booking, hide_fare=False):
     story.append(Paragraph(f'Booking Reference: <b>{booking.booking_reference}</b>', ref_style))
     story.append(Spacer(1, 0.3*inch))
     
-    # Flight Details
+    # Outbound Flight Details
     flight_data = [
-        ['Flight Details', ''],
+        ['Outbound Flight Details', ''],
         ['Route', f"{booking.schedule.route.from_location} → {booking.schedule.route.to_location}"],
         ['Flight Number', booking.schedule.route.carrier_number],
         ['Departure Date', booking.schedule.departure_date.strftime('%d %B %Y')],
@@ -1159,6 +1692,12 @@ def _generate_ticket_pdf(booking, hide_fare=False):
         ['Arrival Time', booking.schedule.route.arrival_time.strftime('%H:%M')],
         ['Duration', booking.schedule.route.formatted_duration],
     ]
+    
+    # Add terminal information if available
+    if booking.schedule.route.departure_terminal:
+        flight_data.append(['Departure Terminal', booking.schedule.route.departure_terminal])
+    if booking.schedule.route.arrival_terminal:
+        flight_data.append(['Arrival Terminal', booking.schedule.route.arrival_terminal])
     
     flight_table = Table(flight_data, colWidths=[2*inch, 4*inch])
     flight_table.setStyle(TableStyle([
@@ -1174,6 +1713,39 @@ def _generate_ticket_pdf(booking, hide_fare=False):
     ]))
     story.append(flight_table)
     story.append(Spacer(1, 0.3*inch))
+    
+    # Return Flight Details (if return trip)
+    if booking.trip_type == 'return' and booking.return_schedule:
+        return_flight_data = [
+            ['Return Flight Details', ''],
+            ['Route', f"{booking.return_schedule.route.from_location} → {booking.return_schedule.route.to_location}"],
+            ['Flight Number', booking.return_schedule.route.carrier_number],
+            ['Departure Date', booking.return_schedule.departure_date.strftime('%d %B %Y')],
+            ['Departure Time', booking.return_schedule.route.departure_time.strftime('%H:%M')],
+            ['Arrival Time', booking.return_schedule.route.arrival_time.strftime('%H:%M')],
+            ['Duration', booking.return_schedule.route.formatted_duration],
+        ]
+        
+        # Add terminal information if available
+        if booking.return_schedule.route.departure_terminal:
+            return_flight_data.append(['Departure Terminal', booking.return_schedule.route.departure_terminal])
+        if booking.return_schedule.route.arrival_terminal:
+            return_flight_data.append(['Arrival Terminal', booking.return_schedule.route.arrival_terminal])
+        
+        return_flight_table = Table(return_flight_data, colWidths=[2*inch, 4*inch])
+        return_flight_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#10b981')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgreen),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ]))
+        story.append(return_flight_table)
+        story.append(Spacer(1, 0.3*inch))
     
     # Passenger Details
     story.append(Paragraph('Passenger Details', styles['Heading2']))
@@ -1655,10 +2227,10 @@ def user_signup(request):
                     
                 except Exception as e:
                     messages.error(request, f'Error creating account: {str(e)}')
-                    # Log the error for debugging
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f'Error during user registration: {str(e)}')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error during user registration: {str(e)}')
         else:
             # Form has errors
             for field, errors in form.errors.items():

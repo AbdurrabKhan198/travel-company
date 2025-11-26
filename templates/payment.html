@@ -37,7 +37,7 @@
                 <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
                     Complete Your <span class="gradient-text">Payment</span>
                 </h1>
-                <p class="text-xl text-gray-600">Secure payment powered by Razorpay</p>
+                <p class="text-xl text-gray-600">Choose your payment method</p>
             </div>
 
             <div class="grid lg:grid-cols-3 gap-8">
@@ -129,8 +129,8 @@
                             <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                                 <i class="fas fa-shield-alt text-white text-3xl"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-900 mb-2">Secure Payment</h3>
-                            <p class="text-sm text-gray-600">Your payment is protected by Razorpay</p>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Payment Options</h3>
+                            <p class="text-sm text-gray-600">Select your preferred payment method</p>
                         </div>
                         
                         <!-- Wallet Payment Option -->
@@ -175,30 +175,50 @@
                         </div>
                         {% endif %}
                         
-                        <form id="payment-form" method="POST" action="{% url 'payment_success' %}" class="space-y-4">
-                            {% csrf_token %}
-                            <input type="hidden" name="razorpay_order_id" value="{{ order_id }}">
-                            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-                            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-                            
-                            <button type="submit" id="pay-button" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
-                                <i class="fas fa-credit-card"></i>
-                                <span>Pay ₹{{ booking.total_amount|floatformat:2 }}</span>
-                            </button>
-                            
-                            <div class="pt-4 border-t border-gray-200">
-                                <div class="flex items-center justify-center space-x-6 text-sm text-gray-600">
-                                    <div class="flex items-center space-x-2">
-                                        <i class="fas fa-lock text-green-500"></i>
-                                        <span>SSL Secured</span>
-                                    </div>
-                                    <div class="flex items-center space-x-2">
-                                        <i class="fas fa-shield-alt text-green-500"></i>
-                                        <span>Protected</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                        {# ========== RAZORPAY PAYMENT GATEWAY COMMENTED FOR TESTING ========== #}
+                        {# Show alternative payment option only if wallet is not available or insufficient #}
+                        {% if not can_use_wallet %}
+                        <div class="mb-6 p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
+                            <p class="text-sm text-blue-800 mb-3 text-center">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Payment gateway is disabled for testing
+                            </p>
+                            <form method="POST" action="{% url 'payment' booking.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="payment_method" value="skip">
+                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Continue without Payment (Testing)</span>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                        
+                        {# ========== COMMENTED RAZORPAY FORM (UNCOMMENT WHEN READY FOR PRODUCTION) ========== #}
+                        {# <form id="payment-form" method="POST" action="{% url 'payment_success' %}" class="space-y-4"> #}
+                        {#     {% csrf_token %} #}
+                        {#     <input type="hidden" name="razorpay_order_id" value="{{ order_id }}"> #}
+                        {#     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id"> #}
+                        {#     <input type="hidden" name="razorpay_signature" id="razorpay_signature"> #}
+                        {#     #}
+                        {#     <button type="submit" id="pay-button" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3"> #}
+                        {#         <i class="fas fa-credit-card"></i> #}
+                        {#         <span>Pay ₹{{ booking.total_amount|floatformat:2 }}</span> #}
+                        {#     </button> #}
+                        {#     #}
+                        {#     <div class="pt-4 border-t border-gray-200"> #}
+                        {#         <div class="flex items-center justify-center space-x-6 text-sm text-gray-600"> #}
+                        {#             <div class="flex items-center space-x-2"> #}
+                        {#                 <i class="fas fa-lock text-green-500"></i> #}
+                        {#                 <span>SSL Secured</span> #}
+                        {#             </div> #}
+                        {#             <div class="flex items-center space-x-2"> #}
+                        {#                 <i class="fas fa-shield-alt text-green-500"></i> #}
+                        {#                 <span>Protected</span> #}
+                        {#             </div> #}
+                        {#         </div> #}
+                        {#     </div> #}
+                        {# </form> #}
                         
                         <!-- Payment Methods -->
                         <div class="mt-6 pt-6 border-t border-gray-200">
@@ -225,47 +245,48 @@
     </div>
 </div>
 
-<!-- Razorpay Checkout Script -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-    document.getElementById('payment-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const button = document.getElementById('pay-button');
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-        
-        const options = {
-            "key": "{{ razorpay_key_id }}",
-            "amount": {{ amount }},
-            "currency": "INR",
-            "name": "Safar Zone Travels",
-            "description": "Flight Booking - {{ booking.booking_reference }}",
-            "order_id": "{{ order_id }}",
-            "handler": function(response) {
-                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-                document.getElementById('razorpay_signature').value = response.razorpay_signature;
-                document.getElementById('payment-form').submit();
-            },
-            "prefill": {
-                "name": "{{ user.profile.full_name|default:user.email }}",
-                "email": "{{ booking.contact_email }}",
-                "contact": "{{ booking.contact_phone }}"
-            },
-            "theme": {
-                "color": "#0ea5e9"
-            },
-            "modal": {
-                "ondismiss": function() {
-                    button.disabled = false;
-                    button.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay ₹{{ booking.total_amount|floatformat:2 }}';
-                    window.location.href = "{% url 'dashboard' %}";
-                }
-            }
-        };
-        
-        const rzp = new Razorpay(options);
-        rzp.open();
-    });
-</script>
+{# ========== RAZORPAY PAYMENT GATEWAY COMMENTED FOR TESTING ========== #}
+{# <!-- Razorpay Checkout Script --> #}
+{# <script src="https://checkout.razorpay.com/v1/checkout.js"></script> #}
+{# <script> #}
+{#     document.getElementById('payment-form').addEventListener('submit', function(e) { #}
+{#         e.preventDefault(); #}
+{#         #}
+{#         const button = document.getElementById('pay-button'); #}
+{#         button.disabled = true; #}
+{#         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...'; #}
+{#         #}
+{#         const options = { #}
+{#             "key": "{{ razorpay_key_id }}", #}
+{#             "amount": {{ amount }}, #}
+{#             "currency": "INR", #}
+{#             "name": "Safar Zone Travels", #}
+{#             "description": "Flight Booking - {{ booking.booking_reference }}", #}
+{#             "order_id": "{{ order_id }}", #}
+{#             "handler": function(response) { #}
+{#                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id; #}
+{#                 document.getElementById('razorpay_signature').value = response.razorpay_signature; #}
+{#                 document.getElementById('payment-form').submit(); #}
+{#             }, #}
+{#             "prefill": { #}
+{#                 "name": "{{ user.profile.full_name|default:user.email }}", #}
+{#                 "email": "{{ booking.contact_email }}", #}
+{#                 "contact": "{{ booking.contact_phone }}" #}
+{#             }, #}
+{#             "theme": { #}
+{#                 "color": "#0ea5e9" #}
+{#             }, #}
+{#             "modal": { #}
+{#                 "ondismiss": function() { #}
+{#                     button.disabled = false; #}
+{#                     button.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay ₹{{ booking.total_amount|floatformat:2 }}'; #}
+{#                     window.location.href = "{% url 'dashboard' %}"; #}
+{#                 } #}
+{#             } #}
+{#         }; #}
+{#         #}
+{#         const rzp = new Razorpay(options); #}
+{#         rzp.open(); #}
+{#     }); #}
+{# </script> #}
 {% endblock %}

@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Group Booking Request - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.6s ease-out;
+    }
+    
+    input, select, textarea {
+        color: #111827 !important;
+    }
+    
+    input::placeholder, textarea::placeholder {
+        color: #9ca3af !important;
+        opacity: 0.7;
+    }
+    
+    label {
+        color: #1f2937 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-12">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8 animate-fade-in-up">
+                <div class="inline-block p-4 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl mb-4 shadow-lg">
+                    <i class="fas fa-users text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                    Group <span class="gradient-text">Booking Request</span>
+                </h1>
+                <p class="text-xl text-gray-600">Request bulk tickets for 10+ passengers (B2B)</p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10 animate-fade-in-up" style="animation-delay: 0.1s;">
+                <form method="POST" action="{% url 'group_request' %}" id="groupRequestForm">
+                    {% csrf_token %}
+                    
+                    <!-- Contact Information Section -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-user-circle text-sky-600 mr-3"></i>
+                            Contact Information
+                        </h2>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="contact_name" class="block text-gray-700 font-semibold mb-2">
+                                    Contact Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="contact_name" id="contact_name" required
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="Enter contact person name">
+                            </div>
+                            <div>
+                                <label for="contact_email" class="block text-gray-700 font-semibold mb-2">
+                                    Email Address <span class="text-red-500">*</span>
+                                </label>
+                                <input type="email" name="contact_email" id="contact_email" required
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="your.email@example.com" value="{{ user.email }}">
+                            </div>
+                            <div>
+                                <label for="contact_phone" class="block text-gray-700 font-semibold mb-2">
+                                    Phone Number <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" name="contact_phone" id="contact_phone" required
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="+91 9876543210">
+                            </div>
+                            <div>
+                                <label for="company_name" class="block text-gray-700 font-semibold mb-2">
+                                    Company Name (Optional)
+                                </label>
+                                <input type="text" name="company_name" id="company_name"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="Your company name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Travel Details Section -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-plane text-sky-600 mr-3"></i>
+                            Travel Details
+                        </h2>
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="origin" class="block text-gray-700 font-semibold mb-2">
+                                    From <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="origin" id="origin" required list="airport-codes"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="Enter origin city">
+                            </div>
+                            <div>
+                                <label for="destination" class="block text-gray-700 font-semibold mb-2">
+                                    To <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="destination" id="destination" required list="airport-codes"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       placeholder="Enter destination city">
+                            </div>
+                            <div>
+                                <label for="departure_date" class="block text-gray-700 font-semibold mb-2">
+                                    Departure Date <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" name="departure_date" id="departure_date" required
+                                       min="{{ today }}"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                            </div>
+                            <div>
+                                <label for="trip_type" class="block text-gray-700 font-semibold mb-2">
+                                    Trip Type <span class="text-red-500">*</span>
+                                </label>
+                                <select name="trip_type" id="trip_type" required
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                        onchange="toggleReturnDate()">
+                                    <option value="one_way">One Way</option>
+                                    <option value="return">Return</option>
+                                </select>
+                            </div>
+                            <div id="return_date_container" style="display: none;">
+                                <label for="return_date" class="block text-gray-700 font-semibold mb-2">
+                                    Return Date
+                                </label>
+                                <input type="date" name="return_date" id="return_date"
+                                       min="{{ min_return_date }}"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                            </div>
+                            <div>
+                                <label for="travel_class" class="block text-gray-700 font-semibold mb-2">
+                                    Travel Class <span class="text-red-500">*</span>
+                                </label>
+                                <select name="travel_class" id="travel_class" required
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                                    <option value="economy">Economy</option>
+                                    <option value="business">Business</option>
+                                    <option value="first">First Class</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passenger Details Section -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-users text-sky-600 mr-3"></i>
+                            Passenger Details
+                        </h2>
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="number_of_passengers" class="block text-gray-700 font-semibold mb-2">
+                                    Total Passengers <span class="text-red-500">*</span>
+                                    <span class="text-sm text-gray-500 font-normal">(Minimum 10)</span>
+                                </label>
+                                <input type="number" name="number_of_passengers" id="number_of_passengers" required
+                                       min="10" value="10"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       onchange="updatePassengerBreakdown()">
+                            </div>
+                            <div>
+                                <label for="adults" class="block text-gray-700 font-semibold mb-2">
+                                    Adults (12+ years)
+                                </label>
+                                <input type="number" name="adults" id="adults" min="0" value="0"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       onchange="updatePassengerBreakdown()">
+                            </div>
+                            <div>
+                                <label for="children" class="block text-gray-700 font-semibold mb-2">
+                                    Children (2-11 years)
+                                </label>
+                                <input type="number" name="children" id="children" min="0" value="0"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       onchange="updatePassengerBreakdown()">
+                            </div>
+                            <div>
+                                <label for="infants" class="block text-gray-700 font-semibold mb-2">
+                                    Infants (0-2 years)
+                                </label>
+                                <input type="number" name="infants" id="infants" min="0" value="0"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                       onchange="updatePassengerBreakdown()">
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                            <p class="text-sm text-blue-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <strong>Note:</strong> The total of adults, children, and infants should match the total number of passengers.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information Section -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-info-circle text-sky-600 mr-3"></i>
+                            Additional Information
+                        </h2>
+                        <div class="mb-6">
+                            <label for="special_requirements" class="block text-gray-700 font-semibold mb-2">
+                                Special Requirements
+                            </label>
+                            <textarea name="special_requirements" id="special_requirements" rows="4"
+                                      class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                      placeholder="Dietary requirements, wheelchair assistance, special meals, etc."></textarea>
+                        </div>
+                        <div>
+                            <label for="additional_notes" class="block text-gray-700 font-semibold mb-2">
+                                Additional Notes
+                            </label>
+                            <textarea name="additional_notes" id="additional_notes" rows="4"
+                                      class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                      placeholder="Any additional information or special requests..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Airport Codes Datalist -->
+                    <datalist id="airport-codes">
+                        {% for city, code in airport_codes.items %}
+                        <option value="{{ city }} ({{ code }})">
+                        {% endfor %}
+                    </datalist>
+
+                    <!-- Submit Button -->
+                    <div class="flex flex-col md:flex-row gap-4 justify-end">
+                        <a href="{% url 'dashboard' %}" class="px-8 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-8 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info Card -->
+            <div class="mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 animate-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-clock text-white text-xl"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">What happens next?</h3>
+                        <ul class="text-gray-700 space-y-2">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                                <span>We'll review your request within a few hours</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                                <span>Our team will contact you to discuss pricing and availability</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                                <span>We'll provide a customized quote and payment options</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                                <span>Once confirmed, we'll process your group booking</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleReturnDate() {
+        const tripType = document.getElementById('trip_type').value;
+        const returnDateContainer = document.getElementById('return_date_container');
+        const returnDateInput = document.getElementById('return_date');
+        
+        if (tripType === 'return') {
+            returnDateContainer.style.display = 'block';
+            returnDateInput.required = true;
+        } else {
+            returnDateContainer.style.display = 'none';
+            returnDateInput.required = false;
+            returnDateInput.value = '';
+        }
+    }
+    
+    function updatePassengerBreakdown() {
+        const total = parseInt(document.getElementById('number_of_passengers').value) || 0;
+        const adults = parseInt(document.getElementById('adults').value) || 0;
+        const children = parseInt(document.getElementById('children').value) || 0;
+        const infants = parseInt(document.getElementById('infants').value) || 0;
+        const sum = adults + children + infants;
+        
+        if (sum > total) {
+            alert('The sum of adults, children, and infants cannot exceed the total number of passengers.');
+            // Reset to match total
+            document.getElementById('adults').value = total;
+            document.getElementById('children').value = 0;
+            document.getElementById('infants').value = 0;
+        }
+    }
+    
+    // Form validation
+    document.getElementById('groupRequestForm').addEventListener('submit', function(e) {
+        const total = parseInt(document.getElementById('number_of_passengers').value) || 0;
+        const adults = parseInt(document.getElementById('adults').value) || 0;
+        const children = parseInt(document.getElementById('children').value) || 0;
+        const infants = parseInt(document.getElementById('infants').value) || 0;
+        const sum = adults + children + infants;
+        
+        if (total < 10) {
+            e.preventDefault();
+            alert('Group requests require at least 10 passengers.');
+            return false;
+        }
+        
+        if (sum !== total) {
+            e.preventDefault();
+            alert('The sum of adults, children, and infants must equal the total number of passengers.');
+            return false;
+        }
+        
+        const tripType = document.getElementById('trip_type').value;
+        if (tripType === 'return') {
+            const departureDate = new Date(document.getElementById('departure_date').value);
+            const returnDate = new Date(document.getElementById('return_date').value);
+            
+            if (!document.getElementById('return_date').value) {
+                e.preventDefault();
+                alert('Please select a return date for return trip.');
+                return false;
+            }
+            
+            if (returnDate <= departureDate) {
+                e.preventDefault();
+                alert('Return date must be after departure date.');
+                return false;
+            }
+        }
+    });
+</script>
+{% endblock %}
+

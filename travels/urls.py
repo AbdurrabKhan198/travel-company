@@ -40,6 +40,10 @@ urlpatterns = [
     path('wallet/recharge/', views.wallet_recharge, name='wallet_recharge'),
     path('wallet/history/', views.wallet_history, name='wallet_history'),
     
+    # Group Request (B2B)
+    path('group-request/', views.group_request, name='group_request'),
+    path('group-request/thanks/<int:request_id>/', views.group_request_thanks, name='group_request_thanks'),
+    
     # Profile PDF Management
     path('profile/pdf/upload/', views.upload_profile_pdf, name='upload_profile_pdf'),
     path('profile/pdf/delete/', views.delete_profile_pdf, name='delete_profile_pdf'),

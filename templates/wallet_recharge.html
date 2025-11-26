@@ -3,85 +3,233 @@
 
 {% block title %}Recharge Wallet - Safar Zone Travels{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Balance Card - Make background darker and text white with shadow */
+    .balance-card {
+        background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%) !important;
+    }
+    
+    .balance-card *,
+    .balance-label,
+    .balance-amount,
+    .balance-info,
+    .balance-info span,
+    .balance-info i,
+    .balance-card p,
+    .balance-card h2,
+    .balance-card div {
+        color: #ffffff !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .balance-amount {
+        text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6) !important;
+    }
+    
+    /* Amount Input */
+    .amount-input {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #111827 !important;
+    }
+    .amount-input::placeholder {
+        color: #9ca3af !important;
+        opacity: 0.6;
+    }
+    
+    /* Quick Amount Buttons */
+    .quick-amount-btn {
+        transition: all 0.3s ease;
+        color: #374151 !important;
+    }
+    .quick-amount-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        color: #92400e !important;
+    }
+    .quick-amount-btn.active {
+        background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+    
+    /* All Input Fields */
+    input[type="text"], 
+    input[type="number"] {
+        color: #111827 !important;
+    }
+    input[type="text"]::placeholder, 
+    input[type="number"]::placeholder {
+        color: #9ca3af !important;
+        opacity: 0.7;
+    }
+    
+    /* Labels - Force dark color */
+    label,
+    .wallet-recharge label {
+        color: #1f2937 !important;
+    }
+    
+    /* Headings - Force dark color */
+    .wallet-recharge h1 {
+        color: #111827 !important;
+    }
+    
+    .wallet-recharge p:not(.balance-card p) {
+        color: #4b5563 !important;
+    }
+    
+    /* Form container text */
+    .bg-white label,
+    .bg-white .font-bold {
+        color: #1f2937 !important;
+    }
+    
+    /* Info card text */
+    .wallet-recharge .bg-gradient-to-br h3 {
+        color: #1e3a8a !important;
+    }
+    
+    .wallet-recharge .bg-white p {
+        color: #1f2937 !important;
+    }
+    
+    /* Payment Buttons - Force visibility */
+    .wallet-recharge button[type="submit"],
+    #pay-button,
+    .wallet-recharge button {
+        background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+    
+    .wallet-recharge button[type="submit"] *,
+    #pay-button *,
+    .wallet-recharge button * {
+        color: #ffffff !important;
+    }
+    
+    .wallet-recharge button[type="submit"]:hover,
+    #pay-button:hover {
+        background: linear-gradient(135deg, #d97706, #c2410c, #b91c1c) !important;
+        opacity: 0.95;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-12">
+<div class="wallet-recharge min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8 md:py-12">
     <div class="container mx-auto px-4">
-        <div class="max-w-2xl mx-auto">
+        <div class="max-w-3xl mx-auto">
             <!-- Header -->
-            <div class="text-center mb-8 animate-fade-in-up">
-                <div class="inline-block p-4 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl mb-4 shadow-lg">
-                    <i class="fas fa-wallet text-white text-3xl"></i>
+            <div class="text-center mb-6 md:mb-8 animate-fade-in-up">
+                <div class="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-2xl mb-4 shadow-xl transform hover:scale-105 transition-transform">
+                    <i class="fas fa-wallet text-white text-3xl md:text-4xl"></i>
                 </div>
-                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                    Recharge <span class="gradient-text">OD Wallet</span>
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-black mb-2" style="color: #111827 !important;">
+                    Recharge <span class="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">OD Wallet</span>
                 </h1>
-                <p class="text-xl text-gray-600">Add funds to your wallet for instant bookings</p>
+                <p class="text-base md:text-lg" style="color: #4b5563 !important;">Add funds to your wallet for instant bookings</p>
             </div>
 
             <!-- Current Balance Card -->
-            <div class="bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-6 text-white mb-8 animate-fade-in-up" style="animation-delay: 0.1s;">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-white/90 mb-1">Current Balance</p>
-                        <h2 class="text-5xl font-bold mb-2">₹{{ wallet_balance|floatformat:2 }}</h2>
-                        <p class="text-white/80 text-sm">Max Balance: ₹{{ max_balance|floatformat:2 }}</p>
+            <div class="balance-card rounded-3xl shadow-2xl p-6 md:p-8 mb-6 md:mb-8 animate-fade-in-up overflow-hidden relative" style="background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%) !important; animation-delay: 0.1s;">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+                <div class="relative flex flex-col md:flex-row items-center md:items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <p class="balance-label text-sm md:text-base mb-2 font-semibold" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; -webkit-text-fill-color: #ffffff !important;">Current Balance</p>
+                        <h2 class="balance-amount text-4xl md:text-5xl lg:text-6xl font-black mb-2" style="color: #ffffff !important; text-shadow: 0 3px 8px rgba(0,0,0,0.6) !important; -webkit-text-fill-color: #ffffff !important;">₹{{ wallet_balance|floatformat:2 }}</h2>
+                        <div class="balance-info flex items-center gap-2 text-xs md:text-sm" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; -webkit-text-fill-color: #ffffff !important;">
+                            <i class="fas fa-info-circle" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;"></i>
+                            <span style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; -webkit-text-fill-color: #ffffff !important;">Max Balance: ₹{{ max_balance|floatformat:0 }}</span>
+                        </div>
                     </div>
-                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                        <i class="fas fa-wallet text-white text-3xl"></i>
+                    <div class="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-wallet text-2xl md:text-3xl" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;"></i>
                     </div>
                 </div>
             </div>
 
             <!-- Recharge Form -->
-            <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.2s;">
-                <form method="POST" class="space-y-6">
+            <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 lg:p-10 animate-fade-in-up" style="animation-delay: 0.2s;">
+                <form method="POST" class="space-y-6 md:space-y-8" id="recharge-form">
                     {% csrf_token %}
                     
                     <!-- Amount Field -->
                     <div>
-                        <label for="{{ form.amount.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-2">
-                            <i class="fas fa-rupee-sign mr-2 text-sky-500"></i>Recharge Amount
+                        <label for="{{ form.amount.id_for_label }}" class="block text-sm md:text-base font-bold mb-3 flex items-center" style="color: #1f2937 !important;">
+                            <i class="fas fa-rupee-sign mr-2 text-amber-500 text-lg"></i>
+                            <span>Enter Recharge Amount</span>
                         </label>
-                        {{ form.amount }}
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 text-2xl font-bold z-10">₹</div>
+                            <input type="number" 
+                                   id="{{ form.amount.id_for_label }}" 
+                                   name="{{ form.amount.name }}"
+                                   value="{{ form.amount.value|default:'' }}"
+                                   min="100" 
+                                   max="100000" 
+                                   step="0.01"
+                                   placeholder="0.00"
+                                   class="w-full pl-12 pr-4 py-4 md:py-5 amount-input border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition-all outline-none bg-white text-gray-900"
+                                   style="color: #111827 !important;"
+                                   required>
+                        </div>
                         {% if form.amount.errors %}
-                            <div class="mt-2 text-sm text-red-600">
-                                {% for error in form.amount.errors %}
-                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                                {% endfor %}
+                            <div class="mt-2 text-sm text-red-600 flex items-start">
+                                <i class="fas fa-exclamation-circle mr-2 mt-0.5"></i>
+                                <div>
+                                    {% for error in form.amount.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
                             </div>
                         {% endif %}
                         {% if form.amount.help_text %}
-                            <p class="mt-2 text-sm text-gray-500">{{ form.amount.help_text }}</p>
+                            <p class="mt-2 text-xs md:text-sm text-gray-500 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i>{{ form.amount.help_text }}
+                            </p>
                         {% endif %}
                     </div>
 
                     <!-- Quick Amount Buttons -->
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                            <i class="fas fa-bolt mr-2 text-amber-500"></i>Quick Recharge
+                        <label class="block text-sm md:text-base font-bold mb-4 flex items-center" style="color: #1f2937 !important;">
+                            <i class="fas fa-bolt mr-2 text-amber-500"></i>
+                            <span>Quick Recharge</span>
                         </label>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <button type="button" onclick="setAmount(500)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                            <button type="button" onclick="setAmount(500)" class="quick-amount-btn px-4 py-3 md:py-4 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-amber-50 hover:to-orange-50 rounded-xl font-bold border-2 border-gray-200 hover:border-amber-300" style="color: #374151 !important;">
                                 ₹500
                             </button>
-                            <button type="button" onclick="setAmount(1000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                            <button type="button" onclick="setAmount(1000)" class="quick-amount-btn px-4 py-3 md:py-4 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-amber-50 hover:to-orange-50 rounded-xl font-bold border-2 border-gray-200 hover:border-amber-300" style="color: #374151 !important;">
                                 ₹1,000
                             </button>
-                            <button type="button" onclick="setAmount(5000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                            <button type="button" onclick="setAmount(5000)" class="quick-amount-btn px-4 py-3 md:py-4 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-amber-50 hover:to-orange-50 rounded-xl font-bold border-2 border-gray-200 hover:border-amber-300" style="color: #374151 !important;">
                                 ₹5,000
                             </button>
-                            <button type="button" onclick="setAmount(10000)" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all duration-200 transform hover:scale-105">
+                            <button type="button" onclick="setAmount(10000)" class="quick-amount-btn px-4 py-3 md:py-4 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-amber-50 hover:to-orange-50 rounded-xl font-bold border-2 border-gray-200 hover:border-amber-300" style="color: #374151 !important;">
                                 ₹10,000
                             </button>
                         </div>
                     </div>
 
-                    <!-- Description Field -->
+                    <!-- Description Field (Optional) -->
                     <div>
-                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-2">
-                            <i class="fas fa-comment mr-2 text-sky-500"></i>{{ form.description.label }}
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm md:text-base font-bold mb-3 flex items-center" style="color: #1f2937 !important;">
+                            <i class="fas fa-comment mr-2 text-amber-500"></i>
+                            <span>{{ form.description.label }} <span style="color: #9ca3af !important;" class="font-normal text-xs">(Optional)</span></span>
                         </label>
-                        {{ form.description }}
+                        <input type="text" 
+                               id="{{ form.description.id_for_label }}" 
+                               name="{{ form.description.name }}"
+                               value="{{ form.description.value|default:'' }}"
+                               placeholder="Add a note for this recharge"
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition-all outline-none bg-white text-gray-900"
+                               style="color: #111827 !important;">
                         {% if form.description.errors %}
                             <div class="mt-2 text-sm text-red-600">
                                 {% for error in form.description.errors %}
@@ -92,16 +240,74 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="pt-4">
-                        <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Recharge Wallet</span>
-                        </button>
+                    <div class="pt-2">
+                        {% if order_id %}
+                            <!-- Payment Form (after order creation) -->
+                            <form id="payment-form" method="POST" action="{% url 'wallet_recharge' %}" class="space-y-4">
+                                {% csrf_token %}
+                                <input type="hidden" name="razorpay_order_id" value="{{ order_id }}">
+                                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+                                <input type="hidden" name="amount" value="{{ amount }}">
+                                
+                                <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 mb-4 border-2 border-amber-200">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-semibold" style="color: #374151 !important;">Recharge Amount:</span>
+                                        <span class="text-xl font-black" style="color: #d97706 !important;">₹{{ recharge_amount|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" id="pay-button" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
+                                    <i class="fas fa-credit-card text-xl" style="color: #ffffff !important;"></i>
+                                    <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card</span>
+                                </button>
+                                
+                                <div class="pt-4 border-t border-gray-200">
+                                    <div class="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs md:text-sm mb-3" style="color: #4b5563 !important;">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-lock text-green-500"></i>
+                                            <span style="color: #4b5563 !important;">SSL Secured</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-shield-alt text-green-500"></i>
+                                            <span style="color: #4b5563 !important;">Protected</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-check-circle text-green-500"></i>
+                                            <span style="color: #4b5563 !important;">Verified</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap items-center justify-center gap-3 md:gap-4">
+                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                            <i class="fab fa-google-pay text-blue-600"></i>
+                                            <span>GPay</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                            <i class="fas fa-mobile-alt text-purple-600"></i>
+                                            <span>UPI</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                            <i class="fas fa-credit-card text-blue-600"></i>
+                                            <span>Cards</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                            <i class="fas fa-university text-green-600"></i>
+                                            <span>Net Banking</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        {% else %}
+                            <button type="submit" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
+                                <i class="fas fa-arrow-right text-xl" style="color: #ffffff !important;"></i>
+                                <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Continue to Payment</span>
+                            </button>
+                        {% endif %}
                     </div>
 
                     <!-- Back Link -->
                     <div class="text-center pt-4">
-                        <a href="{% url 'dashboard' %}" class="text-sky-600 hover:text-sky-700 font-medium">
+                        <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sky-600 hover:text-sky-700 font-semibold transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
                         </a>
                     </div>
@@ -109,19 +315,51 @@
             </div>
 
             <!-- Info Card -->
-            <div class="mt-8 bg-blue-50 border-l-4 border-blue-500 rounded-xl p-6 animate-fade-in-up" style="animation-delay: 0.3s;">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-blue-500 text-2xl"></i>
+            <div class="mt-6 md:mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 md:p-8 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-info-circle text-white text-xl"></i>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-bold text-blue-900 mb-2">About OD Wallet</h3>
-                        <ul class="text-sm text-blue-800 space-y-1">
-                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Minimum recharge: ₹100</li>
-                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Maximum balance: ₹1,00,000</li>
-                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>Use wallet balance to book tickets instantly</li>
-                            <li><i class="fas fa-check-circle mr-2 text-green-500"></i>All transactions are recorded in history</li>
-                        </ul>
+                    <div class="flex-1">
+                        <h3 class="text-base md:text-lg font-black mb-4" style="color: #1e3a8a !important;">About OD Wallet</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="flex items-center space-x-3 p-3 bg-white rounded-xl">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs" style="color: #6b7280 !important;">Min Recharge</p>
+                                    <p class="text-sm font-bold" style="color: #1f2937 !important;">₹100</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-white rounded-xl">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs" style="color: #6b7280 !important;">Max Balance</p>
+                                    <p class="text-sm font-bold" style="color: #1f2937 !important;">₹1,00,000</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-white rounded-xl">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-credit-card text-blue-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs" style="color: #6b7280 !important;">Payment Methods</p>
+                                    <p class="text-sm font-bold" style="color: #1f2937 !important;">UPI, Cards, Net Banking</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-white rounded-xl">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-bolt text-purple-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs" style="color: #6b7280 !important;">Instant Booking</p>
+                                    <p class="text-sm font-bold" style="color: #1f2937 !important;">Use wallet balance</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -131,8 +369,91 @@
 
 <script>
 function setAmount(amount) {
-    document.getElementById('{{ form.amount.id_for_label }}').value = amount;
+    const input = document.getElementById('{{ form.amount.id_for_label }}');
+    input.value = amount;
+    input.focus();
+    
+    // Update active button
+    document.querySelectorAll('.quick-amount-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.trim() === '₹' + amount.toLocaleString('en-IN')) {
+            btn.classList.add('active');
+        }
+    });
 }
+
+// Format input on change
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    if (amountInput) {
+        amountInput.addEventListener('input', function(e) {
+            // Remove active class from all buttons when user types manually
+            document.querySelectorAll('.quick-amount-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        });
+        
+        // Highlight matching quick amount button
+        amountInput.addEventListener('blur', function(e) {
+            const value = parseFloat(e.target.value);
+            if (value) {
+                document.querySelectorAll('.quick-amount-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    const btnAmount = parseInt(btn.textContent.replace(/[₹,]/g, ''));
+                    if (btnAmount === value) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+        });
+    }
+});
 </script>
+
+{# ========== RAZORPAY PAYMENT GATEWAY COMMENTED FOR TESTING ========== #}
+{# {% if order_id %} #}
+{# <!-- Razorpay Checkout Script --> #}
+{# <script src="https://checkout.razorpay.com/v1/checkout.js"></script> #}
+{# <script> #}
+{#     document.getElementById('payment-form').addEventListener('submit', function(e) { #}
+{#         e.preventDefault(); #}
+{#         #}
+{#         const button = document.getElementById('pay-button'); #}
+{#         button.disabled = true; #}
+{#         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...'; #}
+{#         #}
+{#         const options = { #}
+{#             "key": "{{ razorpay_key_id }}", #}
+{#             "amount": {{ amount }}, #}
+{#             "currency": "INR", #}
+{#             "name": "Safar Zone Travels", #}
+{#             "description": "Wallet Recharge - ₹{{ recharge_amount|floatformat:2 }}", #}
+{#             "order_id": "{{ order_id }}", #}
+{#             "handler": function(response) { #}
+{#                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id; #}
+{#                 document.getElementById('razorpay_signature').value = response.razorpay_signature; #}
+{#                 document.getElementById('payment-form').submit(); #}
+{#             }, #}
+{#             "prefill": { #}
+{#                 "name": "{% if user.profile and user.profile.full_name %}{{ user.profile.full_name }}{% else %}{{ user.username }}{% endif %}", #}
+{#                 "email": "{{ user.email }}", #}
+{#                 "contact": "{% if user.profile.phone %}{{ user.profile.phone }}{% else %}9999999999{% endif %}" #}
+{#             }, #}
+{#             "theme": { #}
+{#                 "color": "#f59e0b" #}
+{#             }, #}
+{#             "modal": { #}
+{#                 "ondismiss": function() { #}
+{#                     button.disabled = false; #}
+{#                     button.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card'; #}
+{#                 } #}
+{#             } #}
+{#         }; #}
+{#         #}
+{#         const rzp = new Razorpay(options); #}
+{#         rzp.open(); #}
+{#     }); #}
+{# </script> #}
+{# {% endif %} #}
 {% endblock %}
 

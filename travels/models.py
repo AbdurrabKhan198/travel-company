@@ -53,6 +53,15 @@ class User(AbstractUser):
     phone = models.CharField(_('phone number'), validators=[phone_regex], max_length=17, blank=True)
     user_type = models.CharField(_('user type'), max_length=20, choices=UserType.choices, default=UserType.CUSTOMER)
     is_verified = models.BooleanField(_('verified'), default=False)
+    client_id = models.CharField(
+        _('client ID'), 
+        max_length=20, 
+        unique=True, 
+        editable=False,
+        null=True,
+        blank=True,
+        help_text=_('Unique client identifier assigned on registration')
+    )
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -67,9 +76,27 @@ class User(AbstractUser):
             ('can_manage_routes', 'Can manage routes'),
             ('can_view_reports', 'Can view reports'),
         ]
+        indexes = [
+            models.Index(fields=['client_id'], name='user_client_id_idx'),
+        ]
     
     def __str__(self):
         return self.email
+    
+    def generate_client_id(self):
+        """Generate a unique random client ID"""
+        import random
+        import string
+        
+        while True:
+            # Format: SZ + 8 random alphanumeric characters (uppercase)
+            # Example: SZ-A1B2C3D4
+            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            client_id = f'SZ-{random_part}'
+            
+            # Check if this ID already exists
+            if not User.objects.filter(client_id=client_id).exists():
+                return client_id
     
     @property
     def is_customer(self):
@@ -82,6 +109,11 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if not self.pk and not self.user_type:
             self.user_type = self.UserType.CUSTOMER
+        
+        # Generate client_id if it doesn't exist (for new users)
+        if not self.client_id:
+            self.client_id = self.generate_client_id()
+        
         super().save(*args, **kwargs)
 
 class UserProfile(TimestampedModel):
@@ -342,7 +374,38 @@ class Schedule(TimestampedModel):
     arrival_date = models.DateField(_('arrival date'))
     total_seats = models.PositiveIntegerField(_('total seats'), default=50)
     available_seats = models.PositiveIntegerField(_('available seats'), default=50)
-    price = models.DecimalField(_('price'), max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    price = models.DecimalField(_('price'), max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], 
+                               help_text=_('Base price (used as default adult fare if adult_fare is not set)'))
+    
+    # Passenger-specific fares
+    adult_fare = models.DecimalField(
+        _('adult fare (12+ years)'), 
+        max_digits=10, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+        help_text=_('Fare for adults (12+ years). If not set, uses base price.')
+    )
+    child_fare = models.DecimalField(
+        _('child fare (2-11 years)'), 
+        max_digits=10, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+        help_text=_('Fare for children (2-11 years). Typically around ₹4000. Child gets a seat.')
+    )
+    infant_fare = models.DecimalField(
+        _('infant fare (0-2 years)'), 
+        max_digits=10, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+        help_text=_('Fare for infants (0-2 years). Typically around ₹4000. Infant travels on mother\'s lap, no seat.')
+    )
+    
     is_active = models.BooleanField(_('active'), default=True)
     notes = models.TextField(_('notes'), blank=True)
     
@@ -422,6 +485,22 @@ class Schedule(TimestampedModel):
         """Calculate total price for multiple passengers"""
         return self.price * Decimal(str(num_passengers))
     
+    def get_fare_for_passenger_type(self, passenger_type):
+        """
+        Get fare for a specific passenger type.
+        passenger_type: 'adult', 'child', or 'infant'
+        Returns the appropriate fare or falls back to base price.
+        """
+        if passenger_type == 'adult':
+            return self.adult_fare if self.adult_fare is not None else self.price
+        elif passenger_type == 'child':
+            return self.child_fare if self.child_fare is not None else self.price * Decimal('0.75')
+        elif passenger_type == 'infant':
+            return self.infant_fare if self.infant_fare is not None else self.price * Decimal('0.10')
+        else:
+            # Default to adult fare for unknown types
+            return self.adult_fare if self.adult_fare is not None else self.price
+    
     def can_book(self, num_seats=1):
         """Check if specified number of seats can be booked"""
         return self.is_available and self.available_seats >= num_seats
@@ -456,6 +535,28 @@ class Booking(TimestampedModel):
         on_delete=models.PROTECT, 
         related_name='bookings',
         verbose_name=_('schedule')
+    )
+    
+    # Return flight (for round trip bookings)
+    return_schedule = models.ForeignKey(
+        Schedule,
+        on_delete=models.PROTECT,
+        related_name='return_bookings',
+        verbose_name=_('return schedule'),
+        null=True,
+        blank=True,
+        help_text=_('Return flight schedule for round trip bookings')
+    )
+    
+    # Trip type
+    trip_type = models.CharField(
+        _('trip type'),
+        max_length=20,
+        choices=[
+            ('one_way', _('One Way')),
+            ('return', _('Return')),
+        ],
+        default='one_way'
     )
     
     # Passenger information
@@ -949,3 +1050,65 @@ class WalletTransaction(TimestampedModel):
     def is_debit(self):
         """Check if transaction is a debit (negative amount)"""
         return self.amount < 0
+
+class GroupRequest(TimestampedModel):
+    """B2B Group booking requests for bulk tickets (more than 9 passengers)"""
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        CONTACTED = 'contacted', _('Contacted')
+        PROCESSING = 'processing', _('Processing')
+        CONFIRMED = 'confirmed', _('Confirmed')
+        CANCELLED = 'cancelled', _('Cancelled')
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_requests')
+    reference_id = models.CharField(_('reference ID'), max_length=50, unique=True, editable=False)
+    
+    # Contact Information
+    contact_name = models.CharField(_('contact name'), max_length=200)
+    contact_email = models.EmailField(_('contact email'))
+    contact_phone = models.CharField(_('contact phone'), max_length=20)
+    company_name = models.CharField(_('company name'), max_length=200, blank=True)
+    
+    # Travel Details
+    origin = models.CharField(_('origin'), max_length=100)
+    destination = models.CharField(_('destination'), max_length=100)
+    departure_date = models.DateField(_('departure date'))
+    return_date = models.DateField(_('return date'), null=True, blank=True)
+    trip_type = models.CharField(_('trip type'), max_length=20, choices=[('one_way', 'One Way'), ('return', 'Return')], default='one_way')
+    travel_class = models.CharField(_('travel class'), max_length=20, choices=[('economy', 'Economy'), ('business', 'Business'), ('first', 'First')], default='economy')
+    
+    # Passenger Details
+    number_of_passengers = models.PositiveIntegerField(_('number of passengers'), validators=[MinValueValidator(10)])
+    adults = models.PositiveIntegerField(_('adults'), default=0)
+    children = models.PositiveIntegerField(_('children'), default=0)
+    infants = models.PositiveIntegerField(_('infants'), default=0)
+    
+    # Additional Information
+    special_requirements = models.TextField(_('special requirements'), blank=True, help_text=_('Dietary requirements, wheelchair assistance, etc.'))
+    additional_notes = models.TextField(_('additional notes'), blank=True)
+    
+    # Status and Admin
+    status = models.CharField(_('status'), max_length=20, choices=Status.choices, default=Status.PENDING)
+    admin_notes = models.TextField(_('admin notes'), blank=True, help_text=_('Internal notes for admin use'))
+    estimated_amount = models.DecimalField(_('estimated amount'), max_digits=12, decimal_places=2, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('group request')
+        verbose_name_plural = _('group requests')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status', 'created_at'], name='group_request_idx'),
+            models.Index(fields=['status', 'created_at'], name='group_request_status_idx'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            # Generate unique reference ID: GR + timestamp + random
+            import random
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            random_str = str(random.randint(1000, 9999))
+            self.reference_id = f'GR{timestamp}{random_str}'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Group Request {self.reference_id} - {self.contact_name} ({self.number_of_passengers} passengers)"

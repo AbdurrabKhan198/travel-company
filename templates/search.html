@@ -133,12 +133,22 @@
                 {% if flights %}
                 <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
                     <i class="fas fa-plane-departure text-sky-500 mr-3"></i>
-                    Available Flights 
+                    {% if trip_type == 'return' %}
+                        Outbound Flights
+                {% else %}
+                        Available Flights
+                {% endif %}
                     <span class="ml-3 px-4 py-1 bg-sky-100 text-sky-700 rounded-full text-lg font-semibold">
                         {{ flights|length }}
                     </span>
-                </h2>
-                <p class="text-gray-600">Select your preferred flight and continue to booking</p>
+            </h2>
+                <p class="text-gray-600">
+                    {% if trip_type == 'return' %}
+                        Select your outbound and return flights to continue
+                    {% else %}
+                        Select your preferred flight and continue to booking
+                    {% endif %}
+                </p>
                 {% else %}
                 <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
                     <i class="fas fa-search text-gray-400 mr-3"></i>
@@ -252,24 +262,31 @@
                             </div>
                             
                             {% if flight.is_available and flight.available_seats >= passengers %}
-                            <a href="{% url 'booking' flight.id %}?passengers={{ passengers }}" class="w-full block text-center px-6 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                                <i class="fas fa-shopping-cart mr-2"></i>
-                                Book Now
-                            </a>
+                            {% if trip_type == 'return' %}
+                                <button onclick="selectOutboundFlight({{ flight.id }})" class="w-full block text-center px-6 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" id="outbound-btn-{{ flight.id }}">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Select
+                                </button>
                                     {% else %}
+                                <a href="{% url 'booking' flight.id %}?adults={{ adults }}&children={{ children }}&infants={{ infants }}&travel_class={{ travel_class }}" class="w-full block text-center px-6 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                                    <i class="fas fa-shopping-cart mr-2"></i>
+                                    Book Now
+                                </a>
+                            {% endif %}
+        {% else %}
                             <button disabled class="w-full px-6 py-4 bg-gray-300 text-gray-600 font-bold rounded-xl cursor-not-allowed">
                                 <i class="fas fa-times-circle mr-2"></i>
                                 Not Available
                             </button>
-                                    {% endif %}
+        {% endif %}
                             
                             <button onclick="toggleFlightDetails({{ flight.id }})" class="w-full mt-3 text-sm text-sky-600 hover:text-sky-700 font-semibold transition-colors">
                                 <i class="fas fa-chevron-down mr-1" id="chevron-{{ flight.id }}"></i>
                                 Flight Details
       </button>
-    </div>
-  </div>
-                    
+        </div>
+      </div>
+
                     <!-- Flight Details (Collapsible) -->
                     <div id="details-{{ flight.id }}" class="hidden mt-6 pt-6 border-t border-gray-200">
                         <div class="grid md:grid-cols-2 gap-6">
@@ -282,21 +299,21 @@
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Flight Number</p>
                                         <p class="font-semibold text-gray-900">{{ flight.route.carrier_number }}</p>
-                            </div>
+            </div>
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Duration</p>
                                         <p class="font-semibold text-gray-900">{{ flight.route.formatted_duration }}</p>
-                            </div>
+          </div>
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Available Seats</p>
                                         <p class="font-semibold text-gray-900">{{ flight.available_seats }} / {{ flight.total_seats }}</p>
-                            </div>
+        </div>
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Route Type</p>
                                         <p class="font-semibold text-gray-900">{{ flight.route.route_type|title }}</p>
-                            </div>
-                        </div>
-                    </div>
+      </div>
+      </div>
+    </div>
 
                                 <div>
                                 <h4 class="font-bold text-gray-900 mb-4 flex items-center">
@@ -307,33 +324,176 @@
                                     <div class="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                                         <i class="fas fa-utensils text-sky-500"></i>
                                         <span class="text-sm font-medium text-gray-700">Meal Included</span>
-                            </div>
+    </div>
                                     <div class="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                                         <i class="fas fa-wifi text-sky-500"></i>
                                         <span class="text-sm font-medium text-gray-700">Free WiFi</span>
-                            </div>
+  </div>
                                     <div class="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                                         <i class="fas fa-tv text-sky-500"></i>
                                         <span class="text-sm font-medium text-gray-700">Entertainment</span>
-                            </div>
+      </div>
                                     <div class="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                                         <i class="fas fa-suitcase-rolling text-sky-500"></i>
                                         <span class="text-sm font-medium text-gray-700">15kg Baggage</span>
+          </div>
+          </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      </div>
+            {% endfor %}
+</div>
+
+        <!-- Return Flights Section (only shown for return trips) -->
+        {% if trip_type == 'return' and return_flights %}
+        <div id="returnFlightsSection" class="mt-12" style="display: none;">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                    <i class="fas fa-plane-arrival text-green-500 mr-3"></i>
+                    Return Flights
+                    <span class="ml-3 px-4 py-1 bg-green-100 text-green-700 rounded-full text-lg font-semibold">
+                        {{ return_flights|length }}
+                    </span>
+                </h2>
+                <p class="text-gray-600">Select your return flight</p>
+        </div>
+    
+            <div class="space-y-6">
+                {% for return_flight in return_flights %}
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-l-4 {% if return_flight.route.route_type == 'domestic' %}border-green-500{% else %}border-purple-500{% endif %} hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flight-card-animate" style="animation-delay: {{ forloop.counter0|multiply:0.1 }}s">
+                    <div class="p-6">
+                        <div class="grid md:grid-cols-12 gap-6 items-center">
+                            <!-- Flight Route & Times -->
+                            <div class="md:col-span-8">
+                    <div class="flex items-center justify-between mb-4">
+                            <div>
+                                        <h3 class="text-xl font-bold text-gray-900 mb-1">
+                                            {{ return_flight.route.carrier_number }}
+                                        </h3>
+                                        <div class="flex items-center space-x-2 flex-wrap">
+                                            <span class="px-3 py-1 {% if return_flight.route.route_type == 'domestic' %}bg-green-100 text-green-700{% else %}bg-purple-100 text-purple-700{% endif %} rounded-full text-xs font-semibold">
+                                                {{ return_flight.route.route_type|title }}
+                                            </span>
+                                            <span class="text-sm text-gray-500">
+                                                <i class="fas fa-chair mr-1"></i>{{ return_flight.available_seats }} seats left
+                                            </span>
                             </div>
                         </div>
                     </div>
+                    
+                                <!-- Flight Timeline -->
+                                <div class="flex items-center justify-between">
+                                    <!-- Departure (Return) -->
+                                    <div class="text-center flex-1">
+                                        <div class="text-3xl font-bold text-gray-900 mb-1">
+                                            {{ return_flight.route.departure_time|time:"H:i" }}
+                        </div>
+                                        <div class="text-sm font-semibold text-gray-700 mb-1">
+                                            {{ to_location }}
+                            </div>
+                                        <div class="text-xs text-green-600 font-semibold mb-1">
+                                            {{ to_airport_code }}
+                        </div>
+                                        <div class="text-xs text-gray-500 mb-1">
+                                            {{ return_flight.departure_date|date:"d M Y" }}
+                        </div>
+                                        {% if return_flight.route.departure_terminal %}
+                                        <div class="text-xs font-semibold text-purple-600 mt-1">
+                                            <i class="fas fa-building mr-1"></i>Terminal {{ return_flight.route.departure_terminal }}
+                    </div>
+                                        {% endif %}
                 </div>
+
+                                    <!-- Duration Line -->
+                                    <div class="flex-1 mx-4 relative">
+                                        <div class="absolute inset-0 flex items-center">
+                                            <div class="w-full border-t-2 border-dashed border-gray-300"></div>
+                            </div>
+                                        <div class="relative flex justify-center">
+                                            <div class="bg-white px-3 py-1 rounded-full shadow-lg border-2 border-green-200">
+                                                <i class="fas fa-plane text-green-500"></i>
+                            </div>
+                            </div>
+                                        <div class="text-center mt-2">
+                                            <p class="text-sm font-semibold text-gray-700">{{ return_flight.route.formatted_duration }}</p>
+                                            <p class="text-xs text-gray-500 mb-2">Non-stop</p>
+                                            <!-- Non-Refundable Badge -->
+                                            <div class="mt-2 non-refundable-badge" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
+                                                <span class="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold shadow-md border-2 border-red-600 inline-block">
+                                                    <i class="fas fa-ban mr-1"></i>Non-Refundable
+                                                </span>
+                            </div>
                         </div>
+                    </div>
+
+                                    <!-- Arrival (Return) -->
+                                    <div class="text-center flex-1">
+                                        <div class="text-3xl font-bold text-gray-900 mb-1">
+                                            {{ return_flight.route.arrival_time|time:"H:i" }}
+                            </div>
+                                        <div class="text-sm font-semibold text-gray-700 mb-1">
+                                            {{ from_location }}
+                            </div>
+                                        <div class="text-xs text-green-600 font-semibold mb-1">
+                                            {{ from_airport_code }}
+                            </div>
+                                        <div class="text-xs text-gray-500 mb-1">
+                                            {{ return_flight.arrival_date|date:"d M Y" }}
+                            </div>
+                                        {% if return_flight.route.arrival_terminal %}
+                                        <div class="text-xs font-semibold text-purple-600 mt-1">
+                                            <i class="fas fa-building mr-1"></i>Terminal {{ return_flight.route.arrival_terminal }}
                         </div>
+                                        {% endif %}
                         </div>
-            {% endfor %}
+                    </div>
+                </div>
+
+                            <!-- Price & Select Button -->
+                            <div class="md:col-span-4 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6">
+                                <div class="text-center md:text-right mb-4">
+                                    <div class="text-4xl font-bold text-green-600 mb-1">
+                                        ₹{{ return_flight.price|floatformat:0 }}
                         </div>
+                                    <div class="text-sm text-gray-600">per person</div>
+                </div>
+
+                                {% if return_flight.is_available and return_flight.available_seats >= passengers %}
+                                <button onclick="selectReturnFlight({{ return_flight.id }})" class="w-full block text-center px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" id="return-btn-{{ return_flight.id }}">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Select
+                    </button>
+                                {% else %}
+                                <button disabled class="w-full px-6 py-4 bg-gray-300 text-gray-600 font-bold rounded-xl cursor-not-allowed">
+                                    <i class="fas fa-times-circle mr-2"></i>
+                                    Not Available
+                                </button>
+                                {% endif %}
+                </div>
+            </div>
+                </div>
+            </div>
+                {% endfor %}
+        </div>
+
+            <!-- Continue to Booking Button -->
+            <div class="mt-8 text-center">
+                <button id="continueBookingBtn" onclick="continueToBooking()" class="px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg" style="display: none;">
+                    <i class="fas fa-arrow-right mr-2"></i>
+                    Continue to Booking
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        
         {% else %}
         <!-- No Flights Found -->
         <div class="bg-white rounded-2xl shadow-xl p-12 text-center animate-fade-in-up">
             <div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i class="fas fa-paper-plane text-gray-400 text-5xl"></i>
-                    </div>
+                </div>
             <h3 class="text-3xl font-bold text-gray-900 mb-3">No Flights Found</h3>
             <p class="text-gray-600 mb-8 max-w-md mx-auto">
                 We couldn't find any flights matching your search criteria. Try modifying your search with different dates or routes.
@@ -345,8 +505,8 @@
                 <a href="{% url 'homepage' %}" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200">
                     <i class="fas fa-home mr-2"></i>Back to Home
                     </a>
-                </div>
             </div>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -436,5 +596,80 @@
             });
         });
     });
+    
+    // Return flight selection logic
+    let selectedOutboundFlight = null;
+    let selectedReturnFlight = null;
+    
+    function selectOutboundFlight(flightId) {
+        // Reset previous selection
+        document.querySelectorAll('[id^="outbound-btn-"]').forEach(btn => {
+            btn.classList.remove('bg-green-600', 'from-green-600', 'to-emerald-700');
+            btn.classList.add('from-sky-500', 'to-blue-600');
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Select Outbound';
+        });
+        
+        // Mark selected flight
+        const btn = document.getElementById('outbound-btn-' + flightId);
+        if (btn) {
+            btn.classList.remove('from-sky-500', 'to-blue-600');
+            btn.classList.add('bg-green-600', 'from-green-600', 'to-emerald-700');
+            btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Selected';
+            selectedOutboundFlight = flightId;
+        }
+        
+        // Show return flights section
+        const returnSection = document.getElementById('returnFlightsSection');
+        if (returnSection) {
+            returnSection.style.display = 'block';
+            // Scroll to return flights
+            returnSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    
+    function selectReturnFlight(flightId) {
+        // Reset previous selection
+        document.querySelectorAll('[id^="return-btn-"]').forEach(btn => {
+            btn.classList.remove('bg-sky-600', 'from-sky-600', 'to-blue-700');
+            btn.classList.add('from-green-500', 'to-emerald-600');
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Select Return';
+        });
+        
+        // Mark selected flight
+        const btn = document.getElementById('return-btn-' + flightId);
+        if (btn) {
+            btn.classList.remove('from-green-500', 'to-emerald-600');
+            btn.classList.add('bg-sky-600', 'from-sky-600', 'to-blue-700');
+            btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Selected';
+            selectedReturnFlight = flightId;
+        }
+        
+        // Show continue button
+        const continueBtn = document.getElementById('continueBookingBtn');
+        if (continueBtn) {
+            continueBtn.style.display = 'inline-block';
+        }
+    }
+    
+    function continueToBooking() {
+        if (!selectedOutboundFlight) {
+            alert('Please select an outbound flight first.');
+            return;
+        }
+        
+        if (!selectedReturnFlight) {
+            alert('Please select a return flight.');
+            return;
+        }
+        
+        // Redirect to booking page with both flight IDs
+        const adults = {{ adults|default:1 }};
+        const children = {{ children|default:0 }};
+        const infants = {{ infants|default:0 }};
+        const travelClass = '{{ travel_class|default:"economy" }}';
+        // Build URL correctly with the selected outbound flight ID
+        const bookingUrl = '/booking/' + selectedOutboundFlight + '/?adults=' + adults + '&children=' + children + '&infants=' + infants + '&travel_class=' + travelClass + '&return_schedule_id=' + selectedReturnFlight + '&trip_type=return';
+        window.location.href = bookingUrl;
+    }
 </script>
 {% endblock %}

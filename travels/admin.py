@@ -9,7 +9,7 @@ from django.contrib import messages
 
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
-    Package, PackageImage, Contact, Wallet, WalletTransaction
+    Package, PackageImage, Contact, Wallet, WalletTransaction, GroupRequest
 )
 
 class UserProfileInline(admin.StackedInline):
@@ -22,15 +22,16 @@ class UserProfileInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_active')
+    list_display = ('email', 'client_id', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_active')
     list_filter = ('user_type', 'is_staff', 'is_active')
-    search_fields = ('email', 'first_name', 'last_name')
+    search_fields = ('email', 'client_id', 'first_name', 'last_name')
     ordering = ('email',)
+    readonly_fields = ('client_id',)
     inlines = (UserProfileInline,)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone', 'client_id')}),
         (_('Permissions'), {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'user_type'),
         }),
@@ -100,7 +101,7 @@ class ScheduleInline(admin.TabularInline):
     model = Schedule
     extra = 1
     readonly_fields = ('created_at', 'updated_at')
-    fields = ('departure_date', 'arrival_date', 'total_seats', 'available_seats', 'price', 'is_active', 'notes')
+    fields = ('departure_date', 'arrival_date', 'total_seats', 'available_seats', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'is_active', 'notes')
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
@@ -136,6 +137,35 @@ class RouteAdmin(admin.ModelAdmin):
     def duration_formatted(self, obj):
         return obj.formatted_duration
     duration_formatted.short_description = 'Duration'
+
+@admin.register(Schedule)
+class ScheduleAdmin(admin.ModelAdmin):
+    list_display = ('route', 'departure_date', 'arrival_date', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'available_seats', 'total_seats', 'is_active')
+    list_filter = ('is_active', 'departure_date', 'route__transport_type')
+    search_fields = ('route__name', 'route__from_location', 'route__to_location', 'route__carrier_number')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'departure_date'
+    
+    fieldsets = (
+        ('Schedule Information', {
+            'fields': ('route', 'departure_date', 'arrival_date', 'is_active')
+        }),
+        ('Seating', {
+            'fields': ('total_seats', 'available_seats')
+        }),
+        ('Pricing', {
+            'fields': ('price', 'adult_fare', 'child_fare', 'infant_fare'),
+            'description': 'Base price is used as default adult fare if adult_fare is not set. Child and infant fares are typically around ₹4000.'
+        }),
+        ('Additional Information', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 class BookingPassengerInline(admin.TabularInline):
     model = BookingPassenger
@@ -418,4 +448,43 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     def is_credit_display(self, obj):
         return "Credit" if obj.is_credit else "Debit"
     is_credit_display.short_description = 'Type'
+
+@admin.register(GroupRequest)
+class GroupRequestAdmin(admin.ModelAdmin):
+    """Admin interface for Group Booking Requests"""
+    list_display = ('reference_id', 'contact_name', 'contact_email', 'origin', 'destination', 
+                    'departure_date', 'number_of_passengers', 'status', 'created_at')
+    list_filter = ('status', 'trip_type', 'travel_class', 'created_at')
+    search_fields = ('reference_id', 'contact_name', 'contact_email', 'contact_phone', 
+                     'company_name', 'origin', 'destination')
+    readonly_fields = ('reference_id', 'user', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Request Information', {
+            'fields': ('reference_id', 'user', 'status', 'created_at', 'updated_at')
+        }),
+        ('Contact Information', {
+            'fields': ('contact_name', 'contact_email', 'contact_phone', 'company_name')
+        }),
+        ('Travel Details', {
+            'fields': ('origin', 'destination', 'departure_date', 'return_date', 
+                      'trip_type', 'travel_class')
+        }),
+        ('Passenger Details', {
+            'fields': ('number_of_passengers', 'adults', 'children', 'infants')
+        }),
+        ('Additional Information', {
+            'fields': ('special_requirements', 'additional_notes', 'estimated_amount')
+        }),
+        ('Admin Notes', {
+            'fields': ('admin_notes',)
+        }),
+    )
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Make reference_id readonly on create, all fields readonly on update"""
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('user',)
+        return self.readonly_fields
 

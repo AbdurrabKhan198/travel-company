@@ -1,0 +1,1275 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load travel_filters %}
+
+{% block title %}Booking - Safar Zone Travels{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+    <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 animate-on-scroll">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold shadow-lg">1</div>
+                        <span class="font-bold text-gray-800 hidden sm:inline">Flight Details</span>
+                        <span class="font-bold text-gray-800 sm:hidden">Flight</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-primary mx-2 sm:mx-4"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold shadow-lg">2</div>
+                        <span class="font-bold text-gray-800 hidden sm:inline">Passenger Info</span>
+                        <span class="font-bold text-gray-800 sm:hidden">Passenger</span>
+                    </div>
+                    <div class="flex-1 border-t-2 border-gray-300 mx-2 sm:mx-4"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
+                        <span class="text-gray-500 hidden sm:inline">Confirmation</span>
+                        <span class="text-gray-500 sm:hidden">Confirm</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Booking Form -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-lg p-8 animate-on-scroll">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-primary bg-opacity-10 rounded-full p-3 mr-4">
+                                <i class="fas fa-users text-primary text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Passenger Details</h2>
+                                <p class="text-gray-600">
+                                    {% if adults > 0 %}{{ adults }} Adult{{ adults|pluralize }}{% endif %}
+                                    {% if children > 0 %}{% if adults > 0 %}, {% endif %}{{ children }} Child{{ children|pluralize }}{% endif %}
+                                    {% if infants > 0 %}{% if adults > 0 or children > 0 %}, {% endif %}{{ infants }} Infant{{ infants|pluralize }}{% endif %}
+                                    - Please fill all required fields
+                                    {% if trip_type == 'return' and return_schedule %}
+                                        <span class="block text-sm text-green-600 mt-1">
+                                            <i class="fas fa-info-circle mr-1"></i>Details will apply to both outbound and return flights
+                                        </span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <form method="POST" data-validate>
+                            {% csrf_token %}
+                            {% if return_schedule %}
+                            <input type="hidden" name="return_schedule_id" value="{{ return_schedule.id }}">
+                            <input type="hidden" name="trip_type" value="{{ trip_type }}">
+                            {% endif %}
+                            
+                            <!-- Step Progress Indicator -->
+                            <div class="mb-8">
+                                <div class="flex items-center justify-between mb-4">
+                                    {% for i in passenger_range %}
+                                    <div class="flex items-center">
+                                        <div class="step-indicator flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 cursor-pointer" 
+                                             data-step="{{ i }}" onclick="showPassengerStep({{ i }})">
+                                            <span class="step-number font-semibold">{{ i }}</span>
+                                            <i class="fas fa-check step-check hidden text-white"></i>
+                                        </div>
+                                        {% if not forloop.last %}
+                                        <div class="step-connector w-16 h-0.5 bg-gray-300 mx-2 transition-all duration-300" data-connector="{{ i }}"></div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-center text-sm text-gray-600">
+                                    <span id="current-step-text">Passenger 1 of {{ passengers }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Passenger Details for each traveler -->
+                            {% for i in passenger_range %}
+                            <div class="mb-8 p-6 border-2 border-gray-100 rounded-2xl shadow-hover transition-all duration-300 bg-white passenger-form {% if i > 1 %}hidden{% endif %}" data-passenger="{{ i }}" id="passenger-form-{{ i }}">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="bg-gradient-to-r from-primary to-primary-dark text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">
+                                            {{ i }}
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800">
+                                            Passenger {{ i }} {% if i == 1 %}(Primary){% endif %}
+                                        </h3>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        {% if i > 1 %}
+                                        <button type="button" class="text-red-500 hover:text-red-700 text-sm" onclick="removePassenger({{ i }})">
+                                            <i class="fas fa-times mr-1"></i>Remove
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="text-sm text-secondary hover:text-secondary-dark transition-colors" onclick="showPassengerHelp({{ i }})">
+                                            <i class="fas fa-question-circle mr-1"></i>Help
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Indicator -->
+                                <div class="mb-6">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-semibold text-gray-600">Completion</span>
+                                        <span class="text-sm font-semibold text-primary passenger-progress">0%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-primary h-2 rounded-full transition-all duration-300 passenger-progress-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Title, Passenger Type, and Gender -->
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div class="form-group">
+                                        <label for="passenger_title_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Title <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="passenger_title[]" id="passenger_title_{{ i }}" required 
+                                                class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+                                                onchange="updateTitleOptions({{ i }})">
+                                            <option value="">Select Title</option>
+                                            <option value="Mr">Mr</option>
+                                            <option value="Mrs">Mrs</option>
+                                            <option value="Miss">Miss</option>
+                                            <option value="Master">Master</option>
+                                        </select>
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="passenger_type_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Passenger Type <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="passenger_type[]" id="passenger_type_{{ i }}" required 
+                                                class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+                                                onchange="updateTitleOptions({{ i }})">
+                                            <option value="adult">Adult (12+ years)</option>
+                                            <option value="child">Child (2-11 years)</option>
+                                            <option value="infant">Infant (0-2 years)</option>
+                                        </select>
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="passenger_gender_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Gender <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="passenger_gender[]" id="passenger_gender_{{ i }}" required 
+                                                class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+                                                onchange="updateTitleOptions({{ i }})"
+                                                onblur="validateField(this, 'gender')">
+                                            <option value="">Select Gender</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                            <option value="O">Other</option>
+                                        </select>
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Passenger First Name and Last Name -->
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="form-group">
+                                        <label for="passenger_first_name_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            First Name <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="passenger_first_name[]" id="passenger_first_name_{{ i }}" required 
+                                               class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               placeholder="First Name" 
+                                               onblur="validateField(this, 'name')">
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="passenger_last_name_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Last Name <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="passenger_last_name[]" id="passenger_last_name_{{ i }}" required 
+                                               class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               placeholder="Last Name" 
+                                               onblur="validateField(this, 'name')">
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Date of Birth -->
+                                <div class="mb-4">
+                                    <div class="form-group">
+                                        <label for="passenger_dob_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Date of Birth <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="date" name="passenger_dob[]" id="passenger_dob_{{ i }}" required 
+                                               max="{{ today }}" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               onblur="validateField(this, 'dob'); updatePassengerTypeFromDOB({{ i }})">
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Passport Number and Expiry -->
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="form-group">
+                                        <label for="passport_number_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Passport Number
+                                            <span class="text-xs text-gray-500 ml-2">(Required for international flights)</span>
+                                        </label>
+                                        <input type="text" name="passport_number[]" id="passport_number_{{ i }}" 
+                                               class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               placeholder="Passport Number" 
+                                               onblur="validateField(this, 'passport')">
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="passport_expiry_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                            Passport Expiry Date
+                                        </label>
+                                        <input type="date" name="passport_expiry[]" id="passport_expiry_{{ i }}" 
+                                               min="{{ today }}" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               onblur="validateField(this, 'passport_expiry')">
+                                        <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Nationality -->
+                                <div class="mb-4 form-group">
+                                    <label for="nationality_{{ i }}" class="block text-gray-700 font-semibold mb-2">
+                                        Nationality <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="nationality[]" id="nationality_{{ i }}" required 
+                                           value="Indian" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                           placeholder="Nationality" 
+                                           onblur="validateField(this, 'nationality')">
+                                    <div class="text-red-500 text-sm mt-1 hidden error-message"></div>
+                                </div>
+
+                                <!-- Contact Information (only for first passenger) -->
+                                {% if i == 1 %}
+                                <div class="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200">
+                                    <div class="form-group">
+                                        <label for="contact_email" class="block text-gray-700 font-semibold mb-2">
+                                            Contact Email <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="email" name="contact_email" id="contact_email" required 
+                                               value="{{ user.email }}" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               placeholder="your@email.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact_phone" class="block text-gray-700 font-semibold mb-2">
+                                            Contact Phone <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="tel" name="contact_phone" id="contact_phone" required 
+                                               class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md" 
+                                               placeholder="+91 98765 43210">
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Navigation Buttons -->
+                                <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                                    <button type="button" onclick="previousPassenger({{ i }})" 
+                                            class="btn btn-secondary {% if i == 1 %}hidden{% endif %}"
+                                            id="prev-btn-{{ i }}">
+                                        <i class="fas fa-arrow-left mr-2"></i>Previous
+                                    </button>
+                                    <div>
+                                        <button type="button" class="text-primary hover:text-primary-dark text-sm font-semibold mr-4" onclick="copyFromPrimary({{ i }})">
+                                            <i class="fas fa-copy mr-1"></i>Copy from Passenger 1
+                                        </button>
+                                        <button type="button" onclick="nextPassenger({{ i }})" 
+                                                class="btn btn-primary {% if i == passengers %}hidden{% endif %}"
+                                                id="next-btn-{{ i }}">
+                                            Next Passenger<i class="fas fa-arrow-right ml-2"></i>
+                                        </button>
+                                        {% if i == passengers %}
+                                        <button type="button" onclick="showBookingSummary()" 
+                                                class="btn btn-accent"
+                                                id="summary-btn-{{ i }}">
+                                            Review Booking<i class="fas fa-check-circle ml-2"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Number of Seats (Hidden field to maintain consistency) -->
+                            <input type="hidden" name="seats_booked" value="{{ passengers }}">
+
+                            <!-- Terms and Conditions -->
+                            <div class="mb-6 animate-on-scroll">
+                                <label class="flex items-start space-x-3 cursor-pointer group">
+                                    <input type="checkbox" required class="mt-1 w-5 h-5 text-primary border-2 border-gray-300 rounded focus:ring-primary focus:ring-2 transition-all duration-300 group-hover:border-primary">
+                                    <span class="text-gray-700 text-sm leading-relaxed">
+                                        I agree to the <a href="#" class="text-primary hover:underline font-semibold">terms and conditions</a> 
+                                        and <a href="#" class="text-primary hover:underline font-semibold">cancellation policy</a>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-full py-4 text-lg shadow-hover transition-all duration-300 hover:transform hover:-translate-y-1" id="submit-booking">
+                                <span class="btn-text">
+                                    <i class="fas fa-eye mr-2"></i>Review Booking
+                                    <i class="fas fa-arrow-right ml-2"></i>
+                                </span>
+                                <span class="btn-loading hidden">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Booking Summary -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 sticky top-24 animate-on-scroll">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-green-100 rounded-full p-3 mr-3">
+                                <i class="fas fa-info-circle text-green-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">Booking Summary</h3>
+                        </div>
+                        
+                        <!-- Trip Type Badge -->
+                        {% if trip_type == 'return' and return_schedule %}
+                        <div class="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                            <div class="flex items-center justify-center">
+                                <i class="fas fa-exchange-alt text-green-600 mr-2"></i>
+                                <span class="font-bold text-green-700">Round Trip Booking</span>
+                            </div>
+                            <p class="text-xs text-green-600 text-center mt-1">Passenger details will apply to both flights</p>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Outbound Flight Details -->
+                        <div class="border-b border-gray-100 pb-4 mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-bold text-gray-700 uppercase">
+                                    {% if trip_type == 'return' and return_schedule %}
+                                        <i class="fas fa-plane-departure text-sky-500 mr-1"></i>Outbound Flight
+                                    {% else %}
+                                        <i class="fas fa-plane text-primary mr-1"></i>Flight Details
+                                    {% endif %}
+                                </h4>
+                            </div>
+                            <div class="flex items-center space-x-4 mb-4">
+                                <div class="bg-primary bg-opacity-10 rounded-full p-3">
+                                    <i class="fas fa-plane text-primary text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800 text-lg">{{ schedule.route.carrier_number }}</p>
+                                    <p class="text-sm text-gray-600">{{ schedule.route.formatted_duration }}</p>
+                                    <span class="inline-block mt-1 px-2 py-1 rounded-full text-xs font-semibold
+                                        {% if schedule.route.route_type == 'international' %}
+                                            bg-purple-100 text-purple-800
+                                        {% else %}
+                                            bg-green-100 text-green-800
+                                        {% endif %}">
+                                        {{ schedule.route.route_type|title }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">From:</span>
+                                    <span class="font-semibold text-gray-800">
+                                        {{ schedule.route.from_location }}
+                                        {% if schedule.route.from_location in airport_codes %}
+                                            <span class="text-gray-500 text-xs">({{ airport_codes|get_item:schedule.route.from_location }})</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">To:</span>
+                                    <span class="font-semibold text-gray-800">
+                                        {{ schedule.route.to_location }}
+                                        {% if schedule.route.to_location in airport_codes %}
+                                            <span class="text-gray-500 text-xs">({{ airport_codes|get_item:schedule.route.to_location }})</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Date:</span>
+                                    <span class="font-semibold text-gray-800">{{ schedule.departure_date|date:"d M Y" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Departure:</span>
+                                    <span class="font-semibold text-gray-800">{{ schedule.route.departure_time|time:"H:i" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Arrival:</span>
+                                    <span class="font-semibold text-gray-800">{{ schedule.route.arrival_time|time:"H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Flight Details (if return trip) -->
+                        {% if trip_type == 'return' and return_schedule %}
+                        <div class="border-b border-gray-100 pb-4 mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-bold text-gray-700 uppercase">
+                                    <i class="fas fa-plane-arrival text-green-500 mr-1"></i>Return Flight
+                                </h4>
+                            </div>
+                            <div class="flex items-center space-x-4 mb-4">
+                                <div class="bg-green-100 rounded-full p-3">
+                                    <i class="fas fa-plane text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800 text-lg">{{ return_schedule.route.carrier_number }}</p>
+                                    <p class="text-sm text-gray-600">{{ return_schedule.route.formatted_duration }}</p>
+                                    <span class="inline-block mt-1 px-2 py-1 rounded-full text-xs font-semibold
+                                        {% if return_schedule.route.route_type == 'international' %}
+                                            bg-purple-100 text-purple-800
+                                        {% else %}
+                                            bg-green-100 text-green-800
+                                        {% endif %}">
+                                        {{ return_schedule.route.route_type|title }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">From:</span>
+                                    <span class="font-semibold text-gray-800">
+                                        {{ return_schedule.route.from_location }}
+                                        {% if return_schedule.route.from_location in airport_codes %}
+                                            <span class="text-gray-500 text-xs">({{ airport_codes|get_item:return_schedule.route.from_location }})</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">To:</span>
+                                    <span class="font-semibold text-gray-800">
+                                        {{ return_schedule.route.to_location }}
+                                        {% if return_schedule.route.to_location in airport_codes %}
+                                            <span class="text-gray-500 text-xs">({{ airport_codes|get_item:return_schedule.route.to_location }})</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Date:</span>
+                                    <span class="font-semibold text-gray-800">{{ return_schedule.departure_date|date:"d M Y" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Departure:</span>
+                                    <span class="font-semibold text-gray-800">{{ return_schedule.route.departure_time|time:"H:i" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Arrival:</span>
+                                    <span class="font-semibold text-gray-800">{{ return_schedule.route.arrival_time|time:"H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Price Breakdown -->
+                        <div class="space-y-3 mb-6">
+                            <div class="flex justify-between text-gray-700">
+                                <span class="flex items-center">
+                                    <i class="fas fa-ticket-alt mr-2 text-blue-500"></i>
+                                    Base Fare (per seat)
+                                </span>
+                                <span class="font-semibold">₹{{ schedule.price }}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-700">
+                                <span class="flex items-center">
+                                    <i class="fas fa-users mr-2 text-green-500"></i>
+                                    Number of Passengers
+                                </span>
+                                <span class="font-semibold" id="seat-count">{{ passengers }}</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-800 bg-gray-50 rounded-lg p-3">
+                                <span class="flex items-center">
+                                    <i class="fas fa-rupee-sign mr-2 text-primary"></i>
+                                    Total Amount
+                                </span>
+                                <div class="relative group">
+                                    <span class="text-primary text-xl cursor-help" id="total-amount">₹{{ inventory.price|floatformat:2 }}</span>
+                                    
+                                    <!-- Price Breakdown Tooltip -->
+                                    <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50">
+                                        <div class="bg-gray-800 text-white text-sm rounded-lg shadow-xl p-4 min-w-64">
+                                            <div class="space-y-2">
+                                                <div class="flex justify-between items-center border-b border-gray-600 pb-2">
+                                                    <span class="font-semibold">Price Breakdown</span>
+                                                    <i class="fas fa-info-circle text-blue-400"></i>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span>Base Fare ({{ passengers }} passengers):</span>
+                                                    <span id="tooltip-base-fare">₹{{ inventory.price|floatformat:2 }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span>Taxes & Fees:</span>
+                                                    <span>₹{{ inventory.price|floatformat:0|add:"-2000"|floatformat:2 }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span>Service Charge:</span>
+                                                    <span>₹{{ inventory.price|floatformat:0|add:"-1700"|floatformat:2 }}</span>
+                                                </div>
+                                                <div class="border-t border-gray-600 pt-2 flex justify-between font-bold">
+                                                    <span>Total:</span>
+                                                    <span id="tooltip-total">₹{{ inventory.price|floatformat:2 }}</span>
+                                                </div>
+                                                <div class="text-xs text-gray-400 pt-2 border-t border-gray-600">
+                                                    <i class="fas fa-lightbulb mr-1"></i>
+                                                    Price includes all taxes and fees
+                                                </div>
+                                            </div>
+                                            <!-- Tooltip Arrow -->
+                                            <div class="absolute top-full right-4 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Features -->
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 space-y-3 text-sm border border-green-100">
+                            <p class="text-green-800 flex items-center">
+                                <i class="fas fa-check-circle mr-3 text-green-600"></i>
+                                <span>Instant confirmation</span>
+                            </p>
+                            <p class="text-green-800 flex items-center">
+                                <i class="fas fa-envelope mr-3 text-green-600"></i>
+                                <span>E-ticket sent to email</span>
+                            </p>
+                            <p class="text-green-800 flex items-center">
+                                <i class="fas fa-shield-alt mr-3 text-green-600"></i>
+                                <span>Safe & secure booking</span>
+                            </p>
+                            <p class="text-green-800 flex items-center">
+                                <i class="fas fa-calendar-times mr-3 text-green-600"></i>
+                                <span>Easy cancellation</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const basePrice = {{ inventory.price }};
+    const passengers = {{ passengers }};
+    
+    // Initialize total on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTotal(passengers);
+    });
+    
+    function updateTotal(seats) {
+        const totalPrice = basePrice * seats;
+        document.getElementById('seat-count').textContent = seats;
+        document.getElementById('total-amount').textContent = '₹' + totalPrice.toFixed(2);
+    }
+    
+    // Form validation for multiple passengers
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const passengerNames = document.querySelectorAll('input[name="passenger_name[]"]');
+        const passengerAges = document.querySelectorAll('input[name="passenger_age[]"]');
+        const idLast4Digits = document.querySelectorAll('input[name="id_last_4_digits[]"]');
+        
+        let isValid = true;
+        let errorMessages = [];
+        
+        passengerNames.forEach(function(input, index) {
+            if (!input.value.trim()) {
+                isValid = false;
+                input.classList.add('border-red-500', 'ring-red-500');
+                input.classList.remove('border-gray-200', 'focus:border-primary');
+                errorMessages.push(`Passenger ${index + 1}: Name is required`);
+            } else if (input.value.trim().length < 2) {
+                isValid = false;
+                input.classList.add('border-red-500', 'ring-red-500');
+                input.classList.remove('border-gray-200', 'focus:border-primary');
+                errorMessages.push(`Passenger ${index + 1}: Name must be at least 2 characters`);
+            } else {
+                input.classList.remove('border-red-500', 'ring-red-500');
+                input.classList.add('border-gray-200', 'focus:border-primary');
+            }
+        });
+        
+        passengerAges.forEach(function(input, index) {
+            const age = parseInt(input.value);
+            if (!age || age < 1 || age > 120) {
+                isValid = false;
+                input.classList.add('border-red-500', 'ring-red-500');
+                input.classList.remove('border-gray-200', 'focus:border-primary');
+                errorMessages.push(`Passenger ${index + 1}: Age must be between 1 and 120`);
+            } else {
+                input.classList.remove('border-red-500', 'ring-red-500');
+                input.classList.add('border-gray-200', 'focus:border-primary');
+            }
+        });
+        
+        // Validate ID last 4 digits
+        idLast4Digits.forEach(function(input, index) {
+            const value = input.value.trim();
+            if (!value || !/^\d{4}$/.test(value)) {
+                isValid = false;
+                input.classList.add('border-red-500', 'ring-red-500');
+                input.classList.remove('border-gray-200', 'focus:border-primary');
+                errorMessages.push(`Passenger ${index + 1}: Last 4 digits must be exactly 4 numbers`);
+            } else {
+                input.classList.remove('border-red-500', 'ring-red-500');
+                input.classList.add('border-gray-200', 'focus:border-primary');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            // Show first error message
+            alert(errorMessages[0]);
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-booking');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        btnText.classList.add('hidden');
+        btnLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+    });
+    
+    // Add input animations
+    document.querySelectorAll('input, select').forEach(function(input) {
+        input.addEventListener('focus', function() {
+            this.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50');
+        });
+        
+        // Real-time validation
+        input.addEventListener('input', function() {
+            if (this.classList.contains('border-red-500')) {
+                this.classList.remove('border-red-500', 'ring-red-500');
+                this.classList.add('border-gray-200', 'focus:border-primary');
+            }
+        });
+    });
+    
+    // Add scroll animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animated');
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        observer.observe(el);
+    });
+    // Enhanced booking form functionality
+    
+    // Real-time field validation
+    function validateField(field, type) {
+        const value = field.value.trim();
+        const formGroup = field.closest('.form-group');
+        const errorMessage = formGroup.querySelector('.error-message');
+        let isValid = true;
+        let message = '';
+
+        switch(type) {
+            case 'name':
+                if (value.length < 3) {
+                    isValid = false;
+                    message = 'Name must be at least 3 characters long';
+                } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+                    isValid = false;
+                    message = 'Name should only contain letters and spaces';
+                }
+                break;
+                
+            case 'age':
+                const age = parseInt(value);
+                if (!age || age < 1 || age > 120) {
+                    isValid = false;
+                    message = 'Please enter a valid age (1-120)';
+                }
+                break;
+                
+            case 'gender':
+                if (!value) {
+                    isValid = false;
+                    message = 'Please select a gender';
+                }
+                break;
+                
+            case 'id_type':
+                if (!value) {
+                    isValid = false;
+                    message = 'Please select an ID type';
+                }
+                break;
+                
+            case 'id_digits':
+                if (!/^[0-9]{4}$/.test(value)) {
+                    isValid = false;
+                    message = 'Please enter exactly 4 digits';
+                }
+                break;
+        }
+
+        if (isValid) {
+            field.classList.remove('border-red-500');
+            field.classList.add('border-green-500');
+            errorMessage.classList.add('hidden');
+        } else {
+            field.classList.remove('border-green-500');
+            field.classList.add('border-red-500');
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        updatePassengerProgress(field.closest('.passenger-form'));
+        return isValid;
+    }
+
+    // Update passenger progress indicator
+    function updatePassengerProgress(passengerForm) {
+        const fields = passengerForm.querySelectorAll('input[required], select[required]');
+        const totalFields = fields.length;
+        let filledFields = 0;
+
+        fields.forEach(field => {
+            if (field.value.trim() && !field.closest('.form-group').querySelector('.error-message').classList.contains('hidden')) {
+                filledFields++;
+            }
+        });
+
+        const progress = Math.round((filledFields / totalFields) * 100);
+        const progressBar = passengerForm.querySelector('.passenger-progress-bar');
+        const progressText = passengerForm.querySelector('.passenger-progress');
+
+        progressBar.style.width = progress + '%';
+        progressText.textContent = progress + '%';
+
+        if (progress === 100) {
+            progressBar.classList.add('bg-green-500');
+            progressBar.classList.remove('bg-primary');
+        } else {
+            progressBar.classList.add('bg-primary');
+            progressBar.classList.remove('bg-green-500');
+        }
+    }
+
+    // Copy passenger details from primary passenger
+    function copyFromPrimary(passengerNumber) {
+        if (passengerNumber === 1) return;
+
+        const primaryForm = document.querySelector('[data-passenger="1"]');
+        const targetForm = document.querySelector(`[data-passenger="${passengerNumber}"]`);
+
+        // Copy values
+        const primaryFields = primaryForm.querySelectorAll('input, select');
+        const targetFields = targetForm.querySelectorAll('input, select');
+
+        primaryFields.forEach((field, index) => {
+            if (index < targetFields.length) {
+                targetFields[index].value = field.value;
+                validateField(targetFields[index], getFieldType(targetFields[index]));
+            }
+        });
+
+        // Show success message
+        showNotification('Details copied from primary passenger!', 'success');
+    }
+
+    // Get field type for validation
+    function getFieldType(field) {
+        if (field.name.includes('name')) return 'name';
+        if (field.name.includes('age')) return 'age';
+        if (field.name.includes('gender')) return 'gender';
+        if (field.name.includes('id_type')) return 'id_type';
+        if (field.name.includes('id_last_4_digits')) return 'id_digits';
+        return 'text';
+    }
+
+    // Show passenger help modal
+    function showPassengerHelp(passengerNumber) {
+        const helpModal = document.createElement('div');
+        helpModal.innerHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-md w-full p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Passenger Information Help</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4 text-sm text-gray-600">
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <h4 class="font-semibold text-blue-800 mb-2">Name Requirements</h4>
+                            <p>Enter your full name exactly as it appears on your government-issued ID.</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <h4 class="font-semibold text-green-800 mb-2">Age Restrictions</h4>
+                            <p>Passengers must be at least 1 year old. Infant policies apply for children under 2.</p>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-lg">
+                            <h4 class="font-semibold text-purple-800 mb-2">ID Requirements</h4>
+                            <p>Valid government-issued photo ID is required for domestic flights.</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="this.closest('.fixed').remove()" class="btn btn-primary">
+                            Got it!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(helpModal);
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+        
+        const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+        notification.classList.add(bgColor, 'text-white');
+        
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle mr-2"></i>
+                <span>${message}</span>
+                <button onclick="this.closest('.fixed').remove()" class="ml-3 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Auto remove
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Enhanced form submission with validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submit-booking');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        // Validate all fields
+        let isValid = true;
+        const visibleForms = document.querySelectorAll('.passenger-form:not(.hidden)');
+        
+        visibleForms.forEach(form => {
+            const fields = form.querySelectorAll('input[required], select[required]');
+            fields.forEach(field => {
+                if (!validateField(field, getFieldType(field))) {
+                    isValid = false;
+                }
+            });
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            showNotification('Please fill in all required fields correctly.', 'error');
+            return;
+        }
+        
+        // Show loading state with enhanced animation
+        btnText.classList.add('hidden');
+        btnLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+        
+        // Add loading overlay
+        showBookingLoader();
+        
+        // Simulate processing delay
+        setTimeout(() => {
+            this.submit();
+        }, 3000);
+    });
+
+    // Show booking loader overlay
+    function showBookingLoader() {
+        const loader = document.createElement('div');
+        loader.id = 'booking-loader';
+        loader.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center';
+        loader.innerHTML = `
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+                <div class="mb-6">
+                    <div class="relative w-20 h-20 mx-auto mb-4">
+                        <div class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <div class="absolute inset-2 border-4 border-secondary border-t-transparent rounded-full animate-spin animation-delay-150"></div>
+                        <div class="absolute inset-4 border-4 border-accent border-t-transparent rounded-full animate-spin animation-delay-300"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Processing Your Booking</h3>
+                    <p class="text-gray-600 mb-4">Please don't close this window</p>
+                </div>
+                
+                <div class="space-y-3 text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm" id="step-1-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span class="text-sm" id="step-1-text">Validating passenger information...</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm" id="step-2-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <span class="text-sm" id="step-2-text">Checking seat availability...</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm" id="step-3-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <span class="text-sm" id="step-3-text">Processing payment...</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm" id="step-4-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <span class="text-sm" id="step-4-text">Generating booking confirmation...</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-primary h-2 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2" id="progress-text">0% Complete</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(loader);
+        
+        // Animate the loading steps
+        animateBookingSteps();
+    }
+
+    // Animate booking steps
+    function animateBookingSteps() {
+        const steps = [
+            { icon: 'step-1-icon', text: 'step-1-text', progress: 25 },
+            { icon: 'step-2-icon', text: 'step-2-text', progress: 50 },
+            { icon: 'step-3-icon', text: 'step-3-text', progress: 75 },
+            { icon: 'step-4-icon', text: 'step-4-text', progress: 100 }
+        ];
+        
+        steps.forEach((step, index) => {
+            setTimeout(() => {
+                const iconElement = document.getElementById(step.icon);
+                const textElement = document.getElementById(step.text);
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                
+                // Update icon
+                iconElement.classList.remove('bg-gray-300');
+                iconElement.classList.add('bg-green-500');
+                iconElement.innerHTML = '<i class="fas fa-check"></i>';
+                
+                // Update text
+                textElement.classList.remove('text-gray-600');
+                textElement.classList.add('text-green-600', 'font-semibold');
+                
+                // Update progress bar
+                progressBar.style.width = step.progress + '%';
+                progressText.textContent = step.progress + '% Complete';
+            }, index * 750);
+        });
+    }
+
+    // Add CSS for animation delays
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .slide-in-right {
+            animation: slideInRight 0.6s ease-out;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .animation-delay-150 {
+            animation-delay: 150ms;
+        }
+        
+        .animation-delay-300 {
+            animation-delay: 300ms;
+        }
+        
+        .form-group {
+            transition: all 0.3s ease;
+        }
+        
+        .form-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .passenger-form {
+            transition: all 0.5s ease;
+        }
+        
+        .passenger-form.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        
+        .error-message {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        
+        .error-message:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .success-animation {
+            animation: successPulse 0.6s ease;
+        }
+        
+        @keyframes successPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .notification {
+            transition: all 0.3s ease;
+        }
+        
+        .notification.translate-x-full {
+            transform: translateX(100%);
+        }
+        
+        .notification:not(.translate-x-full) {
+            transform: translateX(0);
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add event listeners for real-time validation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pre-populate passenger types based on adults, children, infants
+        const adults = {{ adults|default:1 }};
+        const children = {{ children|default:0 }};
+        const infants = {{ infants|default:0 }};
+        
+        let passengerIndex = 1;
+        
+        // Set adults
+        for (let i = 0; i < adults; i++) {
+            const typeSelect = document.getElementById(`passenger_type_${passengerIndex}`);
+            if (typeSelect) {
+                typeSelect.value = 'adult';
+                updateTitleOptions(passengerIndex);
+            }
+            passengerIndex++;
+        }
+        
+        // Set children
+        for (let i = 0; i < children; i++) {
+            const typeSelect = document.getElementById(`passenger_type_${passengerIndex}`);
+            if (typeSelect) {
+                typeSelect.value = 'child';
+                updateTitleOptions(passengerIndex);
+            }
+            passengerIndex++;
+        }
+        
+        // Set infants
+        for (let i = 0; i < infants; i++) {
+            const typeSelect = document.getElementById(`passenger_type_${passengerIndex}`);
+            if (typeSelect) {
+                typeSelect.value = 'infant';
+                updateTitleOptions(passengerIndex);
+            }
+            passengerIndex++;
+        }
+        
+        const forms = document.querySelectorAll('.passenger-form');
+        forms.forEach(form => {
+            const fields = form.querySelectorAll('input, select');
+            fields.forEach(field => {
+                field.addEventListener('input', function() {
+                    validateField(this, getFieldType(this));
+                });
+                field.addEventListener('change', function() {
+                    validateField(this, getFieldType(this));
+                });
+            });
+        });
+    });
+
+    // Update title options based on passenger type and gender
+    function updateTitleOptions(passengerIndex) {
+        const titleSelect = document.getElementById(`passenger_title_${passengerIndex}`);
+        const typeSelect = document.getElementById(`passenger_type_${passengerIndex}`);
+        const genderSelect = document.getElementById(`passenger_gender_${passengerIndex}`);
+        
+        if (!titleSelect || !typeSelect || !genderSelect) return;
+        
+        const passengerType = typeSelect.value;
+        const gender = genderSelect.value;
+        const currentTitle = titleSelect.value;
+        
+        // Clear and rebuild options
+        titleSelect.innerHTML = '<option value="">Select Title</option>';
+        
+        if (passengerType === 'infant' || passengerType === 'child') {
+            // For children/infants: Master for male, Miss for female
+            if (gender === 'M' || gender === '') {
+                titleSelect.innerHTML += '<option value="Master">Master</option>';
+            }
+            if (gender === 'F' || gender === '') {
+                titleSelect.innerHTML += '<option value="Miss">Miss</option>';
+            }
+        } else {
+            // For adults: Mr, Mrs, Miss based on gender
+            if (gender === 'M' || gender === '') {
+                titleSelect.innerHTML += '<option value="Mr">Mr</option>';
+            }
+            if (gender === 'F' || gender === '') {
+                titleSelect.innerHTML += '<option value="Mrs">Mrs</option>';
+                titleSelect.innerHTML += '<option value="Miss">Miss</option>';
+            }
+            if (gender === 'O' || gender === '') {
+                titleSelect.innerHTML += '<option value="Mr">Mr</option>';
+                titleSelect.innerHTML += '<option value="Mrs">Mrs</option>';
+                titleSelect.innerHTML += '<option value="Miss">Miss</option>';
+            }
+        }
+        
+        // Try to restore previous selection if still valid
+        if (currentTitle) {
+            const option = Array.from(titleSelect.options).find(opt => opt.value === currentTitle);
+            if (option) {
+                titleSelect.value = currentTitle;
+            }
+        }
+    }
+
+    // Auto-update passenger type based on date of birth
+    function updatePassengerTypeFromDOB(passengerIndex) {
+        const dobInput = document.getElementById(`passenger_dob_${passengerIndex}`);
+        const typeSelect = document.getElementById(`passenger_type_${passengerIndex}`);
+        
+        if (!dobInput || !dobInput.value || !typeSelect) return;
+        
+        const dob = new Date(dobInput.value);
+        const today = new Date();
+        const age = today.getFullYear() - dob.getFullYear() - 
+                   ((today.getMonth() < dob.getMonth() || 
+                    (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) ? 1 : 0);
+        
+        if (age < 2) {
+            typeSelect.value = 'infant';
+        } else if (age < 12) {
+            typeSelect.value = 'child';
+        } else {
+            typeSelect.value = 'adult';
+        }
+        
+        // Update title options after type change
+        updateTitleOptions(passengerIndex);
+    }
+</script>
+{% endblock %}
