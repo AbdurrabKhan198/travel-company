@@ -62,24 +62,32 @@ echo -e "${BLUE}[5/10] Cloning/Updating repository from GitHub...${NC}"
 if [ -d "$PROJECT_DIR/.git" ]; then
     echo -e "${YELLOW}[INFO] Repository exists. Pulling latest changes...${NC}"
     cd $PROJECT_DIR
-    $USE_SUDO -u $PROJECT_USER git pull origin main || $USE_SUDO -u $PROJECT_USER git pull origin master
+    if [ "$EUID" -eq 0 ]; then
+        sudo -u $PROJECT_USER git pull origin main || sudo -u $PROJECT_USER git pull origin master
+    else
+        git pull origin main || git pull origin master
+    fi
 else
     echo -e "${YELLOW}[INFO] Cloning repository...${NC}"
     cd /tmp
     rm -rf travel-company-temp 2>/dev/null || true
     git clone $GIT_REPO travel-company-temp
-    $USE_SUDO cp -r travel-company-temp/* $PROJECT_DIR/ 2>/dev/null || true
-    $USE_SUDO cp -r travel-company-temp/.* $PROJECT_DIR/ 2>/dev/null || true
+    cp -r travel-company-temp/* $PROJECT_DIR/ 2>/dev/null || true
+    cp -r travel-company-temp/.* $PROJECT_DIR/ 2>/dev/null || true
     rm -rf travel-company-temp
     cd $PROJECT_DIR
-    $USE_SUDO chown -R $PROJECT_USER:$PROJECT_USER $PROJECT_DIR
+    chown -R $PROJECT_USER:$PROJECT_USER $PROJECT_DIR
 fi
 
 echo
 echo -e "${BLUE}[6/10] Setting up Python virtual environment...${NC}"
 cd $PROJECT_DIR
 if [ ! -d "venv" ]; then
-    $USE_SUDO -u $PROJECT_USER python3 -m venv venv
+    if [ "$EUID" -eq 0 ]; then
+        sudo -u $PROJECT_USER python3 -m venv venv
+    else
+        python3 -m venv venv
+    fi
     echo -e "${GREEN}[OK] Virtual environment created.${NC}"
 else
     echo -e "${YELLOW}[INFO] Virtual environment already exists.${NC}"
@@ -87,38 +95,29 @@ fi
 
 echo
 echo -e "${BLUE}[7/10] Installing Python dependencies...${NC}"
-$USE_SUDO -u $PROJECT_USER bash << 'DEPLOY_APP'
-#!/bin/bash
-set -e
-cd /var/www/safarzonetravels
-source venv/bin/activate
-pip install --upgrade pip -q
-pip install -r requirements.txt -q
-echo "[OK] Dependencies installed."
-DEPLOY_APP
+if [ "$EUID" -eq 0 ]; then
+    sudo -u $PROJECT_USER bash -c "cd $PROJECT_DIR && source venv/bin/activate && pip install --upgrade pip -q && pip install -r requirements.txt -q && echo '[OK] Dependencies installed.'"
+else
+    cd $PROJECT_DIR
+    source venv/bin/activate
+    pip install --upgrade pip -q
+    pip install -r requirements.txt -q
+    echo "[OK] Dependencies installed."
+fi
 
 echo
 echo -e "${BLUE}[8/10] Configuring Django...${NC}"
-$USE_SUDO -u $PROJECT_USER bash << 'DJANGO_SETUP'
-#!/bin/bash
-set -e
-cd /var/www/safarzonetravels
-source venv/bin/activate
-
-# Set environment variables
-export DEBUG=False
-export ALLOWED_HOSTS='safarzonetravels.com,www.safarzonetravels.com,165.232.178.54'
-
-# Run migrations
-echo "Running database migrations..."
-python manage.py migrate --noinput
-
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
-
-echo "[OK] Django configured."
-DJANGO_SETUP
+if [ "$EUID" -eq 0 ]; then
+    sudo -u $PROJECT_USER bash -c "cd $PROJECT_DIR && source venv/bin/activate && export DEBUG=False && export ALLOWED_HOSTS='safarzonetravels.com,www.safarzonetravels.com,165.232.178.54' && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && echo '[OK] Django configured.'"
+else
+    cd $PROJECT_DIR
+    source venv/bin/activate
+    export DEBUG=False
+    export ALLOWED_HOSTS='safarzonetravels.com,www.safarzonetravels.com,165.232.178.54'
+    python manage.py migrate --noinput
+    python manage.py collectstatic --noinput --clear
+    echo "[OK] Django configured."
+fi
 
 echo
 echo -e "${BLUE}[9/10] Creating Gunicorn service...${NC}"
@@ -207,4 +206,3 @@ echo -e "${GREEN}Check service status:${NC}"
 echo "  sudo systemctl status gunicorn"
 echo "  sudo systemctl status nginx"
 echo
-
