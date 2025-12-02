@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Apply for {{ selected_package.name|default:"Package" }} Package - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .form-input {
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen" style="background: linear-gradient(135deg, #f0f8ff 0%, #e0e7ff 50%, #c7d2fe 100%); padding-top: 3rem; padding-bottom: 3rem; padding-left: 1rem; padding-right: 1rem;">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in-up">
+            {% if selected_package and selected_package.image %}
+            <div class="position-relative rounded-4 overflow-hidden mb-6 shadow-xl" style="height: 16rem;">
+                <img src="{{ selected_package.image }}" alt="{{ selected_package.name }}" class="w-100 h-100 object-fit-cover" style="min-height:100%; min-width:100%;">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to top, rgba(0,0,0,.7) 70%, rgba(0,0,0,.3) 95%, transparent 100%);"></div>
+                <div class="position-absolute bottom-0 start-0 end-0 p-4 text-start">
+                    <h1 class="text-4xl md:text-5xl fw-bold text-white mb-2 text-shadow-lg">
+                        {{ selected_package.name }} Package
+                    </h1>
+                    <p class="fs-4 text-white" style="text-shadow:0 2px 8px rgba(30,30,30,.4)">{{ selected_package.description }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="d-inline-block p-4 bg-white rounded-2xl mb-4 shadow-lg">
+                <span class="fs-1">✈️</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl fw-bold text-dark mb-2">
+                Apply for {{ selected_package.name|default:"Travel" }} Package
+            </h1>
+            <p class="fs-4 text-secondary">Fill in your details to proceed with the package application</p>
+            {% endif %}
+        </div>
+
+        <!-- Package Application Form -->
+        <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50 animate-fade-in-up">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Package Selection -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-suitcase mr-3 text-blue-500"></i>
+                        Package Selection
+                    </h3>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Select Package <span class="text-red-500">*</span>
+                        </label>
+                        <select name="package_name" required
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none">
+                            <option value="">-- Select a Package --</option>
+                            {% for pkg in popular_packages %}
+                            <option value="{{ pkg.name }}" {% if selected_package and selected_package.name == pkg.name %}selected{% endif %}>
+                                {{ pkg.name }} - {{ pkg.destination }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="destination" id="destination" value="{{ selected_package.destination|default:'' }}">
+                    </div>
+                </div>
+                
+                <!-- Personal Information -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-user-circle mr-3 text-blue-500"></i>
+                        Personal Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-user mr-2"></i>Full Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="full_name" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="Enter your full name"
+                                   value="{{ initial_data.full_name|default:'' }}">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-2"></i>Email Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" name="email" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="your.email@example.com"
+                                   value="{{ initial_data.email|default:'' }}">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-phone mr-2"></i>Phone Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" name="phone" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="+91 9876543210"
+                                   value="{{ initial_data.phone|default:'' }}">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>Travel Date (Optional)
+                            </label>
+                            <input type="date" name="travel_date"
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   min="{{ today }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Travel Details -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-plane mr-3 text-green-500"></i>
+                        Travel Details
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-users mr-2"></i>Number of People <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="number_of_people" required min="1" max="50" value="1"
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-comment-alt mr-2"></i>Special Requests or Requirements
+                        </label>
+                        <textarea name="special_requests" rows="4"
+                                  class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:outline-none"
+                                  placeholder="Any special requests, dietary requirements, accommodation preferences, etc."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="flex justify-center pt-4">
+                    <button type="submit" 
+                            class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-blue-700 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-3">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Submit Application</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update destination when package is selected
+    document.querySelector('select[name="package_name"]').addEventListener('change', function() {
+        const packageName = this.value;
+        const destinationInput = document.getElementById('destination');
+        const packages = {
+            {% for pkg in popular_packages %}
+            '{{ pkg.name }}': '{{ pkg.destination }}',
+            {% endfor %}
+        };
+        if (packages[packageName]) {
+            destinationInput.value = packages[packageName];
+        }
+    });
+</script>
+{% endblock %}
+

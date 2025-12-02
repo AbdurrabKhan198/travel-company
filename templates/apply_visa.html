@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Apply for Visa - {{ visa.name }} - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .form-input {
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in-up">
+            <div class="inline-block p-4 bg-white/20 backdrop-blur-md rounded-2xl mb-4 shadow-lg">
+                <span class="text-5xl">{{ visa.flag|default:'🇺🇳' }}</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
+                Apply for {{ visa.name|default:country|title }} Visa
+            </h1>
+            <p class="text-xl text-gray-600">Fill in your details to proceed with the visa application</p>
+        </div>
+
+        <!-- Visa Application Form -->
+        <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50 animate-fade-in-up">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Personal Information -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-user-circle mr-3 text-blue-500"></i>
+                        Personal Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-user mr-2"></i>Full Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="name" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="Enter your full name">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-2"></i>Email Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" name="email" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="your.email@example.com"
+                                   value="{% if user.is_authenticated %}{{ user.email }}{% endif %}">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-phone mr-2"></i>Phone Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" name="phone" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   placeholder="+91 9876543210"
+                                   pattern="[0-9]{10,15}"
+                                   oninput="this.value = this.value.replace(/\D/g, '')">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>Travel Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="travel_date" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                   id="travelDate">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Passport Information -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-l-4 border-purple-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-passport mr-3 text-purple-500"></i>
+                        Passport Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-id-card mr-2"></i>Passport Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="passport_number" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
+                                   placeholder="Enter passport number">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-calendar-check mr-2"></i>Passport Expiry Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="passport_expiry" required
+                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
+                                   id="passportExpiry">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visa Details -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-plane mr-3 text-green-500"></i>
+                        Visa Details
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-clock mr-2"></i>Duration <span class="text-red-500">*</span>
+                            </label>
+                            <select name="duration" required
+                                    class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:outline-none"
+                                    onchange="updatePrice(this)">
+                                <option value="">Select Duration</option>
+                                {% for dur in visa.durations %}
+                                <option value="{{ dur.days }}" data-price="{{ dur.price }}" {% if duration == dur.days|stringformat:"s" %}selected{% endif %}>
+                                    {{ dur.days }} Days{% if dur.entry %} ({{ dur.entry }}){% endif %} - ₹{{ dur.price|floatformat:0 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-rupee-sign mr-2"></i>Total Price
+                            </label>
+                            <div class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50">
+                                <p class="text-2xl font-bold text-green-600" id="priceDisplay">
+                                    ₹{% if price %}{{ price }}{% else %}0{% endif %}
+                                </p>
+                            </div>
+                            <input type="hidden" name="price" id="priceInput" value="{% if price %}{{ price }}{% else %}0{% endif %}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border-l-4 border-amber-500">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt mr-3 text-amber-500"></i>
+                        Address
+                    </h3>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-home mr-2"></i>Full Address <span class="text-red-500">*</span>
+                        </label>
+                        <textarea name="address" required rows="3"
+                                  class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-amber-500 focus:outline-none"
+                                  placeholder="Enter your complete address"></textarea>
+                    </div>
+                </div>
+
+                <!-- Additional Notes -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-sticky-note mr-2"></i>Additional Notes (Optional)
+                    </label>
+                    <textarea name="notes" rows="3"
+                              class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                              placeholder="Any special requirements or notes..."></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button type="submit" 
+                            class="flex-1 px-8 py-4  text-blue-300 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Submit Application</span>
+                    </button>
+                    <a href="{% url 'visit_visa' %}" 
+                       class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updatePrice(select) {
+        const selectedOption = select.options[select.selectedIndex];
+        const price = selectedOption.getAttribute('data-price');
+        document.getElementById('priceDisplay').textContent = '₹' + parseInt(price).toLocaleString('en-IN');
+        document.getElementById('priceInput').value = price;
+    }
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="travel_date"]').setAttribute('min', today);
+    document.querySelector('input[name="passport_expiry"]').setAttribute('min', today);
+</script>
+{% endblock %}
+

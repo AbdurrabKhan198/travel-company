@@ -10,6 +10,13 @@ urlpatterns = [
     path('contact/', views.contact, name='contact'),
     path('contact/thanks/<int:contact_id>/', views.contact_thanks, name='contact_thanks'),
     path('about/',views.about, name='about'),
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('terms-conditions/', views.terms_conditions, name='terms_conditions'),
+    path('faq/', views.faq, name='faq'),
+    path('visit-visa/', views.visit_visa, name='visit_visa'),
+    path('apply-visa/', views.apply_visa, name='apply_visa'),
+    path('apply-package/<str:package_name>/', views.apply_package, name='apply_package'),
+    path('apply-package/', views.apply_package, name='apply_package'),
     path('test-colors/', TemplateView.as_view(template_name='test_colors.html'), name='test_colors'),
     path('search/', views.search_flights, name='search_flights'),
     
@@ -28,6 +35,7 @@ urlpatterns = [
     
     # User pages
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('my-trips/', views.my_trips, name='my_trips'),
     path('login/', views.user_login, name='login'),
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),

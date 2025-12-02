@@ -170,7 +170,7 @@
                         <i class="fas fa-suitcase text-xl mb-1"></i>
                         <span class="text-xs font-semibold">Packages</span>
                     </a>
-                    <a href="{% url 'homepage' %}#visa" class="nav-item flex flex-col items-center px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200">
+                    <a href="{% url 'visit_visa' %}" class="nav-item flex flex-col items-center px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200">
                         <i class="fas fa-passport text-xl mb-1"></i>
                         <span class="text-xs font-semibold">Visit Visa</span>
                     </a>
@@ -178,9 +178,48 @@
 
                 <!-- Right Side Menu - Goibibo Style -->
                 <div class="flex items-center space-x-4">
+                    <!-- Our Executive -->
+                    {% if executives %}
+                    <div class="relative group hidden md:block">
+                        <button class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 flex items-center space-x-2">
+                            <i class="fas fa-headset mr-2 text-sky-500"></i>
+                            <span>Our Executive</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50">
+                            <div class="py-3">
+                                <div class="px-4 py-2 border-b border-gray-200">
+                                    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Our Executives</h3>
+                                </div>
+                                {% for executive in executives %}
+                                <div class="px-4 py-3 hover:bg-sky-50 transition-colors">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <p class="font-semibold text-gray-900">{{ executive.name }}</p>
+                                            <p class="text-sm text-gray-600 mt-1">
+                                                <i class="fas fa-map-marker-alt mr-1 text-sky-500"></i>{{ executive.city }}
+                                            </p>
+                                            <a href="tel:{{ executive.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                                <i class="fas fa-phone mr-2"></i>{{ executive.phone }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if not forloop.last %}
+                                <div class="border-t border-gray-100"></div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     {% if user.is_authenticated %}
                         <a href="{% url 'dashboard' %}" class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
-                            <i class="fas fa-calendar-check"></i>
+                            <i class="fas fa-user-circle mr-2"></i> User Profile
+                        </a>
+                        <a href="{% url 'my_trips' %}" class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
+                            <i class="fas fa-calendar-check mr-2 text-sky-500"></i>
                             <span>My Trips</span>
                         </a>
                         <div class="relative group">
@@ -196,22 +235,34 @@
                             <div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50">
                                 <div class="py-2">
                                     <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                                        <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                                        <i class="fas fa-user-circle mr-2"></i> User Profile
+                                    </a>
+                                    <a href="{% url 'my_trips' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
+                                        <i class="fas fa-calendar-check mr-2 text-sky-500"></i> My Trips
                                     </a>
                                     <hr class="my-1">
+                                    {% if has_od_wallet_access %}
                                     <div class="px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400">
                                         <div class="flex items-center justify-between mb-1">
                                             <span class="text-xs font-semibold text-gray-600">OD Wallet</span>
-                                            <span class="text-xs font-bold text-amber-600">
-                                                {% if user.wallet %}₹{{ user.wallet.balance|floatformat:0 }}{% else %}₹0{% endif %}
-                                            </span>
+                                            <span class="text-xs font-bold text-amber-600">₹{{ od_wallet_balance|floatformat:0 }}</span>
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'wallet_history' %}?type=od" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
+                                        <i class="fas fa-history mr-2 text-amber-500"></i> OD Wallet History
+                                    </a>
+                                    {% endif %}
+                                    <div class="px-4 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-400">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-xs font-semibold text-gray-600">Cash Balance</span>
+                                            <span class="text-xs font-bold text-blue-600">₹{{ cash_balance|floatformat:0 }}</span>
                                         </div>
                                     </div>
                                     <a href="{% url 'wallet_recharge' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                                        <i class="fas fa-wallet mr-2 text-amber-500"></i> Recharge Wallet
+                                        <i class="fas fa-wallet mr-2 text-blue-500"></i> Recharge Cash Balance
                                     </a>
                                     <a href="{% url 'wallet_history' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                                        <i class="fas fa-history mr-2"></i> Wallet History
+                                        <i class="fas fa-history mr-2"></i> Cash Balance History
                                     </a>
                                     <hr class="my-1">
                                     <a href="{% url 'group_request' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
@@ -252,12 +303,34 @@
                     <i class="fas fa-suitcase text-lg"></i>
                     <span>Packages</span>
                 </a>
-                <a href="{% url 'homepage' %}#visa" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
+                <a href="{% url 'visit_visa' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                     <i class="fas fa-passport text-lg"></i>
                     <span>Visit Visa</span>
                 </a>
+                {% if executives %}
+                <div class="border-t border-gray-200 pt-2 mt-2">
+                    <div class="px-4 py-2">
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Our Executives</h3>
+                        {% for executive in executives %}
+                        <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
+                            <p class="font-semibold text-gray-900">{{ executive.name }}</p>
+                            <p class="text-sm text-gray-600 mt-1">
+                                <i class="fas fa-map-marker-alt mr-1 text-sky-500"></i>{{ executive.city }}
+                            </p>
+                            <a href="tel:{{ executive.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                <i class="fas fa-phone mr-2"></i>{{ executive.phone }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
                 {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
+                    <i class="fas fa-user-circle text-lg"></i>
+                    <span>User Profile</span>
+                </a>
+                <a href="{% url 'my_trips' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                     <i class="fas fa-calendar-check text-lg"></i>
                     <span>My Trips</span>
                 </a>
@@ -343,6 +416,7 @@
                         <li><a href="{% url 'homepage' %}#destinations" class="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"><i class="fas fa-chevron-right text-xs"></i><span>Destinations</span></a></li>
                         <li><a href="{% url 'about' %}" class="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"><i class="fas fa-chevron-right text-xs"></i><span>About Us</span></a></li>
                         <li><a href="{% url 'contact' %}" class="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"><i class="fas fa-chevron-right text-xs"></i><span>Contact</span></a></li>
+                        <li><a href="{% url 'faq' %}" class="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"><i class="fas fa-chevron-right text-xs"></i><span>FAQ</span></a></li>
                     </ul>
                 </div>
 
@@ -383,9 +457,9 @@
                 <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                     <p class="text-gray-400 text-sm">&copy; 2024 Safar Zone. All rights reserved.</p>
                     <div class="flex space-x-6 text-sm">
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors">FAQ</a>
+                        <a href="{% url 'privacy_policy' %}" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="{% url 'terms_conditions' %}" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
+                        <a href="{% url 'faq' %}" class="text-gray-400 hover:text-white transition-colors">FAQ</a>
                 </div>
                 </div>
             </div>

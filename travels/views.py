@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf import settings
 from decimal import Decimal
-from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, Wallet, WalletTransaction, GroupRequest
+from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, PackageApplication
 from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm
 import random
 import string
@@ -296,6 +296,45 @@ def homepage(request):
     """Homepage with search and featured packages"""
     packages = Package.objects.filter(is_featured=True)[:6]
     
+    # Define popular package destinations with Unsplash images
+    popular_packages = [
+        {
+            'name': 'Thailand', 
+            'destination': 'Thailand', 
+            'icon': '🇹🇭',
+            'image': 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&h=600&fit=crop',
+            'description': 'Experience the vibrant culture, stunning beaches, and delicious cuisine of Thailand'
+        },
+        {
+            'name': 'Dubai', 
+            'destination': 'Dubai', 
+            'icon': '🇦🇪',
+            'image': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=600&fit=crop',
+            'description': 'Discover luxury, modern architecture, and desert adventures in Dubai'
+        },
+        {
+            'name': 'Singapore', 
+            'destination': 'Singapore', 
+            'icon': '🇸🇬',
+            'image': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&h=600&fit=crop',
+            'description': 'Explore the perfect blend of culture, cuisine, and cutting-edge innovation'
+        },
+        {
+            'name': 'Bali', 
+            'destination': 'Bali', 
+            'icon': '🇮🇩',
+            'image': 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&h=600&fit=crop',
+            'description': 'Relax on pristine beaches and immerse in Balinese culture and spirituality'
+        },
+        {
+            'name': 'Vietnam', 
+            'destination': 'Vietnam', 
+            'icon': '🇻🇳',
+            'image': 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=600&fit=crop',
+            'description': 'Journey through rich history, breathtaking landscapes, and amazing food'
+        },
+    ]
+    
     # Get airport codes dictionary
     airport_codes = get_airport_codes()
     
@@ -322,13 +361,18 @@ def homepage(request):
     # Convert to list of date strings for JavaScript
     available_dates_list = [d.isoformat() for d in available_dates]
     
+    # Get active executives for header
+    executives = Executive.objects.filter(is_active=True).order_by('display_order', 'name')
+    
     context = {
         'packages': packages,
+        'popular_packages': popular_packages,
         'origins': origins,
         'destinations': destinations,
         'today': date.today().isoformat(),
         'available_dates': available_dates_list,
         'airport_codes': airport_codes,
+        'executives': executives,
     }
     return render(request, 'index.html', context)
 
@@ -932,12 +976,86 @@ def contact_thanks(request, contact_id):
     
     return render(request, 'thanks.html', {'contact': contact})
 
+def visit_visa(request):
+    """Visit Visa services page"""
+    return render(request, 'visit_visa.html')
+
+def apply_visa(request):
+    """Visa application form"""
+    country = request.GET.get('country', '')
+    duration = request.GET.get('duration', '')
+    price = request.GET.get('price', '')
+    
+    # Visa data mapping
+    visa_data = {
+        'qatar': {'name': 'Qatar', 'flag': '🇶🇦', 'durations': [{'days': 30, 'price': 500, 'entry': 'Single Entry'}]},
+        'bahrain': {'name': 'Bahrain', 'flag': '🇧🇭', 'durations': [{'days': 30, 'price': 4900}, {'days': 14, 'price': 3000}, {'days': 90, 'price': 11300}]},
+        'oman': {'name': 'Oman', 'flag': '🇴🇲', 'durations': [{'days': 30, 'price': 5100}, {'days': 10, 'price': 1700}, {'days': 90, 'price': 22000}], 'note': 'Female charges High'},
+        'azerbaijan': {'name': 'Azerbaijan', 'flag': '🇦🇿', 'durations': [{'days': 30, 'price': 3000}]},
+        'uzbekistan': {'name': 'Uzbekistan', 'flag': '🇺🇿', 'durations': [{'days': 30, 'price': 3100}]},
+        'vietnam': {'name': 'Vietnam', 'flag': '🇻🇳', 'durations': [{'days': 30, 'price': 3000, 'entry': 'Single Entry'}]},
+        'cambodia': {'name': 'Cambodia', 'flag': '🇰🇭', 'durations': [{'days': 30, 'price': 3200}]},
+        'russia': {'name': 'Russia', 'flag': '🇷🇺', 'durations': [{'days': 30, 'price': 5800}]},
+        'dubai': {'name': 'Dubai', 'flag': '🇦🇪', 'durations': [{'days': 30, 'price': 10700}, {'days': 60, 'price': 14500}]},
+    }
+    
+    selected_visa = visa_data.get(country.lower(), {})
+    
+    if request.method == 'POST':
+        # Handle form submission
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        selected_duration = request.POST.get('duration')
+        selected_price = request.POST.get('price')
+        travel_date = request.POST.get('travel_date')
+        passport_number = request.POST.get('passport_number')
+        passport_expiry = request.POST.get('passport_expiry')
+        address = request.POST.get('address')
+        notes = request.POST.get('notes', '')
+        
+        # Here you would save to database or send email
+        # For now, we'll just show a success message
+        messages.success(request, f'Your visa application for {selected_visa.get("name", country)} has been submitted successfully! We will contact you soon.')
+        return redirect('visit_visa')
+    
+    context = {
+        'country': country,
+        'duration': duration,
+        'price': price,
+        'visa': selected_visa,
+    }
+    return render(request, 'apply_visa.html', context)
+
 def about(request):
     return render(request, 'about.html')
+
+def privacy_policy(request):
+    """Privacy Policy page"""
+    return render(request, 'privacy_policy.html')
+
+def terms_conditions(request):
+    """Terms and Conditions page"""
+    return render(request, 'terms_conditions.html')
+
+def faq(request):
+    """FAQ page"""
+    return render(request, 'faq.html')
 
 @login_required
 def dashboard(request):
     """User dashboard with bookings"""
+    # Handle logo upload
+    if request.method == 'POST' and 'logo' in request.FILES:
+        profile, created = UserProfile.objects.get_or_create(
+            user=request.user,
+            defaults={'full_name': request.user.get_full_name() or request.user.email.split('@')[0]}
+        )
+        profile.logo = request.FILES['logo']
+        profile.save()
+        messages.success(request, 'Logo uploaded successfully!')
+        return redirect('dashboard')
+    
     # Ensure user has a profile (auto-create if missing)
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
@@ -971,16 +1089,27 @@ def dashboard(request):
         payment_status=Booking.PaymentStatus.PAID
     ).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
     
-    # Get wallet information (if user has wallet access)
-    wallet = None
-    wallet_balance = Decimal('0')
-    has_wallet_access = False
+    # Get OD Wallet information (admin controlled)
+    od_wallet = None
+    od_wallet_balance = Decimal('0')
+    has_od_wallet_access = False
     try:
-        wallet = Wallet.objects.get(user=request.user)
-        wallet_balance = wallet.balance
-        has_wallet_access = wallet.is_active
-    except Wallet.DoesNotExist:
+        od_wallet = ODWallet.objects.get(user=request.user)
+        od_wallet_balance = od_wallet.balance
+        has_od_wallet_access = od_wallet.is_active
+    except ODWallet.DoesNotExist:
         pass
+    
+    # Get Cash Balance Wallet information (user self-recharge, direct access)
+    cash_balance_wallet = None
+    cash_balance = Decimal('0')
+    try:
+        cash_balance_wallet = CashBalanceWallet.objects.get(user=request.user)
+        cash_balance = cash_balance_wallet.balance
+    except CashBalanceWallet.DoesNotExist:
+        # Create cash balance wallet if it doesn't exist (auto-create for all users)
+        cash_balance_wallet = CashBalanceWallet.objects.create(user=request.user)
+        cash_balance = Decimal('0')
     
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
@@ -995,11 +1124,107 @@ def dashboard(request):
         'cancelled_bookings': cancelled_bookings,
         'airport_codes': airport_codes,
         'user': request.user,
-        'wallet': wallet,
-        'wallet_balance': wallet_balance,
-        'has_wallet_access': has_wallet_access,
+        'profile': profile,
+        'od_wallet': od_wallet,
+        'od_wallet_balance': od_wallet_balance,
+        'has_od_wallet_access': has_od_wallet_access,
+        'cash_balance_wallet': cash_balance_wallet,
+        'cash_balance': cash_balance,
     }
     return render(request, 'dashboard_new.html', context)
+
+
+@login_required
+def my_trips(request):
+    """My Trips page with date range filtering and Past/Upcoming/Completed tabs"""
+    from datetime import datetime, date
+    from django.db.models import Q
+    
+    today = timezone.now().date()
+    
+    # Get filter parameters
+    from_date_str = request.GET.get('from_date', '')
+    to_date_str = request.GET.get('to_date', '')
+    trip_type_filter = request.GET.get('trip_type', 'all')  # all, upcoming, past, completed
+    
+    # Parse date filters
+    from_date = None
+    to_date = None
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    # Get all bookings for the user
+    all_bookings = Booking.objects.filter(user=request.user).select_related(
+        'schedule__route', 'return_schedule__route'
+    ).prefetch_related('passengers').order_by('-schedule__departure_date', '-created_at')
+    
+    # Apply date range filter
+    if from_date:
+        all_bookings = all_bookings.filter(schedule__departure_date__gte=from_date)
+    if to_date:
+        all_bookings = all_bookings.filter(schedule__departure_date__lte=to_date)
+    
+    # Categorize bookings
+    upcoming_bookings = all_bookings.filter(
+        schedule__departure_date__gte=today,
+        status=Booking.Status.CONFIRMED
+    )
+    
+    past_bookings = all_bookings.filter(
+        schedule__departure_date__lt=today,
+        status=Booking.Status.CONFIRMED
+    )
+    
+    completed_bookings = all_bookings.filter(
+        status=Booking.Status.COMPLETED
+    )
+    
+    cancelled_bookings = all_bookings.filter(
+        status=Booking.Status.CANCELLED
+    )
+    
+    # Get airport codes for display
+    airport_codes = get_airport_codes()
+    
+    # Apply trip type filter if specified
+    if trip_type_filter == 'upcoming':
+        filtered_bookings = upcoming_bookings
+    elif trip_type_filter == 'past':
+        filtered_bookings = past_bookings
+    elif trip_type_filter == 'completed':
+        filtered_bookings = completed_bookings
+    elif trip_type_filter == 'cancelled':
+        filtered_bookings = cancelled_bookings
+    else:
+        filtered_bookings = all_bookings
+    
+    context = {
+        'all_bookings': filtered_bookings,
+        'upcoming_bookings': upcoming_bookings,
+        'past_bookings': past_bookings,
+        'completed_bookings': completed_bookings,
+        'cancelled_bookings': cancelled_bookings,
+        'upcoming_count': upcoming_bookings.count(),
+        'past_count': past_bookings.count(),
+        'completed_count': completed_bookings.count(),
+        'cancelled_count': cancelled_bookings.count(),
+        'total_count': all_bookings.count(),
+        'from_date': from_date_str,
+        'to_date': to_date_str,
+        'trip_type_filter': trip_type_filter,
+        'airport_codes': airport_codes,
+        'today': today,
+    }
+    
+    return render(request, 'my_trips.html', context)
 
 
 @login_required
@@ -1035,9 +1260,18 @@ def payment_page(request, booking_id):
         return redirect('booking_confirmation', booking_id=booking.id)
     
     # Handle wallet payment if requested
-    if request.method == 'POST' and request.POST.get('payment_method') == 'wallet':
+    if request.method == 'POST' and request.POST.get('payment_method') in ['od_wallet', 'cash_balance']:
+        payment_method = request.POST.get('payment_method')
         try:
-            wallet = Wallet.objects.get(user=request.user, is_active=True)
+            if payment_method == 'od_wallet':
+                # OD Wallet payment (admin controlled)
+                wallet = ODWallet.objects.get(user=request.user, is_active=True)
+                wallet_type = 'OD Wallet'
+            else:
+                # Cash Balance Wallet payment (user self-recharge)
+                wallet = CashBalanceWallet.objects.get(user=request.user)
+                wallet_type = 'Cash Balance'
+            
             if wallet.balance >= booking.total_amount:
                 # Deduct from wallet
                 wallet.deduct_balance(
@@ -1059,12 +1293,14 @@ def payment_page(request, booking_id):
                 
                 booking.save()
                 
-                messages.success(request, f'Payment successful using wallet! Booking confirmed: {booking.booking_reference}')
+                messages.success(request, f'Payment successful using {wallet_type}! Booking confirmed: {booking.booking_reference}')
                 return redirect('booking_confirmation', booking_id=booking.id)
             else:
-                messages.error(request, f'Insufficient wallet balance. Your balance: ₹{wallet.balance}, Required: ₹{booking.total_amount}')
-        except Wallet.DoesNotExist:
-            messages.error(request, 'Wallet is not available or not activated.')
+                messages.error(request, f'Insufficient {wallet_type} balance. Your balance: ₹{wallet.balance}, Required: ₹{booking.total_amount}')
+        except ODWallet.DoesNotExist:
+            messages.error(request, 'OD Wallet is not available or not activated.')
+        except CashBalanceWallet.DoesNotExist:
+            messages.error(request, 'Cash Balance Wallet is not available.')
         except Exception as e:
             messages.error(request, f'Wallet payment failed: {str(e)}')
     
@@ -1085,16 +1321,29 @@ def payment_page(request, booking_id):
         messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment skipped for testing)')
         return redirect('booking_confirmation', booking_id=booking.id)
     
-    # Get wallet information for payment page
-    wallet = None
-    wallet_balance = Decimal('0')
-    can_use_wallet = False
+    # Get OD Wallet information for payment page
+    od_wallet = None
+    od_wallet_balance = Decimal('0')
+    can_use_od_wallet = False
     try:
-        wallet = Wallet.objects.get(user=request.user, is_active=True)
-        wallet_balance = wallet.balance
-        can_use_wallet = wallet.balance >= booking.total_amount
-    except Wallet.DoesNotExist:
+        od_wallet = ODWallet.objects.get(user=request.user, is_active=True)
+        od_wallet_balance = od_wallet.balance
+        can_use_od_wallet = od_wallet.balance >= booking.total_amount
+    except ODWallet.DoesNotExist:
         pass
+    
+    # Get Cash Balance Wallet information for payment page
+    cash_balance_wallet = None
+    cash_balance = Decimal('0')
+    can_use_cash_balance = False
+    try:
+        cash_balance_wallet = CashBalanceWallet.objects.get(user=request.user)
+        cash_balance = cash_balance_wallet.balance
+        can_use_cash_balance = cash_balance_wallet.balance >= booking.total_amount
+    except CashBalanceWallet.DoesNotExist:
+        # Auto-create cash balance wallet if it doesn't exist
+        cash_balance_wallet = CashBalanceWallet.objects.create(user=request.user)
+        cash_balance = Decimal('0')
     
     # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
     # Check if Razorpay is configured
@@ -1108,9 +1357,12 @@ def payment_page(request, booking_id):
     context = {
         'booking': booking,
         'airport_codes': airport_codes,
-        'wallet': wallet,
-        'wallet_balance': wallet_balance,
-        'can_use_wallet': can_use_wallet,
+        'od_wallet': od_wallet,
+        'od_wallet_balance': od_wallet_balance,
+        'can_use_od_wallet': can_use_od_wallet,
+        'cash_balance_wallet': cash_balance_wallet,
+        'cash_balance': cash_balance,
+        'can_use_cash_balance': can_use_cash_balance,
     }
     return render(request, 'payment.html', context)
     
@@ -1268,13 +1520,9 @@ def payment_failed(request):
 
 @login_required
 def wallet_recharge(request):
-    """Wallet recharge page with Razorpay payment gateway"""
-    # Get or create wallet for user
-    wallet, created = Wallet.objects.get_or_create(user=request.user)
-    
-    if not wallet.is_active:
-        messages.info(request, 'Your wallet is not activated. Please contact admin to activate your wallet.')
-        return redirect('dashboard')
+    """Cash Balance Wallet recharge page - User self-recharge (direct access for everyone)"""
+    # Get or create cash balance wallet for user (auto-created for all users)
+    wallet, created = CashBalanceWallet.objects.get_or_create(user=request.user)
     
     # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
     # Handle successful payment callback
@@ -1432,20 +1680,33 @@ def wallet_recharge(request):
 
 @login_required
 def wallet_history(request):
-    """Wallet transaction history page"""
-    try:
-        wallet = Wallet.objects.get(user=request.user)
+    """Wallet transaction history page - supports both OD Wallet and Cash Balance Wallet"""
+    wallet_type = request.GET.get('type', 'cash_balance')  # Default to cash balance
+    
+    if wallet_type == 'od':
+        # OD Wallet history (only if active)
+        try:
+            wallet = ODWallet.objects.get(user=request.user, is_active=True)
+            transactions = wallet.transactions.all().order_by('-created_at')[:50]  # Last 50 transactions
+            wallet_balance = wallet.balance
+            wallet_name = 'OD Wallet'
+        except ODWallet.DoesNotExist:
+            messages.info(request, 'OD Wallet is not available or not activated.')
+            return redirect('dashboard')
+    else:
+        # Cash Balance Wallet history (direct access for everyone)
+        wallet, created = CashBalanceWallet.objects.get_or_create(user=request.user)
         transactions = wallet.transactions.all().order_by('-created_at')[:50]  # Last 50 transactions
-        
-        context = {
-            'wallet': wallet,
-            'wallet_balance': wallet.balance,
-            'transactions': transactions,
-            'has_wallet_access': wallet.is_active,
-        }
-    except Wallet.DoesNotExist:
-        messages.info(request, 'You do not have a wallet. Please contact admin to activate wallet access.')
-        return redirect('dashboard')
+        wallet_balance = wallet.balance
+        wallet_name = 'Cash Balance'
+    
+    context = {
+        'wallet': wallet,
+        'wallet_balance': wallet_balance,
+        'transactions': transactions,
+        'wallet_type': wallet_type,
+        'wallet_name': wallet_name,
+    }
     
     return render(request, 'wallet_history.html', context)
 
@@ -2017,20 +2278,10 @@ def send_otp(request):
         try:
             data = json.loads(request.body)
             email = data.get('email', '').strip().lower()
-            aadhar_number = data.get('aadhar_number', '').strip()
             
             # Validate email
             if not email or '@' not in email:
                 return JsonResponse({'success': False, 'message': 'Invalid email address.'})
-            
-            # Validate aadhar number if provided
-            if aadhar_number:
-                if not aadhar_number.isdigit() or len(aadhar_number) != 12:
-                    return JsonResponse({'success': False, 'message': 'Invalid Aadhar number. Must be 12 digits.'})
-                
-                # Check if aadhar is already registered
-                if UserProfile.objects.filter(aadhar_number=aadhar_number).exists():
-                    return JsonResponse({'success': False, 'message': 'This Aadhar number is already registered.'})
             
             # Check if email is already registered
             User = get_user_model()
@@ -2047,7 +2298,6 @@ def send_otp(request):
             expires_at = timezone.now() + timedelta(minutes=10)
             otp_obj = OTPVerification.objects.create(
                 email=email,
-                aadhar_number=aadhar_number if aadhar_number else '',
                 otp=otp,
                 expires_at=expires_at
             )
@@ -2129,8 +2379,6 @@ def verify_otp(request):
             if otp_obj.verify(otp):
                 # Store verification in session with email and aadhar
                 request.session['email_verified'] = email
-                if otp_obj.aadhar_number:
-                    request.session['aadhar_verified'] = otp_obj.aadhar_number
                 request.session['otp_verified_at'] = timezone.now().isoformat()
                 return JsonResponse({'success': True, 'message': 'OTP verified successfully! You can now create your account.'})
             else:
@@ -2147,86 +2395,25 @@ def verify_otp(request):
 
 
 def user_signup(request):
-    """Handle new user registration with email OTP verification"""
+    """Handle new user registration (OTP verification disabled for now)"""
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
-    # Check if email is verified in session
-    email_verified = request.session.get('email_verified')
-    otp_verified_at = request.session.get('otp_verified_at')
-    
-    # OTP verification expires after 30 minutes
-    if otp_verified_at:
-        verified_time = datetime.fromisoformat(otp_verified_at)
-        if (timezone.now() - verified_time).total_seconds() > 1800:  # 30 minutes
-            email_verified = None
-            del request.session['email_verified']
-            if 'aadhar_verified' in request.session:
-                del request.session['aadhar_verified']
-            del request.session['otp_verified_at']
         
     if request.method == 'POST':
-        # Check if this is OTP verification request or account creation
-        if 'verify_otp_only' in request.POST:
-            # This is handled by verify_otp view via AJAX
-            form = UserRegisterForm()
-            return render(request, 'signup.html', {
-                'form': form,
-                'email_verified': email_verified is not None,
-                'show_otp': True
-            })
-        
         form = UserRegisterForm(request.POST, request.FILES)
         
-        # Check if email is verified
-        email = request.POST.get('email', '').strip().lower()
         if form.is_valid():
-            if email != email_verified:
-                # Form is valid but OTP not verified - send OTP first
-                # Store form data in session temporarily
-                request.session['signup_data'] = {
-                    'full_name': form.cleaned_data.get('full_name'),
-                    'email': form.cleaned_data.get('email'),
-                    'phone': form.cleaned_data.get('phone', ''),
-                    'aadhar_number': form.cleaned_data.get('aadhar_number'),
-                    'password1': form.cleaned_data.get('password1'),
-                }
-                messages.info(request, 'Please verify your email with OTP to complete registration.')
-                return render(request, 'signup.html', {
-                    'form': form,
-                    'email_verified': False,
-                    'show_otp': True,
-                    'email': email
-                })
-            else:
-                # Email is verified and form is valid - create account
-                try:
-                    # Save the user (which also creates the profile)
-                    user = form.save()
-                    
-                    # Mark OTP as used
-                    if email_verified:
-                        OTPVerification.objects.filter(
-                            email=email_verified,
-                            is_verified=False
-                        ).update(is_verified=True)
-                        # Clear session
-                        if 'email_verified' in request.session:
-                            del request.session['email_verified']
-                        if 'aadhar_verified' in request.session:
-                            del request.session['aadhar_verified']
-                        if 'otp_verified_at' in request.session:
-                            del request.session['otp_verified_at']
-                        if 'signup_data' in request.session:
-                            del request.session['signup_data']
-                    
-                    # Log the user in
-                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                    messages.success(request, 'Account created successfully! Welcome to Safar Zone Travels.')
-                    return redirect('dashboard')
-                    
-                except Exception as e:
-                    messages.error(request, f'Error creating account: {str(e)}')
+            try:
+                # Save the user (which also creates the profile)
+                user = form.save()
+                
+                # Log the user in
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, 'Account created successfully! Welcome to Safar Zone Travels.')
+                return redirect('dashboard')
+                
+            except Exception as e:
+                messages.error(request, f'Error creating account: {str(e)}')
                 # Log the error for debugging
                 import logging
                 logger = logging.getLogger(__name__)
@@ -2238,20 +2425,9 @@ def user_signup(request):
                     messages.error(request, f"{field.title()}: {error}")
     else:
         form = UserRegisterForm()
-        # Restore form data from session if available
-        if 'signup_data' in request.session:
-            signup_data = request.session['signup_data']
-            form = UserRegisterForm(initial={
-                'full_name': signup_data.get('full_name'),
-                'email': signup_data.get('email'),
-                'phone': signup_data.get('phone'),
-                'aadhar_number': signup_data.get('aadhar_number'),
-            })
     
     return render(request, 'signup.html', {
-        'form': form,
-        'email_verified': email_verified is not None,
-        'show_otp': False
+        'form': form
     })
 
 
@@ -2376,6 +2552,121 @@ def add_package(request):
     
     return redirect('admin_packages')
 
+
+def apply_package(request, package_name=None):
+    """Package application form - for applying to travel packages"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            package_name = request.POST.get('package_name', '').strip()
+            destination = request.POST.get('destination', package_name).strip()
+            full_name = request.POST.get('full_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            phone = request.POST.get('phone', '').strip()
+            travel_date_str = request.POST.get('travel_date', '').strip()
+            number_of_people = int(request.POST.get('number_of_people', 1))
+            special_requests = request.POST.get('special_requests', '').strip()
+            
+            # Validate required fields
+            if not all([package_name, full_name, email, phone]):
+                messages.error(request, 'Please fill in all required fields.')
+                return redirect('apply_package', package_name=package_name or '')
+            
+            # Parse travel date if provided
+            travel_date = None
+            if travel_date_str:
+                try:
+                    travel_date = datetime.strptime(travel_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    travel_date = None
+            
+            # Get user IP and user agent
+            ip_address = get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # Create package application
+            application = PackageApplication.objects.create(
+                package_name=package_name,
+                destination=destination,
+                user=request.user if request.user.is_authenticated else None,
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                travel_date=travel_date,
+                number_of_people=number_of_people,
+                special_requests=special_requests,
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
+            
+            messages.success(request, f'Your application for {package_name} package has been submitted successfully! We will contact you soon.')
+            return redirect('homepage')
+            
+        except Exception as e:
+            messages.error(request, f'Error submitting application: {str(e)}')
+            return redirect('apply_package', package_name=package_name or '')
+    
+    # GET request - show form
+    # Default package destinations with images
+    popular_packages = [
+        {
+            'name': 'Thailand', 
+            'destination': 'Thailand',
+            'image': 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&h=600&fit=crop',
+            'description': 'Experience the vibrant culture, stunning beaches, and delicious cuisine of Thailand'
+        },
+        {
+            'name': 'Dubai', 
+            'destination': 'Dubai',
+            'image': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=600&fit=crop',
+            'description': 'Discover luxury, modern architecture, and desert adventures in Dubai'
+        },
+        {
+            'name': 'Singapore', 
+            'destination': 'Singapore',
+            'image': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&h=600&fit=crop',
+            'description': 'Explore the perfect blend of culture, cuisine, and cutting-edge innovation'
+        },
+        {
+            'name': 'Bali', 
+            'destination': 'Bali',
+            'image': 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&h=600&fit=crop',
+            'description': 'Relax on pristine beaches and immerse in Balinese culture and spirituality'
+        },
+        {
+            'name': 'Vietnam', 
+            'destination': 'Vietnam',
+            'image': 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=600&fit=crop',
+            'description': 'Journey through rich history, breathtaking landscapes, and amazing food'
+        },
+    ]
+    
+    # Find the selected package
+    selected_package = None
+    if package_name:
+        for pkg in popular_packages:
+            if pkg['name'].lower() == package_name.lower():
+                selected_package = pkg
+                break
+    
+    # Pre-fill form if user is authenticated
+    initial_data = {}
+    if request.user.is_authenticated:
+        initial_data['email'] = request.user.email
+        if hasattr(request.user, 'profile') and request.user.profile:
+            initial_data['full_name'] = request.user.profile.full_name or request.user.get_full_name()
+            if hasattr(request.user.profile, 'phone'):
+                initial_data['phone'] = request.user.profile.phone or request.user.phone
+    
+    context = {
+        'package_name': package_name or '',
+        'selected_package': selected_package,
+        'popular_packages': popular_packages,
+        'initial_data': initial_data,
+        'today': date.today().isoformat(),
+    }
+    
+    return render(request, 'apply_package.html', context)
 
 @login_required
 @user_passes_test(is_staff_user)

@@ -2,7 +2,7 @@
 {% load static %}
 {% load travel_filters %}
 
-{% block title %}Dashboard - Safar Zone Travels{% endblock %}
+{% block title %}User Profile - Safar Zone Travels{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -77,6 +77,17 @@
   <!-- Welcome Header -->
         <div class="mb-8 animate-fade-in-up">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="flex items-center gap-4">
+                    <!-- Logo Display/Upload -->
+                    <div class="flex-shrink-0">
+                        {% if profile.logo %}
+                            <img src="{{ profile.logo.url }}" alt="Logo" class="w-20 h-20 rounded-xl object-cover border-4 border-white shadow-lg">
+                        {% else %}
+                            <div class="w-20 h-20 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
+                                <i class="fas fa-image text-white text-2xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
         <div>
                     <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #111827 !important;">
                         Welcome back, <span class="gradient-text">{% if user.profile %}{{ user.profile.full_name|default:user.email }}{% else %}{{ user.email }}{% endif %}!</span> 👋
@@ -89,10 +100,22 @@
                     </p>
                     {% endif %}
         </div>
+        </div>
+                <div class="flex gap-3">
+                    <!-- Logo Upload Form -->
+                    <form method="post" enctype="multipart/form-data" class="flex items-center">
+                        {% csrf_token %}
+                        <label class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 cursor-pointer">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Logo</span>
+                            <input type="file" name="logo" accept="image/*" class="hidden" onchange="this.form.submit()">
+                        </label>
+                    </form>
                 <a href="{% url 'homepage' %}" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2">
                     <i class="fas fa-plus"></i>
                     <span>New Booking</span>
                 </a>
+                </div>
     </div>
   </div>
   
@@ -141,8 +164,8 @@
       </div>
     </div>
     
-        <!-- Wallet Card (OD) - Only show if user has wallet access -->
-        {% if has_wallet_access %}
+        <!-- OD Wallet Card - Only show if admin has activated it -->
+        {% if has_od_wallet_access %}
         <div class="mb-8 animate-fade-in-up" style="animation-delay: 0.3s;">
             <div class="wallet-card rounded-2xl shadow-2xl p-6" style="background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%) !important;">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -153,13 +176,38 @@
                             <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold" style="color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;">ACTIVE</span>
             </div>
                         <p class="mb-1" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Available Balance</p>
-                        <h2 class="text-5xl font-bold mb-2" style="color: #ffffff !important; text-shadow: 0 3px 8px rgba(0,0,0,0.6) !important;">₹{{ wallet_balance|floatformat:2 }}</h2>
-                        <p class="text-sm" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Use your wallet balance to book tickets instantly</p>
+                        <h2 class="text-5xl font-bold mb-2" style="color: #ffffff !important; text-shadow: 0 3px 8px rgba(0,0,0,0.6) !important;">₹{{ od_wallet_balance|floatformat:2 }}</h2>
+                        <p class="text-sm" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Admin managed wallet - Only admin can recharge</p>
             </div>
                     <div class="flex flex-col gap-3 w-full md:w-auto">
-                        <a href="{% url 'wallet_recharge' %}" class="px-6 py-3 bg-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2" style="color: #ea580c !important;">
-                            <i class="fas fa-plus-circle" style="color: #ea580c !important;"></i>
-                            <span style="color: #ea580c !important;">Recharge Wallet</span>
+                        <a href="{% url 'wallet_history' %}?type=od" class="px-6 py-3 bg-white/20 backdrop-blur-sm font-bold rounded-xl shadow-lg hover:bg-white/30 transition-all duration-200 flex items-center justify-center space-x-2" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">
+                            <i class="fas fa-history" style="color: #ffffff !important;"></i>
+                            <span style="color: #ffffff !important;">OD Wallet History</span>
+                        </a>
+          </div>
+        </div>
+      </div>
+    </div>
+        {% endif %}
+        
+        <!-- Cash Balance Wallet Card - Always visible, users can recharge themselves -->
+        <div class="mb-8 animate-fade-in-up" style="animation-delay: 0.4s;">
+            <div class="wallet-card rounded-2xl shadow-2xl p-6" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%) !important;">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-wallet text-2xl" style="color: #ffffff !important;"></i>
+                            <h3 class="text-2xl font-bold" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Cash Balance</h3>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold" style="color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;">ACTIVE</span>
+            </div>
+                        <p class="mb-1" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Available Balance</p>
+                        <h2 class="text-5xl font-bold mb-2" style="color: #ffffff !important; text-shadow: 0 3px 8px rgba(0,0,0,0.6) !important;">₹{{ cash_balance|floatformat:2 }}</h2>
+                        <p class="text-sm" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">Recharge yourself and use for bookings instantly</p>
+            </div>
+                    <div class="flex flex-col gap-3 w-full md:w-auto">
+                        <a href="{% url 'wallet_recharge' %}" class="px-6 py-3 bg-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2" style="color: #1e40af !important;">
+                            <i class="fas fa-plus-circle" style="color: #1e40af !important;"></i>
+                            <span style="color: #1e40af !important;">Recharge Cash Balance</span>
                         </a>
                         <a href="{% url 'wallet_history' %}" class="px-6 py-3 bg-white/20 backdrop-blur-sm font-bold rounded-xl shadow-lg hover:bg-white/30 transition-all duration-200 flex items-center justify-center space-x-2" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;">
                             <i class="fas fa-history" style="color: #ffffff !important;"></i>
@@ -169,7 +217,6 @@
         </div>
       </div>
     </div>
-        {% endif %}
   
   <!-- Bookings Section -->
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in-up" style="animation-delay: 0.3s;">

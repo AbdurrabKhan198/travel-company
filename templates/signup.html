@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-500 via-pink-600 to-red-600 relative overflow-hidden">
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 relative overflow-hidden">
     <!-- Animated Background -->
     <div class="absolute inset-0 overflow-hidden">
         <div class="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float"></div>
@@ -9,18 +9,19 @@
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-float" style="animation-delay: 4s;"></div>
     </div>
 
-    <div class="max-w-lg w-full space-y-8 relative z-10 animate-fade-in-up">
-        <!-- Logo & Header -->
+    <div class="max-w-4xl w-full space-y-8 relative z-10 animate-fade-in-up">
+        <!-- Header -->
         <div class="text-center">
             <div class="inline-block p-4 bg-white/20 backdrop-blur-md rounded-2xl mb-6 shadow-lg">
                 <i class="fas fa-user-plus text-white text-4xl animate-float"></i>
             </div>
             <h2 class="text-4xl font-bold text-white mb-2">Create Your Account</h2>
-            <p class="text-white/90">Join Safar Zone and start your journey</p>
+            <p class="text-white/90 text-lg">Join Safar Zone and start your journey</p>
         </div>
 
-        <!-- Signup Card -->
-        <div class="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+        <!-- Main Signup Card -->
+        <div class="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+            <div class="p-8 lg:p-10">
             {% if messages %}
             <div class="mb-6 space-y-2">
                 {% for message in messages %}
@@ -34,8 +35,27 @@
             </div>
             {% endif %}
 
-            <form method="post" id="signupForm" class="space-y-5">
+                <form method="post" id="signupForm" class="space-y-6" enctype="multipart/form-data">
                 {% csrf_token %}
+                    
+                    <!-- Personal Information Section -->
+                    <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                        <h3 class="text-xl font-bold text-white mb-5 flex items-center">
+                            <i class="fas fa-user-circle mr-3 text-blue-300"></i>
+                            Personal Information
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Title -->
+                            <div>
+                                <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-user-tag mr-2"></i>Title
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.title.errors.0 }}</p>
+                                {% endif %}
+                            </div>
                 
                 <!-- Full Name -->
                 <div>
@@ -62,30 +82,29 @@
                 <!-- Phone -->
                 <div>
                     <label for="{{ form.phone.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-phone mr-2"></i>Phone Number <span class="text-white/70 text-xs">(Optional)</span>
+                                    <i class="fas fa-phone mr-2"></i>Phone Number <span class="text-white/70 text-xs font-normal">(Optional)</span>
                     </label>
                     {{ form.phone }}
                     {% if form.phone.errors %}
                     <p class="mt-1 text-sm text-red-300">{{ form.phone.errors.0 }}</p>
                     {% endif %}
+                                <p class="mt-1 text-xs text-white/70">Enter 10-15 digits only (no spaces or special characters)</p>
+                            </div>
+                        </div>
                 </div>
 
-                <!-- Aadhar Number -->
-                <div>
-                    <label for="{{ form.aadhar_number.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-id-card mr-2"></i>Aadhar Number <span class="text-red-300">*</span>
-                    </label>
-                    {{ form.aadhar_number }}
-                    {% if form.aadhar_number.errors %}
-                    <p class="mt-1 text-sm text-red-300">{{ form.aadhar_number.errors.0 }}</p>
-                    {% endif %}
-                    <p class="mt-1 text-xs text-white/70">12-digit Aadhar number for security verification</p>
-                </div>
-
+                    <!-- Password Section -->
+                    <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                        <h3 class="text-xl font-bold text-white mb-5 flex items-center">
+                            <i class="fas fa-lock mr-3 text-purple-300"></i>
+                            Security
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Password -->
                 <div>
                     <label for="{{ form.password1.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-lock mr-2"></i>Password
+                                    <i class="fas fa-key mr-2"></i>Password
                     </label>
                     <div class="relative">
                         {{ form.password1 }}
@@ -103,7 +122,7 @@
                 <!-- Confirm Password -->
                 <div>
                     <label for="{{ form.password2.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-lock mr-2"></i>Confirm Password
+                                    <i class="fas fa-key mr-2"></i>Confirm Password
                     </label>
                     <div class="relative">
                         {{ form.password2 }}
@@ -117,48 +136,134 @@
                     <p class="mt-1 text-sm text-red-300">{{ form.password2.errors.0 }}</p>
                     {% endif %}
                 </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Details Section -->
+                    <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                        <h3 class="text-xl font-bold text-white mb-5 flex items-center">
+                            <i class="fas fa-building mr-3 text-pink-300"></i>
+                            Company Details
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Company Name -->
+                            <div class="md:col-span-2">
+                                <label for="{{ form.company_name.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-briefcase mr-2"></i>Company Name <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.company_name }}
+                                {% if form.company_name.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.company_name.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Address -->
+                            <div class="md:col-span-2">
+                                <label for="{{ form.address.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>Address <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.address.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- City -->
+                            <div>
+                                <label for="{{ form.city.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-city mr-2"></i>City <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.city }}
+                                {% if form.city.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.city.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- State -->
+                            <div>
+                                <label for="{{ form.state.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-map mr-2"></i>State/Province <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.state }}
+                                {% if form.state.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.state.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Country -->
+                            <div>
+                                <label for="{{ form.country.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-globe mr-2"></i>Country <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.country }}
+                                {% if form.country.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.country.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Pin Code -->
+                            <div>
+                                <label for="{{ form.pincode.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-mail-bulk mr-2"></i>Pin Code <span class="text-red-300">*</span>
+                                </label>
+                                {{ form.pincode }}
+                                {% if form.pincode.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.pincode.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- GST Number -->
+                            <div class="md:col-span-2">
+                                <label for="{{ form.gst_number.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-receipt mr-2"></i>GST Number <span class="text-white/70 text-xs font-normal">(Optional)</span>
+                                </label>
+                                {{ form.gst_number }}
+                                {% if form.gst_number.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.gst_number.errors.0 }}</p>
+                                {% endif %}
+                                <p class="mt-1 text-xs text-white/70">Enter your GST number (Optional) - Format: 27ABCDE1234F1Z5</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Document Upload Section -->
+                    <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                        <h3 class="text-xl font-bold text-white mb-5 flex items-center">
+                            <i class="fas fa-file-upload mr-3 text-yellow-300"></i>
+                            Document Upload
+                        </h3>
+                        
+                        <div>
+                            <!-- Aadhar Card Upload -->
+                            <div>
+                        <label for="{{ form.aadhar_card.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                            <i class="fas fa-id-card mr-2"></i>Aadhar Card <span class="text-red-300">*</span>
+                        </label>
+                            <input type="file" 
+                                   name="{{ form.aadhar_card.name }}" 
+                                   id="{{ form.aadhar_card.id_for_label }}"
+                                   accept="image/*"
+                                   required
+                                   class="block w-full text-sm text-white/90 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-lg focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30">
+                        {% if form.aadhar_card.errors %}
+                        <p class="mt-1 text-sm text-red-300">{{ form.aadhar_card.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-white/70">Upload your Aadhar card image (Required)</p>
+                    </div>
+                    </div>
+                </div>
 
                 <!-- Terms & Conditions -->
-                <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
                     {{ form.terms_accepted }}
                     <label for="{{ form.terms_accepted.id_for_label }}" class="text-white/90 text-sm cursor-pointer">
-                        I agree to the <a href="#" class="text-white font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-white font-semibold hover:underline">Privacy Policy</a>
+                            I agree to the <a href="#" class="text-blue-300 font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-blue-300 font-semibold hover:underline">Privacy Policy</a>
                     </label>
                 </div>
                 {% if form.terms_accepted.errors %}
                 <p class="text-sm text-red-300">{{ form.terms_accepted.errors.0 }}</p>
                 {% endif %}
-
-                <!-- OTP Verification Section (shown after clicking Create Account) -->
-                <div id="otpSection" class="hidden p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-                    <div class="flex items-center space-x-2 mb-3">
-                        <i class="fas fa-envelope text-blue-400"></i>
-                        <span class="text-white font-semibold">Email Verification</span>
-                    </div>
-                    <p class="text-white/80 text-sm mb-3">We've sent a 6-digit OTP to <span id="otpEmail" class="font-semibold"></span>. Please check your inbox and enter the OTP below.</p>
-                    <div class="flex space-x-2">
-                        <input type="text" 
-                               id="otpInput" 
-                               maxlength="6" 
-                               pattern="\d{6}"
-                               placeholder="Enter 6-digit OTP"
-                               class="flex-1 px-4 py-3 rounded-xl bg-white/90 backdrop-blur-md border-2 border-white/30 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 text-gray-800 text-center text-2xl font-bold tracking-widest">
-                        <button type="button" 
-                                id="verifyOtpBtn"
-                                onclick="verifyOTP()"
-                                class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                            <i class="fas fa-check mr-2"></i>Verify
-                        </button>
-                    </div>
-                    <div id="otpMessage" class="mt-2 text-sm"></div>
-                    <div id="otpStatus" class="mt-2"></div>
-                    <button type="button" 
-                            id="resendOtpBtn"
-                            onclick="resendOTP()"
-                            class="mt-3 text-sm text-white/80 hover:text-white underline">
-                        Didn't receive OTP? <span id="resendTimer" class="font-semibold"></span>
-                    </button>
-                </div>
 
                 <!-- Submit Button -->
                 <button type="submit" 
@@ -177,19 +282,27 @@
                         Login
                     </a>
                 </p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Style form inputs to match design */
+    /* Form Input Styles */
+    #{{ form.title.id_for_label }},
     #{{ form.full_name.id_for_label }},
     #{{ form.email.id_for_label }},
     #{{ form.phone.id_for_label }},
-    #{{ form.aadhar_number.id_for_label }},
     #{{ form.password1.id_for_label }},
-    #{{ form.password2.id_for_label }} {
+    #{{ form.password2.id_for_label }},
+    #{{ form.company_name.id_for_label }},
+    #{{ form.address.id_for_label }},
+    #{{ form.city.id_for_label }},
+    #{{ form.state.id_for_label }},
+    #{{ form.country.id_for_label }},
+    #{{ form.pincode.id_for_label }},
+    #{{ form.gst_number.id_for_label }} {
         width: 100%;
         padding: 0.75rem 1rem;
         border-radius: 0.75rem;
@@ -200,15 +313,28 @@
         transition: all 0.2s;
     }
     
+    #{{ form.title.id_for_label }}:focus,
     #{{ form.full_name.id_for_label }}:focus,
     #{{ form.email.id_for_label }}:focus,
     #{{ form.phone.id_for_label }}:focus,
-    #{{ form.aadhar_number.id_for_label }}:focus,
     #{{ form.password1.id_for_label }}:focus,
-    #{{ form.password2.id_for_label }}:focus {
+    #{{ form.password2.id_for_label }}:focus,
+    #{{ form.company_name.id_for_label }}:focus,
+    #{{ form.address.id_for_label }}:focus,
+    #{{ form.city.id_for_label }}:focus,
+    #{{ form.state.id_for_label }}:focus,
+    #{{ form.country.id_for_label }}:focus,
+    #{{ form.pincode.id_for_label }}:focus,
+    #{{ form.gst_number.id_for_label }}:focus {
         outline: none;
         border-color: rgba(255, 255, 255, 0.5);
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 1);
+    }
+    
+    #{{ form.address.id_for_label }} {
+        min-height: 100px;
+        resize: vertical;
     }
     
     #{{ form.terms_accepted.id_for_label }} {
@@ -226,10 +352,6 @@
 </style>
 
 <script>
-    let otpVerified = {% if email_verified %}true{% else %}false{% endif %};
-    let countdownInterval = null;
-    let resendCountdown = 60;
-    
     function togglePassword(inputId, toggleId) {
         const passwordInput = document.getElementById(inputId);
         const passwordToggle = document.getElementById(toggleId);
@@ -245,238 +367,110 @@
         }
     }
     
-    function sendOTP(email, aadharNumber) {
-        const otpSection = document.getElementById('otpSection');
-        const otpMessage = document.getElementById('otpMessage');
-        const otpEmail = document.getElementById('otpEmail');
-        const submitBtn = document.getElementById('submitBtn');
-        const submitBtnText = document.getElementById('submitBtnText');
-        
-        otpEmail.textContent = email;
-        otpSection.classList.remove('hidden');
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        submitBtnText.textContent = 'Verifying OTP...';
-        
-        // Send OTP request
-        fetch('{% url "send_otp" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                email: email,
-                aadhar_number: aadharNumber
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage(otpMessage, data.message, 'success');
-                document.getElementById('otpInput').value = '';
-                document.getElementById('otpInput').focus();
-                startResendCountdown();
-            } else {
-                showMessage(otpMessage, data.message, 'error');
-                otpSection.classList.add('hidden');
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtnText.textContent = 'Create Account';
-            }
-        })
-        .catch(error => {
-            showMessage(otpMessage, 'Error sending OTP. Please try again.', 'error');
-            otpSection.classList.add('hidden');
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            submitBtnText.textContent = 'Create Account';
-        });
-    }
-    
-    function verifyOTP() {
-        const emailInput = document.getElementById('{{ form.email.id_for_label }}');
-        const otpInput = document.getElementById('otpInput');
-        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-        const otpMessage = document.getElementById('otpMessage');
-        const otpStatus = document.getElementById('otpStatus');
-        const submitBtn = document.getElementById('submitBtn');
-        const submitBtnText = document.getElementById('submitBtnText');
-        
-        const email = emailInput.value.trim().toLowerCase();
-        const otp = otpInput.value.trim();
-        
-        if (!otp || !/^\d{6}$/.test(otp)) {
-            showMessage(otpMessage, 'Please enter a valid 6-digit OTP.', 'error');
-            return;
-        }
-        
-        // Disable button and show loading
-        verifyOtpBtn.disabled = true;
-        verifyOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying...';
-        
-        // Verify OTP
-        fetch('{% url "verify_otp" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                email: email,
-                otp: otp
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                otpVerified = true;
-                showMessage(otpMessage, data.message, 'success');
-                otpStatus.innerHTML = '<div class="flex items-center space-x-2 text-green-400"><i class="fas fa-check-circle"></i><span class="font-semibold">Email Verified!</span></div>';
-                
-                // Enable submit button and submit form
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtnText.textContent = 'Create Account';
-                
-                // Disable OTP inputs
-                otpInput.disabled = true;
-                verifyOtpBtn.disabled = true;
-                document.getElementById('resendOtpBtn').disabled = true;
-                
-                // Stop countdown
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                }
-                
-                // Submit the form
-                setTimeout(() => {
-                    document.getElementById('signupForm').submit();
-                }, 500);
-            } else {
-                showMessage(otpMessage, data.message, 'error');
-                verifyOtpBtn.disabled = false;
-                verifyOtpBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Verify';
-                otpInput.value = '';
-                otpInput.focus();
-            }
-        })
-        .catch(error => {
-            showMessage(otpMessage, 'Error verifying OTP. Please try again.', 'error');
-            verifyOtpBtn.disabled = false;
-            verifyOtpBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Verify';
-        });
-    }
-    
-    function resendOTP() {
-        const emailInput = document.getElementById('{{ form.email.id_for_label }}');
-        const aadharInput = document.getElementById('{{ form.aadhar_number.id_for_label }}');
-        const email = emailInput.value.trim().toLowerCase();
-        const aadharNumber = aadharInput.value.trim();
-        
-        if (!email || !email.includes('@')) {
-            alert('Please enter a valid email address first.');
-            return;
-        }
-        
-        sendOTP(email, aadharNumber);
-    }
-    
-    function showMessage(element, message, type) {
-        element.innerHTML = `<div class="p-2 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}">${message}</div>`;
-        setTimeout(() => {
-            if (type === 'success') {
-                element.innerHTML = '';
-            }
-        }, 5000);
-    }
-    
-    function startResendCountdown() {
-        const resendBtn = document.getElementById('resendOtpBtn');
-        const resendTimer = document.getElementById('resendTimer');
-        resendCountdown = 60;
-        resendBtn.disabled = true;
-        
-        if (countdownInterval) {
-            clearInterval(countdownInterval);
-        }
-        
-        countdownInterval = setInterval(() => {
-            if (resendCountdown > 0) {
-                resendTimer.textContent = `Resend in ${resendCountdown}s`;
-                resendCountdown--;
-            } else {
-                resendBtn.disabled = false;
-                resendTimer.textContent = 'Click to resend';
-                clearInterval(countdownInterval);
-            }
-        }, 1000);
-    }
-    
-    // Handle form submission
+    // Form validation before submission
     document.getElementById('signupForm').addEventListener('submit', function(e) {
-        if (!otpVerified) {
-            e.preventDefault();
-            
-            // Validate form first
             const emailInput = document.getElementById('{{ form.email.id_for_label }}');
-            const aadharInput = document.getElementById('{{ form.aadhar_number.id_for_label }}');
             const fullNameInput = document.getElementById('{{ form.full_name.id_for_label }}');
             const password1Input = document.getElementById('{{ form.password1.id_for_label }}');
             const password2Input = document.getElementById('{{ form.password2.id_for_label }}');
             const termsInput = document.getElementById('{{ form.terms_accepted.id_for_label }}');
             
-            // Basic validation
+        const companyNameInput = document.getElementById('{{ form.company_name.id_for_label }}');
+        const addressInput = document.getElementById('{{ form.address.id_for_label }}');
+        const cityInput = document.getElementById('{{ form.city.id_for_label }}');
+        const stateInput = document.getElementById('{{ form.state.id_for_label }}');
+        const countryInput = document.getElementById('{{ form.country.id_for_label }}');
+        const pincodeInput = document.getElementById('{{ form.pincode.id_for_label }}');
+        const gstInput = document.getElementById('{{ form.gst_number.id_for_label }}');
+        const aadharCardInput = document.getElementById('{{ form.aadhar_card.id_for_label }}');
+        
             if (!fullNameInput.value.trim()) {
+            e.preventDefault();
                 alert('Please enter your full name.');
                 return false;
             }
             if (!emailInput.value.trim() || !emailInput.value.includes('@')) {
+            e.preventDefault();
                 alert('Please enter a valid email address.');
                 return false;
             }
-            if (!aadharInput.value.trim() || aadharInput.value.length !== 12) {
-                alert('Please enter a valid 12-digit Aadhar number.');
+            if (!aadharCardInput.files || aadharCardInput.files.length === 0) {
+            e.preventDefault();
+                alert('Please upload your Aadhar card image. This is mandatory.');
                 return false;
             }
             if (!password1Input.value || password1Input.value.length < 8) {
+            e.preventDefault();
                 alert('Password must be at least 8 characters long.');
                 return false;
             }
             if (password1Input.value !== password2Input.value) {
+            e.preventDefault();
                 alert('Passwords do not match.');
                 return false;
             }
-            if (!termsInput.checked) {
-                alert('Please accept the Terms of Service and Privacy Policy.');
-                return false;
-            }
-            
-            // Send OTP
-            const email = emailInput.value.trim().toLowerCase();
-            const aadharNumber = aadharInput.value.trim();
-            sendOTP(email, aadharNumber);
-            
+        
+        if (!companyNameInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your company name.');
             return false;
         }
-        // If OTP is verified, allow form submission
-    });
-    
-    // Auto-format Aadhar number input
-    document.getElementById('{{ form.aadhar_number.id_for_label }}').addEventListener('input', function(e) {
-        this.value = this.value.replace(/\D/g, '').slice(0, 12);
-    });
-    
-    // Auto-format OTP input
-    document.getElementById('otpInput').addEventListener('input', function(e) {
-        this.value = this.value.replace(/\D/g, '').slice(0, 6);
-    });
-    
-    // Enter key to verify OTP
-    document.getElementById('otpInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && this.value.length === 6) {
-            verifyOTP();
+        if (!addressInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your company address.');
+            return false;
         }
+        if (!cityInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your city.');
+            return false;
+        }
+        if (!stateInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your state/province.');
+            return false;
+        }
+        if (!countryInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your country.');
+            return false;
+        }
+        if (!pincodeInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter your pin code.');
+            return false;
+        }
+        if (pincodeInput.value.trim().length < 6) {
+            e.preventDefault();
+            alert('Please enter a valid 6-digit pin code.');
+            return false;
+        }
+        
+        // GST validation (optional)
+        if (gstInput.value.trim()) {
+            const gst = gstInput.value.trim().toUpperCase();
+            if (gst.length !== 15) {
+                e.preventDefault();
+                alert('GST number must be 15 characters long (e.g., 27ABCDE1234F1Z5).');
+                return false;
+            }
+        }
+        
+        if (!termsInput.checked) {
+            e.preventDefault();
+            alert('Please accept the Terms of Service and Privacy Policy.');
+            return false;
+        }
+    });
+    
+    // Phone number - only digits allowed
+    document.getElementById('{{ form.phone.id_for_label }}').addEventListener('input', function(e) {
+        this.value = this.value.replace(/\D/g, '').slice(0, 15);
+    });
+    
+    // GST number formatting
+    document.getElementById('{{ form.gst_number.id_for_label }}').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 15);
     });
 </script>
 {% endblock %}

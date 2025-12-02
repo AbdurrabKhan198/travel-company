@@ -1,0 +1,81 @@
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex-1">
+        <div class="flex items-center space-x-4 mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-plane text-white text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-bold mb-1" style="color: #111827 !important;">
+                    {{ booking.schedule.route.from_location }}
+                    {% if booking.schedule.route.from_location in airport_codes %}
+                    <span class="text-sky-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.from_location }})</span>
+                    {% endif %}
+                    <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                    {{ booking.schedule.route.to_location }}
+                    {% if booking.schedule.route.to_location in airport_codes %}
+                    <span class="text-sky-600 text-sm">({{ airport_codes|get_item:booking.schedule.route.to_location }})</span>
+                    {% endif %}
+                </h3>
+                <div class="flex flex-wrap items-center gap-3 text-sm" style="color: #4b5563 !important;">
+                    <span><i class="fas fa-calendar-alt mr-1 text-sky-500"></i>{{ booking.schedule.departure_date|date:"D, M d, Y" }}</span>
+                    <span><i class="fas fa-clock mr-1 text-sky-500"></i>{{ booking.schedule.route.departure_time|time:"H:i" }}</span>
+                    <span><i class="fas fa-users mr-1 text-sky-500"></i>{{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}</span>
+                    {% if booking.return_schedule %}
+                    <span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                        <i class="fas fa-exchange-alt mr-1"></i>Round Trip
+                    </span>
+                    {% endif %}
+                    <span class="px-3 py-1 {% if booking.status == 'confirmed' %}bg-green-100 text-green-800{% elif booking.status == 'completed' %}bg-blue-100 text-blue-800{% elif booking.status == 'cancelled' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %} rounded-full text-xs font-semibold">
+                        <i class="fas fa-{% if booking.status == 'confirmed' %}check-circle{% elif booking.status == 'completed' %}check-double{% elif booking.status == 'cancelled' %}times-circle{% else %}clock{% endif %} mr-1"></i>{{ booking.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="ml-18">
+            <p class="text-sm mb-2" style="color: #4b5563 !important;">
+                <span class="font-semibold">Booking Ref:</span> 
+                <span class="font-mono text-sky-600">{{ booking.booking_reference }}</span>
+            </p>
+            <p class="text-lg font-bold" style="color: #111827 !important;">
+                <i class="fas fa-rupee-sign mr-1 text-sky-500"></i>{{ booking.total_amount|floatformat:2 }}
+            </p>
+        </div>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2">
+        <a href="{% url 'booking_confirmation' booking.id %}" 
+           class="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-eye"></i>
+            <span>View Details</span>
+        </a>
+        {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
+        <button onclick="viewTicketPDF('{{ booking.id }}', '{% url 'download_ticket_pdf' booking.id %}')" 
+                class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-file-pdf"></i>
+            <span>View PDF</span>
+        </button>
+        {% endif %}
+        {% if booking.status == 'confirmed' and booking.schedule.departure_date >= today %}
+        <button onclick="confirmCancelBooking('{{ booking.id }}')" 
+                class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-times"></i>
+            <span>Cancel</span>
+        </button>
+        <form id="cancel-form-{{ booking.id }}" method="POST" action="{% url 'cancel_booking' booking.id %}" class="hidden">
+            {% csrf_token %}
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function viewTicketPDF(bookingId, url) {
+        window.open(url, '_blank');
+    }
+    
+    function confirmCancelBooking(bookingId) {
+        if (confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+            document.getElementById('cancel-form-' + bookingId).submit();
+        }
+    }
+</script>
+

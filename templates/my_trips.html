@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load travel_filters %}
+
+{% block title %}My Trips - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    .tab-button.active {
+        background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+        color: white !important;
+    }
+    
+    .tab-button.active:hover {
+        background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+    }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 2px solid #bae6fd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in-up">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #111827 !important;">
+                <i class="fas fa-calendar-check mr-3 text-sky-500"></i>My Trips
+            </h1>
+            <p class="text-xl" style="color: #4b5563 !important;">View and manage all your travel bookings</p>
+        </div>
+
+        <!-- Date Filter Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 filter-card animate-fade-in-up">
+            <h3 class="text-xl font-bold mb-4" style="color: #111827 !important;">
+                <i class="fas fa-filter mr-2 text-sky-500"></i>Filter by Date Range
+            </h3>
+            <form method="get" action="{% url 'my_trips' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>From Date
+                    </label>
+                    <input type="date" 
+                           name="from_date" 
+                           value="{{ from_date }}"
+                           class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-check mr-1"></i>To Date
+                    </label>
+                    <input type="date" 
+                           name="to_date" 
+                           value="{{ to_date }}"
+                           class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="w-full px-6 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                        <i class="fas fa-search mr-2"></i>Apply Filter
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <a href="{% url 'my_trips' %}" 
+                       class="w-full px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-center">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+            {% if from_date or to_date %}
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <p class="text-sm text-blue-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Showing trips from 
+                    <strong>{{ from_date|default:"beginning" }}</strong> 
+                    to 
+                    <strong>{{ to_date|default:"today" }}</strong>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fade-in-up">
+            <div class="bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-90">Total Trips</p>
+                        <p class="text-2xl font-bold">{{ total_count }}</p>
+                    </div>
+                    <i class="fas fa-plane text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-90">Upcoming</p>
+                        <p class="text-2xl font-bold">{{ upcoming_count }}</p>
+                    </div>
+                    <i class="fas fa-calendar-alt text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-purple-400 to-pink-600 rounded-xl p-4 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-90">Completed</p>
+                        <p class="text-2xl font-bold">{{ completed_count }}</p>
+                    </div>
+                    <i class="fas fa-check-circle text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl p-4 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-90">Past</p>
+                        <p class="text-2xl font-bold">{{ past_count }}</p>
+                    </div>
+                    <i class="fas fa-history text-3xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in-up">
+            <div class="border-b border-gray-200 bg-gray-50">
+                <div class="flex flex-wrap space-x-1 p-2">
+                    <button onclick="showTab('all', '{{ from_date }}', '{{ to_date }}')" 
+                            id="tab-all" 
+                            class="tab-button flex-1 px-6 py-4 text-center font-semibold transition-all rounded-lg hover:bg-white {% if trip_type_filter == 'all' %}active{% endif %}" 
+                            style="color: {% if trip_type_filter == 'all' %}white{% else %}#374151{% endif %} !important;">
+                        <i class="fas fa-list mr-2"></i>All Trips
+                        <span class="ml-2 px-2 py-1 bg-sky-500 text-white text-xs rounded-full">{{ total_count }}</span>
+                    </button>
+                    <button onclick="showTab('upcoming', '{{ from_date }}', '{{ to_date }}')" 
+                            id="tab-upcoming" 
+                            class="tab-button flex-1 px-6 py-4 text-center font-semibold transition-all rounded-lg hover:bg-white {% if trip_type_filter == 'upcoming' %}active{% endif %}" 
+                            style="color: {% if trip_type_filter == 'upcoming' %}white{% else %}#374151{% endif %} !important;">
+                        <i class="fas fa-calendar-alt mr-2"></i>Upcoming
+                        {% if upcoming_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full">{{ upcoming_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button onclick="showTab('past', '{{ from_date }}', '{{ to_date }}')" 
+                            id="tab-past" 
+                            class="tab-button flex-1 px-6 py-4 text-center font-semibold transition-all rounded-lg hover:bg-white {% if trip_type_filter == 'past' %}active{% endif %}" 
+                            style="color: {% if trip_type_filter == 'past' %}white{% else %}#374151{% endif %} !important;">
+                        <i class="fas fa-history mr-2"></i>Past
+                        {% if past_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-gray-500 text-white text-xs rounded-full">{{ past_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button onclick="showTab('completed', '{{ from_date }}', '{{ to_date }}')" 
+                            id="tab-completed" 
+                            class="tab-button flex-1 px-6 py-4 text-center font-semibold transition-all rounded-lg hover:bg-white {% if trip_type_filter == 'completed' %}active{% endif %}" 
+                            style="color: {% if trip_type_filter == 'completed' %}white{% else %}#374151{% endif %} !important;">
+                        <i class="fas fa-check-circle mr-2"></i>Completed
+                        {% if completed_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-purple-500 text-white text-xs rounded-full">{{ completed_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button onclick="showTab('cancelled', '{{ from_date }}', '{{ to_date }}')" 
+                            id="tab-cancelled" 
+                            class="tab-button flex-1 px-6 py-4 text-center font-semibold transition-all rounded-lg hover:bg-white {% if trip_type_filter == 'cancelled' %}active{% endif %}" 
+                            style="color: {% if trip_type_filter == 'cancelled' %}white{% else %}#374151{% endif %} !important;">
+                        <i class="fas fa-times-circle mr-2"></i>Cancelled
+                        {% if cancelled_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">{{ cancelled_count }}</span>
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- All Bookings -->
+                {% if trip_type_filter == 'all' %}
+                <div id="content-all" class="tab-content">
+                    {% if all_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in all_bookings %}
+                        <div class="bg-gradient-to-r {% if booking.schedule.departure_date >= today %}from-sky-50 to-blue-50 border-sky-500{% else %}from-green-50 to-emerald-50 border-green-500{% endif %} rounded-xl p-6 border-l-4 hover:shadow-lg transition-all duration-300">
+                            {% include 'my_trips_booking_card.html' with booking=booking %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-calendar-times text-gray-400 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2" style="color: #111827 !important;">No Trips Found</h3>
+                        <p class="mb-6" style="color: #4b5563 !important;">No trips match your filter criteria.</p>
+                        <a href="{% url 'my_trips' %}" class="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-refresh mr-2"></i>Clear Filters
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Upcoming Bookings -->
+                {% if trip_type_filter == 'upcoming' %}
+                <div id="content-upcoming" class="tab-content">
+                    {% if upcoming_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in upcoming_bookings %}
+                        <div class="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-6 border-l-4 border-sky-500 hover:shadow-lg transition-all duration-300">
+                            {% include 'my_trips_booking_card.html' with booking=booking %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-calendar-times text-gray-400 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2" style="color: #111827 !important;">No Upcoming Trips</h3>
+                        <p class="mb-6" style="color: #4b5563 !important;">You don't have any upcoming trips. Start planning your next adventure!</p>
+                        <a href="{% url 'homepage' %}" class="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-search mr-2"></i>Search Flights
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Past Bookings -->
+                {% if trip_type_filter == 'past' %}
+                <div id="content-past" class="tab-content">
+                    {% if past_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in past_bookings %}
+                        <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-l-4 border-gray-500 hover:shadow-lg transition-all duration-300">
+                            {% include 'my_trips_booking_card.html' with booking=booking %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-history text-gray-400 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2" style="color: #111827 !important;">No Past Trips</h3>
+                        <p class="mb-6" style="color: #4b5563 !important;">You don't have any past trips yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Completed Bookings -->
+                {% if trip_type_filter == 'completed' %}
+                <div id="content-completed" class="tab-content">
+                    {% if completed_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in completed_bookings %}
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500 hover:shadow-lg transition-all duration-300">
+                            {% include 'my_trips_booking_card.html' with booking=booking %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-check-circle text-gray-400 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2" style="color: #111827 !important;">No Completed Trips</h3>
+                        <p class="mb-6" style="color: #4b5563 !important;">You don't have any completed trips yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Cancelled Bookings -->
+                {% if trip_type_filter == 'cancelled' %}
+                <div id="content-cancelled" class="tab-content">
+                    {% if cancelled_bookings %}
+                    <div class="space-y-4">
+                        {% for booking in cancelled_bookings %}
+                        <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500 hover:shadow-lg transition-all duration-300">
+                            {% include 'my_trips_booking_card.html' with booking=booking %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-times-circle text-gray-400 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2" style="color: #111827 !important;">No Cancelled Trips</h3>
+                        <p class="mb-6" style="color: #4b5563 !important;">You don't have any cancelled trips.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(tabType, fromDate, toDate) {
+        // Update active tab
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.color = '#374151';
+        });
+        
+        const activeTab = document.getElementById('tab-' + tabType);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.style.color = 'white';
+        }
+        
+        // Build URL with filters
+        let url = '{% url "my_trips" %}?trip_type=' + tabType;
+        if (fromDate) {
+            url += '&from_date=' + fromDate;
+        }
+        if (toDate) {
+            url += '&to_date=' + toDate;
+        }
+        
+        // Redirect to update the page
+        window.location.href = url;
+    }
+</script>
+{% endblock %}
+

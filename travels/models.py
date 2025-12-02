@@ -133,10 +133,20 @@ class UserProfile(TimestampedModel):
         ('other', _('Other')),
     ]
     
+    TITLE_CHOICES = [
+        ('Mr', _('Mr')),
+        ('Mrs', _('Mrs')),
+        ('Miss', _('Miss')),
+        ('Ms', _('Ms')),
+        ('Dr', _('Dr')),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    title = models.CharField(_('title'), max_length=10, choices=TITLE_CHOICES, default='Mr')
     full_name = models.CharField(_('full name'), max_length=100)
     date_of_birth = models.DateField(_('date of birth'), null=True, blank=True)
     gender = models.CharField(_('gender'), max_length=1, choices=GENDER_CHOICES, blank=True)
+    company_name = models.CharField(_('company name'), max_length=200, blank=True, help_text=_('Name of your company'))
     address = models.TextField(_('address'), blank=True)
     city = models.CharField(_('city'), max_length=100, blank=True)
     state = models.CharField(_('state/province'), max_length=100, blank=True)
@@ -162,14 +172,32 @@ class UserProfile(TimestampedModel):
         blank=True,
         help_text=_('ID number of the selected ID type')
     )
-    aadhar_number = models.CharField(
-        _('Aadhar Number'),
-        max_length=12,
+    
+    gst_number = models.CharField(
+        _('GST Number'),
+        max_length=15,
         unique=True,
         null=True,
         blank=True,
-        validators=[MinLengthValidator(12)],
-        help_text=_('12-digit Aadhar number for security verification')
+        help_text=_('GST number (Optional)')
+    )
+    
+    # Signup Document Uploads
+    aadhar_card = models.ImageField(
+        _('Aadhar Card'),
+        upload_to='user_documents/aadhar/',
+        blank=False,
+        null=False,
+        help_text=_('Upload your Aadhar card image (Required)')
+    )
+    
+    # Logo Upload (Optional)
+    logo = models.ImageField(
+        _('Logo'),
+        upload_to='user_documents/logo/',
+        blank=True,
+        null=True,
+        help_text=_('Upload your company/personal logo (Optional)')
     )
     
     # PDF Documents
@@ -212,10 +240,12 @@ class UserProfile(TimestampedModel):
     def clean(self):
         if self.date_of_birth and self.date_of_birth > date.today():
             raise ValidationError({'date_of_birth': _('Date of birth cannot be in the future')})
-        if self.aadhar_number and not self.aadhar_number.isdigit():
-            raise ValidationError({'aadhar_number': _('Aadhar number must contain only digits')})
-        if self.aadhar_number and len(self.aadhar_number) != 12:
-            raise ValidationError({'aadhar_number': _('Aadhar number must be exactly 12 digits')})
+        if self.gst_number:
+            import re
+            if len(self.gst_number) != 15:
+                raise ValidationError({'gst_number': _('GST number must be 15 characters long')})
+            if not re.match(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$', self.gst_number.upper()):
+                raise ValidationError({'gst_number': _('Please enter a valid GST number format (e.g., 27ABCDE1234F1Z5)')})
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -947,27 +977,27 @@ class Contact(TimestampedModel):
         """Check if inquiry has been read"""
         return self.status in [self.Status.READ, self.Status.REPLIED, self.Status.CLOSED]
 
-class Wallet(TimestampedModel):
-    """Wallet for OD (Organizational Discount) users - Admin controlled access"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
+class ODWallet(TimestampedModel):
+    """OD (Organizational Discount) Wallet - Admin controlled access and recharge only"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='od_wallet')
     balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-    is_active = models.BooleanField(_('active'), default=False, help_text=_('Only admin can enable/disable wallet access'))
+    is_active = models.BooleanField(_('active'), default=False, help_text=_('Only admin can enable/disable OD wallet access'))
     max_balance = models.DecimalField(_('maximum balance'), max_digits=10, decimal_places=2, default=100000, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit'))
     
     class Meta:
-        verbose_name = _('wallet')
-        verbose_name_plural = _('wallets')
+        verbose_name = _('OD Wallet')
+        verbose_name_plural = _('OD Wallets')
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Wallet - {self.user.email} (₹{self.balance})"
+        return f"OD Wallet - {self.user.email} (₹{self.balance})"
     
     def can_use(self):
-        """Check if wallet can be used (active and has balance)"""
+        """Check if OD wallet can be used (active and has balance)"""
         return self.is_active and self.balance > 0
     
     def add_balance(self, amount, transaction_type='recharge', description='', reference_id=None):
-        """Add balance to wallet and create transaction record"""
+        """Add balance to OD wallet and create transaction record (Admin only)"""
         if amount <= 0:
             raise ValidationError(_('Amount must be greater than zero'))
         
@@ -978,8 +1008,8 @@ class Wallet(TimestampedModel):
         self.save()
         
         # Create transaction record
-        WalletTransaction.objects.create(
-            wallet=self,
+        ODWalletTransaction.objects.create(
+            od_wallet=self,
             transaction_type=transaction_type,
             amount=amount,
             balance_after=self.balance,
@@ -990,22 +1020,22 @@ class Wallet(TimestampedModel):
         return self.balance
     
     def deduct_balance(self, amount, transaction_type='payment', description='', reference_id=None):
-        """Deduct balance from wallet and create transaction record"""
+        """Deduct balance from OD wallet and create transaction record"""
         if amount <= 0:
             raise ValidationError(_('Amount must be greater than zero'))
         
         if amount > self.balance:
-            raise ValidationError(_('Insufficient wallet balance'))
+            raise ValidationError(_('Insufficient OD wallet balance'))
         
         if not self.is_active:
-            raise ValidationError(_('Wallet is not active'))
+            raise ValidationError(_('OD Wallet is not active'))
         
         self.balance -= amount
         self.save()
         
         # Create transaction record (negative amount for deduction)
-        WalletTransaction.objects.create(
-            wallet=self,
+        ODWalletTransaction.objects.create(
+            od_wallet=self,
             transaction_type=transaction_type,
             amount=-amount,
             balance_after=self.balance,
@@ -1015,15 +1045,15 @@ class Wallet(TimestampedModel):
         
         return self.balance
 
-class WalletTransaction(TimestampedModel):
-    """Transaction history for wallet"""
+class ODWalletTransaction(TimestampedModel):
+    """Transaction history for OD Wallet"""
     class TransactionType(models.TextChoices):
-        RECHARGE = 'recharge', _('Recharge')
+        RECHARGE = 'recharge', _('Admin Recharge')
         PAYMENT = 'payment', _('Payment')
         REFUND = 'refund', _('Refund')
         ADJUSTMENT = 'adjustment', _('Admin Adjustment')
     
-    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    od_wallet = models.ForeignKey(ODWallet, on_delete=models.CASCADE, related_name='transactions')
     transaction_type = models.CharField(_('transaction type'), max_length=20, choices=TransactionType.choices)
     amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2, help_text=_('Positive for credit, negative for debit'))
     balance_after = models.DecimalField(_('balance after'), max_digits=10, decimal_places=2)
@@ -1031,15 +1061,15 @@ class WalletTransaction(TimestampedModel):
     reference_id = models.CharField(_('reference ID'), max_length=100, blank=True, null=True, help_text=_('Booking reference, payment ID, etc.'))
     
     class Meta:
-        verbose_name = _('wallet transaction')
-        verbose_name_plural = _('wallet transactions')
+        verbose_name = _('OD Wallet Transaction')
+        verbose_name_plural = _('OD Wallet Transactions')
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['wallet', 'created_at'], name='wallet_transaction_idx'),
+            models.Index(fields=['od_wallet', 'created_at'], name='od_wallet_transaction_idx'),
         ]
     
     def __str__(self):
-        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.wallet.user.email}"
+        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.od_wallet.user.email}"
     
     @property
     def is_credit(self):
@@ -1050,6 +1080,181 @@ class WalletTransaction(TimestampedModel):
     def is_debit(self):
         """Check if transaction is a debit (negative amount)"""
         return self.amount < 0
+
+class CashBalanceWallet(TimestampedModel):
+    """Cash Balance Wallet - User can recharge themselves, direct access for everyone"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cash_balance_wallet')
+    balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    max_balance = models.DecimalField(_('maximum balance'), max_digits=10, decimal_places=2, default=100000, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit'))
+    
+    class Meta:
+        verbose_name = _('Cash Balance Wallet')
+        verbose_name_plural = _('Cash Balance Wallets')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Cash Balance - {self.user.email} (₹{self.balance})"
+    
+    def can_use(self):
+        """Check if cash balance wallet can be used (has balance)"""
+        return self.balance > 0
+    
+    def add_balance(self, amount, transaction_type='recharge', description='', reference_id=None):
+        """Add balance to cash balance wallet and create transaction record (User self-recharge)"""
+        if amount <= 0:
+            raise ValidationError(_('Amount must be greater than zero'))
+        
+        if (self.balance + amount) > self.max_balance:
+            raise ValidationError(_(f'Balance cannot exceed maximum limit of ₹{self.max_balance}'))
+        
+        self.balance += amount
+        self.save()
+        
+        # Create transaction record
+        CashBalanceTransaction.objects.create(
+            cash_balance_wallet=self,
+            transaction_type=transaction_type,
+            amount=amount,
+            balance_after=self.balance,
+            description=description,
+            reference_id=reference_id
+        )
+        
+        return self.balance
+    
+    def deduct_balance(self, amount, transaction_type='payment', description='', reference_id=None):
+        """Deduct balance from cash balance wallet and create transaction record"""
+        if amount <= 0:
+            raise ValidationError(_('Amount must be greater than zero'))
+        
+        if amount > self.balance:
+            raise ValidationError(_('Insufficient cash balance'))
+        
+        self.balance -= amount
+        self.save()
+        
+        # Create transaction record (negative amount for deduction)
+        CashBalanceTransaction.objects.create(
+            cash_balance_wallet=self,
+            transaction_type=transaction_type,
+            amount=-amount,
+            balance_after=self.balance,
+            description=description,
+            reference_id=reference_id
+        )
+        
+        return self.balance
+
+class CashBalanceTransaction(TimestampedModel):
+    """Transaction history for Cash Balance Wallet"""
+    class TransactionType(models.TextChoices):
+        RECHARGE = 'recharge', _('Recharge')
+        PAYMENT = 'payment', _('Payment')
+        REFUND = 'refund', _('Refund')
+        ADJUSTMENT = 'adjustment', _('Adjustment')
+    
+    cash_balance_wallet = models.ForeignKey(CashBalanceWallet, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(_('transaction type'), max_length=20, choices=TransactionType.choices)
+    amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2, help_text=_('Positive for credit, negative for debit'))
+    balance_after = models.DecimalField(_('balance after'), max_digits=10, decimal_places=2)
+    description = models.TextField(_('description'), blank=True)
+    reference_id = models.CharField(_('reference ID'), max_length=100, blank=True, null=True, help_text=_('Booking reference, payment ID, etc.'))
+    
+    class Meta:
+        verbose_name = _('Cash Balance Transaction')
+        verbose_name_plural = _('Cash Balance Transactions')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cash_balance_wallet', 'created_at'], name='cash_balance_transaction_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.cash_balance_wallet.user.email}"
+    
+    @property
+    def is_credit(self):
+        """Check if transaction is a credit (positive amount)"""
+        return self.amount > 0
+    
+    @property
+    def is_debit(self):
+        """Check if transaction is a debit (negative amount)"""
+        return self.amount < 0
+
+class Executive(TimestampedModel):
+    """Executive/Contact person model for homepage display"""
+    name = models.CharField(_('name'), max_length=100)
+    phone = models.CharField(_('phone number'), max_length=20, help_text=_('Contact number'))
+    city = models.CharField(_('city'), max_length=100, help_text=_('Place/City of executive'))
+    is_active = models.BooleanField(_('active'), default=True, help_text=_('Show on homepage'))
+    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text=_('Order in which executives are displayed'))
+    
+    class Meta:
+        verbose_name = _('Executive')
+        verbose_name_plural = _('Executives')
+        ordering = ['display_order', 'name']
+        indexes = [
+            models.Index(fields=['is_active', 'display_order'], name='executive_active_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.city} ({self.phone})"
+
+class PackageApplication(TimestampedModel):
+    """Model to store package application details"""
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        CONTACTED = 'contacted', _('Contacted')
+        PROCESSING = 'processing', _('Processing')
+        CONFIRMED = 'confirmed', _('Confirmed')
+        CANCELLED = 'cancelled', _('Cancelled')
+    
+    # Package Information
+    package_name = models.CharField(_('package name'), max_length=200, help_text=_('Name of the package (e.g., Thailand, Dubai, Singapore, Bali, Vietnam)'))
+    destination = models.CharField(_('destination'), max_length=200)
+    
+    # User Information
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='package_applications', verbose_name=_('user'))
+    full_name = models.CharField(_('full name'), max_length=200)
+    email = models.EmailField(_('email address'))
+    phone = models.CharField(_('phone number'), max_length=20)
+    
+    # Travel Details
+    travel_date = models.DateField(_('travel date'), null=True, blank=True)
+    number_of_people = models.PositiveIntegerField(_('number of people'), default=1, validators=[MinValueValidator(1), MaxValueValidator(50)])
+    special_requests = models.TextField(_('special requests'), blank=True)
+    
+    # Status and Admin
+    status = models.CharField(_('status'), max_length=20, choices=Status.choices, default=Status.PENDING)
+    admin_notes = models.TextField(_('admin notes'), blank=True, help_text=_('Internal notes for admin use'))
+    estimated_amount = models.DecimalField(_('estimated amount'), max_digits=12, decimal_places=2, null=True, blank=True)
+    
+    # Additional Information
+    ip_address = models.GenericIPAddressField(_('IP address'), null=True, blank=True)
+    user_agent = models.TextField(_('user agent'), blank=True)
+    
+    class Meta:
+        verbose_name = _('Package Application')
+        verbose_name_plural = _('Package Applications')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status', 'created_at'], name='package_application_idx'),
+            models.Index(fields=['status', 'created_at'], name='package_application_status_idx'),
+            models.Index(fields=['package_name'], name='package_application_name_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Package Application - {self.package_name} - {self.full_name} ({self.get_status_display()})"
+    
+    @property
+    def is_new(self):
+        """Check if application is new"""
+        return self.status == self.Status.PENDING
+    
+    @property
+    def is_contacted(self):
+        """Check if application has been contacted"""
+        return self.status in [self.Status.CONTACTED, self.Status.PROCESSING, self.Status.CONFIRMED]
 
 class GroupRequest(TimestampedModel):
     """B2B Group booking requests for bulk tickets (more than 9 passengers)"""

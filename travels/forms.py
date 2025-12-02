@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .models import User, UserProfile, Booking, Package, Route, Schedule, BookingPassenger, Contact, Wallet
+from .models import User, UserProfile, Booking, Package, Route, Schedule, BookingPassenger, Contact
 from datetime import date
 from decimal import Decimal
 import re
@@ -29,6 +29,25 @@ class UserRegisterForm(UserCreationForm):
         }
     )
     
+    TITLE_CHOICES = [
+        ('Mr', _('Mr')),
+        ('Mrs', _('Mrs')),
+        ('Miss', _('Miss')),
+        ('Ms', _('Ms')),
+        ('Dr', _('Dr')),
+    ]
+    
+    title = forms.ChoiceField(
+        label=_('Title'),
+        choices=TITLE_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'required': 'required',
+        }),
+        initial='Mr'
+    )
+    
     full_name = forms.CharField(
         label=_('Full Name'),
         max_length=100,
@@ -39,43 +58,35 @@ class UserRegisterForm(UserCreationForm):
         })
     )
     
-    aadhar_number = forms.CharField(
-        label=_('Aadhar Number'),
-        max_length=12,
-        min_length=12,
-        required=True,
+    gst_number = forms.CharField(
+        label=_('GST Number'),
+        max_length=15,
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Enter 12-digit Aadhar number'),
-            'required': 'required',
-            'pattern': r'\d{12}',
-            'id': 'id_aadhar_number'
+            'placeholder': _('Enter GST number (Optional)'),
         }),
-        help_text=_('12-digit Aadhar number (digits only) - Required for security verification'),
-        validators=[
-            RegexValidator(
-                regex=r'^\d{12}$',
-                message=_('Aadhar number must be exactly 12 digits')
-            )
-        ]
+        help_text=_('GST number (Optional) - Format: 27ABCDE1234F1Z5')
     )
     
     phone_regex = RegexValidator(
-        regex=r'^\+?1?\d{9,15}$',
-        message=_("Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+        regex=r'^\d{10,15}$',
+        message=_("Phone number must contain only digits (10-15 digits allowed).")
     )
     
     phone = forms.CharField(
         label=_('Phone Number'),
         validators=[phone_regex],
-        max_length=17,
+        max_length=15,
+        min_length=10,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('e.g. +919876543210'),
+            'placeholder': _('e.g. 9876543210'),
             'autocomplete': 'tel',
+            'pattern': r'\d{10,15}',
         }),
-        required=False,
-        help_text=_('Enter your phone number with country code (e.g., +91 for India)')
+        required=True,
+        help_text=_('Enter your phone number (10-15 digits only, no spaces or special characters)')
     )
     
     password1 = forms.CharField(
@@ -113,6 +124,111 @@ class UserRegisterForm(UserCreationForm):
         }
     )
     
+    
+    # Company Details Fields (All Mandatory)
+    company_name = forms.CharField(
+        label=_('Company Name'),
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter your company name'),
+            'required': 'required',
+        }),
+        help_text=_('Name of your company'),
+        error_messages={
+            'required': _('Company name is required')
+        }
+    )
+    
+    address = forms.CharField(
+        label=_('Address'),
+        required=True,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': _('Enter your company address'),
+            'required': 'required',
+        }),
+        help_text=_('Company address'),
+        error_messages={
+            'required': _('Address is required')
+        }
+    )
+    
+    city = forms.CharField(
+        label=_('City'),
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter city'),
+            'required': 'required',
+        }),
+        error_messages={
+            'required': _('City is required')
+        }
+    )
+    
+    state = forms.CharField(
+        label=_('State/Province'),
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter state/province'),
+            'required': 'required',
+        }),
+        error_messages={
+            'required': _('State/Province is required')
+        }
+    )
+    
+    country = forms.CharField(
+        label=_('Country'),
+        max_length=100,
+        required=True,
+        initial='India',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter country'),
+            'required': 'required',
+        }),
+        error_messages={
+            'required': _('Country is required')
+        }
+    )
+    
+    pincode = forms.CharField(
+        label=_('Pin Code'),
+        max_length=10,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter pin code'),
+            'pattern': r'\d{6}',
+            'required': 'required',
+        }),
+        help_text=_('6-digit pin code'),
+        error_messages={
+            'required': _('Pin code is required')
+        }
+    )
+    
+    aadhar_card = forms.ImageField(
+        label=_('Aadhar Card'),
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*',
+            'required': 'required',
+        }),
+        help_text=_('Upload your Aadhar card image (Required)'),
+        error_messages={
+            'required': _('Aadhar card upload is mandatory')
+        }
+    )
+    
     class Meta:
         model = User
         fields = ('email', 'phone', 'password1', 'password2')
@@ -130,8 +246,14 @@ class UserRegisterForm(UserCreationForm):
         return email
     
     def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-        if phone and User.objects.filter(phone=phone).exists():
+        phone = self.cleaned_data.get('phone', '').strip()
+        # Remove any non-digit characters
+        phone = ''.join(filter(str.isdigit, phone))
+        if not phone:
+            raise ValidationError(_('Phone number is required'))
+        if len(phone) < 10 or len(phone) > 15:
+            raise ValidationError(_('Phone number must be between 10 and 15 digits'))
+        if User.objects.filter(phone=phone).exists():
             raise ValidationError(_('This phone number is already registered. Please use a different number or try logging in.'))
         return phone
     
@@ -162,24 +284,56 @@ class UserRegisterForm(UserCreationForm):
         
         if commit:
             user.save()
-            # Create user profile with the additional fields
-            UserProfile.objects.create(
+            # Get or create user profile (signal might have already created it)
+            profile, created = UserProfile.objects.get_or_create(
                 user=user,
-                full_name=self.cleaned_data['full_name'],
-                aadhar_number=self.cleaned_data['aadhar_number']
+                defaults={
+                    'title': self.cleaned_data.get('title', 'Mr'),
+                    'full_name': self.cleaned_data['full_name'],
+                    'gst_number': self.cleaned_data.get('gst_number', ''),
+                    'company_name': self.cleaned_data.get('company_name', ''),
+                    'address': self.cleaned_data.get('address', ''),
+                    'city': self.cleaned_data.get('city', ''),
+                    'state': self.cleaned_data.get('state', ''),
+                    'country': self.cleaned_data.get('country', 'India'),
+                    'pincode': self.cleaned_data.get('pincode', '')
+                }
             )
+            
+            # Update profile with all fields (including file uploads)
+            if not created:
+                profile.title = self.cleaned_data.get('title', 'Mr')
+                profile.full_name = self.cleaned_data['full_name']
+                profile.gst_number = self.cleaned_data.get('gst_number', '')
+                profile.company_name = self.cleaned_data.get('company_name', '')
+                profile.address = self.cleaned_data.get('address', '')
+                profile.city = self.cleaned_data.get('city', '')
+                profile.state = self.cleaned_data.get('state', '')
+                profile.country = self.cleaned_data.get('country', 'India')
+                profile.pincode = self.cleaned_data.get('pincode', '')
+            
+            # Handle file uploads
+            if self.cleaned_data.get('aadhar_card'):
+                profile.aadhar_card = self.cleaned_data.get('aadhar_card')
+            
+            profile.save()
         return user
     
-    def clean_aadhar_number(self):
-        aadhar = self.cleaned_data.get('aadhar_number', '').strip()
-        if not aadhar.isdigit():
-            raise ValidationError(_('Aadhar number must contain only digits'))
-        if len(aadhar) != 12:
-            raise ValidationError(_('Aadhar number must be exactly 12 digits'))
-        # Check if aadhar is already registered
-        if UserProfile.objects.filter(aadhar_number=aadhar).exists():
-            raise ValidationError(_('This Aadhar number is already registered. Please use a different number or try logging in.'))
-        return aadhar
+    def clean_gst_number(self):
+        gst = self.cleaned_data.get('gst_number', '').strip()
+        if gst:
+            # GST format: 27ABCDE1234F1Z5 (15 characters)
+            if len(gst) != 15:
+                raise ValidationError(_('GST number must be 15 characters long'))
+            # Basic format validation: 2 digits + 5 letters + 4 digits + 1 letter + 1 digit + Z + 1 letter + 1 digit
+            import re
+            if not re.match(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$', gst.upper()):
+                raise ValidationError(_('Please enter a valid GST number format (e.g., 27ABCDE1234F1Z5)'))
+            # Check if GST is already registered
+            if UserProfile.objects.filter(gst_number__iexact=gst).exists():
+                raise ValidationError(_('This GST number is already registered. Please use a different number or try logging in.'))
+            return gst.upper()
+        return gst
 
 
 class UserLoginForm(AuthenticationForm):
@@ -205,7 +359,7 @@ class UserLoginForm(AuthenticationForm):
     )
     
     remember_me = forms.BooleanField(
-        required=False,
+        required=True,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         label=_('Remember me')
     )
@@ -247,7 +401,7 @@ class ProfileUpdateForm(forms.ModelForm):
     )
     
     date_of_birth = forms.DateField(
-        required=False,
+        required=True,
         widget=forms.DateInput(attrs={
             'class': 'form-control',
             'type': 'date',
@@ -257,7 +411,7 @@ class ProfileUpdateForm(forms.ModelForm):
     )
     
     profile_picture = forms.ImageField(
-        required=False,
+        required=True,
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*',
@@ -541,7 +695,7 @@ class PackageBookingForm(forms.Form):
         })
     )
     special_requests = forms.CharField(
-        required=False,
+        required=True,
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 3,
@@ -599,7 +753,7 @@ class ContactForm(forms.Form):
     
     phone = forms.CharField(
         max_length=20,
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': _('Your Phone (Optional)'),
@@ -608,7 +762,7 @@ class ContactForm(forms.Form):
     
     subject = forms.CharField(
         max_length=200,
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': _('Subject (Optional)'),
@@ -655,7 +809,7 @@ class WalletRechargeForm(forms.Form):
     
     description = forms.CharField(
         label=_('Description (Optional)'),
-        required=False,
+        required=True,
         max_length=200,
         widget=forms.TextInput(attrs={
             'class': 'form-control',

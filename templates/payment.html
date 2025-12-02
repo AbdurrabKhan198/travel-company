@@ -133,25 +133,71 @@
                             <p class="text-sm text-gray-600">Select your preferred payment method</p>
                         </div>
                         
-                        <!-- Wallet Payment Option -->
-                        {% if can_use_wallet %}
+                        <!-- OD Wallet Payment Option -->
+                        {% if can_use_od_wallet %}
                         <div class="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center space-x-2">
                                     <i class="fas fa-wallet text-amber-600 text-xl"></i>
                                     <span class="font-bold text-gray-900">Pay with OD Wallet</span>
                                 </div>
-                                <span class="text-sm font-semibold text-amber-700">Balance: ₹{{ wallet_balance|floatformat:2 }}</span>
+                                <span class="text-sm font-semibold text-amber-700">Balance: ₹{{ od_wallet_balance|floatformat:2 }}</span>
                             </div>
                             <form method="POST" action="{% url 'payment' booking.id %}" class="mb-0">
                                 {% csrf_token %}
-                                <input type="hidden" name="payment_method" value="wallet">
+                                <input type="hidden" name="payment_method" value="od_wallet">
                                 <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
                                     <i class="fas fa-wallet"></i>
-                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }} from Wallet</span>
+                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }} from OD Wallet</span>
                                 </button>
                             </form>
                         </div>
+                        {% elif od_wallet %}
+                        <div class="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-wallet text-gray-400 text-xl"></i>
+                                    <span class="font-medium text-gray-600">OD Wallet</span>
+                                </div>
+                                <span class="text-sm text-gray-500">Balance: ₹{{ od_wallet_balance|floatformat:2 }}</span>
+                            </div>
+                            <p class="text-xs text-red-600 mt-2">Insufficient balance or not active.</p>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Cash Balance Payment Option -->
+                        {% if can_use_cash_balance %}
+                        <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-wallet text-blue-600 text-xl"></i>
+                                    <span class="font-bold text-gray-900">Pay with Cash Balance</span>
+                                </div>
+                                <span class="text-sm font-semibold text-blue-700">Balance: ₹{{ cash_balance|floatformat:2 }}</span>
+                            </div>
+                            <form method="POST" action="{% url 'payment' booking.id %}" class="mb-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="payment_method" value="cash_balance">
+                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                    <i class="fas fa-wallet"></i>
+                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }} from Cash Balance</span>
+                                </button>
+                            </form>
+                        </div>
+                        {% elif cash_balance_wallet %}
+                        <div class="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-wallet text-gray-400 text-xl"></i>
+                                    <span class="font-medium text-gray-600">Cash Balance</span>
+                                </div>
+                                <span class="text-sm text-gray-500">Balance: ₹{{ cash_balance|floatformat:2 }}</span>
+                            </div>
+                            <p class="text-xs text-red-600 mt-2">Insufficient balance. <a href="{% url 'wallet_recharge' %}" class="underline">Recharge now</a></p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if can_use_od_wallet or can_use_cash_balance %}
                         <div class="mb-6 text-center">
                             <div class="relative">
                                 <div class="absolute inset-0 flex items-center">
@@ -162,22 +208,11 @@
                                 </div>
                             </div>
                         </div>
-                        {% elif wallet %}
-                        <div class="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-wallet text-gray-400 text-xl"></i>
-                                    <span class="font-medium text-gray-600">OD Wallet</span>
-                                </div>
-                                <span class="text-sm text-gray-500">Balance: ₹{{ wallet_balance|floatformat:2 }}</span>
-                            </div>
-                            <p class="text-xs text-red-600 mt-2">Insufficient balance. <a href="{% url 'wallet_recharge' %}" class="underline">Recharge now</a></p>
-                        </div>
                         {% endif %}
                         
                         {# ========== RAZORPAY PAYMENT GATEWAY COMMENTED FOR TESTING ========== #}
-                        {# Show alternative payment option only if wallet is not available or insufficient #}
-                        {% if not can_use_wallet %}
+                        {# Show alternative payment option only if wallets are not available or insufficient #}
+                        {% if not can_use_od_wallet and not can_use_cash_balance %}
                         <div class="mb-6 p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
                             <p class="text-sm text-blue-800 mb-3 text-center">
                                 <i class="fas fa-info-circle mr-2"></i>
@@ -186,7 +221,7 @@
                             <form method="POST" action="{% url 'payment' booking.id %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="payment_method" value="skip">
-                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-blue-700 font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
                                     <i class="fas fa-check-circle"></i>
                                     <span>Continue without Payment (Testing)</span>
                                 </button>

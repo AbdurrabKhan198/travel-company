@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Frequently Asked Questions - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    .faq-header {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        color: white;
+        padding: 60px 20px;
+        text-align: center;
+    }
+    .faq-content {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        padding: 40px;
+        margin-top: -30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .faq-item {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+    .faq-item:last-child {
+        border-bottom: none;
+    }
+    .faq-question {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e40af;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s;
+    }
+    .faq-question:hover {
+        background: #f3f4f6;
+    }
+    .faq-question.active {
+        background: #dbeafe;
+    }
+    .faq-answer {
+        padding: 0 1rem;
+        color: #4b5563;
+        line-height: 1.7;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    .faq-answer.show {
+        max-height: 1000px;
+        padding: 1rem;
+    }
+    .faq-icon {
+        transition: transform 0.3s;
+    }
+    .faq-question.active .faq-icon {
+        transform: rotate(180deg);
+    }
+    .faq-category {
+        margin-top: 3rem;
+        margin-bottom: 1.5rem;
+    }
+    .faq-category-title {
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: #1e40af;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="faq-header">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Frequently Asked Questions</h1>
+            <p class="text-xl opacity-90">Find answers to common questions about our services</p>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="faq-content">
+            <!-- Booking FAQs -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Booking & Reservations</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I book a flight?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>To book a flight, simply search for your desired route and travel dates on our homepage. Select your preferred flight, enter passenger details, review your booking, and proceed to payment. Once payment is confirmed, you'll receive a booking confirmation email with your ticket details.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I book for multiple passengers?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, you can book for multiple passengers in a single booking. During the booking process, you can add multiple passengers and enter their details. For group bookings of 10 or more passengers, please use our Group Request feature for special pricing and arrangements.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I know if my booking is confirmed?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>After successful payment, you will receive a booking confirmation email with your booking reference number. You can also check your booking status in the "My Trips" section of your dashboard. A confirmed booking will show "Confirmed" status.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I modify my booking after confirmation?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Booking modifications depend on the airline's policy and fare type. Some bookings can be modified (subject to change fees), while others may be non-changeable. Please contact our customer support or check your booking details for modification options. Change fees and fare differences may apply.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment FAQs -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Payment & Pricing</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What payment methods do you accept?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>We accept multiple payment methods including credit cards, debit cards, UPI, net banking, and wallet payments (Cash Balance Wallet and OD Wallet). All payments are processed securely through our payment gateway partners.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Are the prices shown final?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Prices are subject to change until payment is confirmed. The final price will be displayed before you proceed to payment. All prices include applicable taxes and fees unless stated otherwise.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is Cash Balance Wallet?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Cash Balance Wallet is available to all registered users. You can recharge it yourself and use the balance for bookings. It's like a prepaid wallet that makes booking faster and easier. You can view your balance and transaction history anytime.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is OD Wallet?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>OD (Organizational Discount) Wallet is a special wallet that can only be activated and recharged by admin. It's designed for corporate clients or special arrangements. Contact admin to activate your OD Wallet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cancellation & Refunds -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Cancellation & Refunds</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I cancel my booking?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can cancel your booking from the "My Trips" section in your dashboard. Click on the booking you want to cancel and select "Cancel Booking". Please note that cancellation charges apply as per the airline's policy and fare type. Some bookings may be non-refundable.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How long does it take to process a refund?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Refunds are typically processed within 7-14 business days after cancellation approval. The refund will be credited to the original payment method used. If you paid via wallet, the refund will be credited to your wallet balance.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Are cancellation charges refundable?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>No, cancellation charges and service fees are non-refundable. These charges are set by the airline and are deducted from your refund amount. The remaining amount after deducting cancellation charges will be refunded to you.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Travel Documents -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Travel Documents & Visa</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Do I need a visa for international travel?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Visa requirements depend on your destination and nationality. Some countries offer visa-free entry or visa-on-arrival for Indian passport holders. We recommend checking visa requirements for your destination well in advance. You can use our Visit Visa service for visa assistance.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What documents do I need to travel?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>For domestic travel, a valid government-issued ID (Aadhar, Passport, Driving License) is required. For international travel, you need a valid passport (with at least 6 months validity), visa (if required), and any other documents specified by the destination country. Always carry your booking confirmation and e-ticket.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How can I apply for a visa through your website?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Visit our "Visit Visa" page, select your destination country, and fill out the visa application form. Submit the required documents and pay the visa processing fee. Our team will process your application and guide you through the process. Processing times vary by destination.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packages -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Travel Packages</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I apply for a travel package?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Browse our popular packages on the homepage, click on "Apply Now" for your desired destination, fill out the application form with your travel details and requirements, and submit. Our team will contact you with a customized package quote and further details.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I customize a package?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, you can customize packages according to your preferences. Mention your requirements in the "Special Requests" section when applying, or contact our team directly. We'll create a personalized itinerary that suits your needs and budget.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account & Support -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Account & Support</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I create an account?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Click on "Sign Up" in the top navigation, enter your email address, create a password, and complete the registration form. You'll receive a verification email. After verification, your account will be activated and you can start booking.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>I forgot my password. How do I reset it?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>On the login page, click "Forgot Password" and enter your registered email address. You'll receive a password reset link via email. Click the link and follow the instructions to create a new password.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How can I contact customer support?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can contact us through our "Contact" page, email us at support@safarzometravels.com, or call our customer support number. We're available Monday to Saturday, 9:00 AM to 6:00 PM IST. For urgent travel-related issues, please call our 24/7 emergency helpline.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Where can I view my booking history?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Log in to your account and go to "My Trips" or "Dashboard" section. Here you can view all your bookings, including upcoming trips, past trips, and cancelled bookings. You can also download tickets and view booking details.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Still have questions -->
+            <div class="mt-12 p-6 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Still have questions?</h3>
+                <p class="text-gray-600 mb-4">If you couldn't find the answer you're looking for, please feel free to contact our support team.</p>
+                <a href="{% url 'contact' %}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-envelope mr-2"></i>Contact Us
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFaq(element) {
+    const answer = element.nextElementSibling;
+    const isActive = element.classList.contains('active');
+    
+    // Close all other FAQs
+    document.querySelectorAll('.faq-question').forEach(q => {
+        if (q !== element) {
+            q.classList.remove('active');
+            q.nextElementSibling.classList.remove('show');
+        }
+    });
+    
+    // Toggle current FAQ
+    if (isActive) {
+        element.classList.remove('active');
+        answer.classList.remove('show');
+    } else {
+        element.classList.add('active');
+        answer.classList.add('show');
+    }
+}
+</script>
+{% endblock %}
+
