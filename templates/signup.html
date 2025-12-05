@@ -234,23 +234,41 @@
                             Document Upload
                         </h3>
                         
-                        <div>
-                            <!-- Aadhar Card Upload -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Aadhar Card Front Upload -->
                             <div>
-                        <label for="{{ form.aadhar_card.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
-                            <i class="fas fa-id-card mr-2"></i>Aadhar Card <span class="text-red-300">*</span>
-                        </label>
-                            <input type="file" 
-                                   name="{{ form.aadhar_card.name }}" 
-                                   id="{{ form.aadhar_card.id_for_label }}"
-                                   accept="image/*"
-                                   required
-                                   class="block w-full text-sm text-white/90 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-lg focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30">
-                        {% if form.aadhar_card.errors %}
-                        <p class="mt-1 text-sm text-red-300">{{ form.aadhar_card.errors.0 }}</p>
-                        {% endif %}
-                        <p class="mt-1 text-xs text-white/70">Upload your Aadhar card image (Required)</p>
-                    </div>
+                                <label for="{{ form.aadhar_card_front.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-id-card mr-2"></i>Aadhar Card Front <span class="text-red-300">*</span>
+                                </label>
+                                <input type="file" 
+                                       name="{{ form.aadhar_card_front.name }}" 
+                                       id="{{ form.aadhar_card_front.id_for_label }}"
+                                       accept="image/*"
+                                       required
+                                       class="block w-full text-sm text-white/90 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-lg focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30">
+                                {% if form.aadhar_card_front.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.aadhar_card_front.errors.0 }}</p>
+                                {% endif %}
+                                <p class="mt-1 text-xs text-white/70">Upload front side of your Aadhar card (Required)</p>
+                            </div>
+                            
+                            <!-- Aadhar Card Back Upload -->
+                            <div>
+                                <label for="{{ form.aadhar_card_back.id_for_label }}" class="block text-sm font-semibold text-white mb-2">
+                                    <i class="fas fa-id-card mr-2"></i>Aadhar Card Back <span class="text-red-300">*</span>
+                                </label>
+                                <input type="file" 
+                                       name="{{ form.aadhar_card_back.name }}" 
+                                       id="{{ form.aadhar_card_back.id_for_label }}"
+                                       accept="image/*"
+                                       required
+                                       class="block w-full text-sm text-white/90 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-lg focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30">
+                                {% if form.aadhar_card_back.errors %}
+                                <p class="mt-1 text-sm text-red-300">{{ form.aadhar_card_back.errors.0 }}</p>
+                                {% endif %}
+                                <p class="mt-1 text-xs text-white/70">Upload back side of your Aadhar card (Required)</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -382,7 +400,8 @@
         const countryInput = document.getElementById('{{ form.country.id_for_label }}');
         const pincodeInput = document.getElementById('{{ form.pincode.id_for_label }}');
         const gstInput = document.getElementById('{{ form.gst_number.id_for_label }}');
-        const aadharCardInput = document.getElementById('{{ form.aadhar_card.id_for_label }}');
+        const aadharCardFrontInput = document.getElementById('{{ form.aadhar_card_front.id_for_label }}');
+        const aadharCardBackInput = document.getElementById('{{ form.aadhar_card_back.id_for_label }}');
         
             if (!fullNameInput.value.trim()) {
             e.preventDefault();
@@ -394,9 +413,14 @@
                 alert('Please enter a valid email address.');
                 return false;
             }
-            if (!aadharCardInput.files || aadharCardInput.files.length === 0) {
+            if (!aadharCardFrontInput.files || aadharCardFrontInput.files.length === 0) {
             e.preventDefault();
-                alert('Please upload your Aadhar card image. This is mandatory.');
+                alert('Please upload your Aadhar card front image. This is mandatory.');
+                return false;
+            }
+            if (!aadharCardBackInput.files || aadharCardBackInput.files.length === 0) {
+            e.preventDefault();
+                alert('Please upload your Aadhar card back image. This is mandatory.');
                 return false;
             }
             if (!password1Input.value || password1Input.value.length < 8) {

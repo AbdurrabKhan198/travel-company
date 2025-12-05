@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
+from functools import wraps
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
 from django.db.models import Q, Count, Sum
@@ -283,6 +284,19 @@ def get_airport_codes():
     }
 
 
+def approved_required(view_func):
+    """Decorator to ensure user is authenticated and approved"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if not request.user.is_approved:
+            messages.warning(request, 'Your account is under review. You will be able to access the site once your account is approved (within 24 hours).')
+            logout(request)
+            return redirect('login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
 def get_client_ip(request):
     """Get client IP address"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -292,8 +306,20 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+# Landing page removed - root URL now goes directly to login
+
 def homepage(request):
-    """Homepage with search and featured packages"""
+    """Homepage with search and featured packages - only for authenticated and approved users"""
+    # If user is not authenticated, redirect to login page
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # If user is authenticated but not approved, show message and redirect to login
+    if request.user.is_authenticated and not request.user.is_approved:
+        messages.info(request, 'Your account is under review. You will be able to access the site once your account is approved (within 24 hours).')
+        logout(request)
+        return redirect('login')
+    
     packages = Package.objects.filter(is_featured=True)[:6]
     
     # Define popular package destinations with Unsplash images
@@ -1030,6 +1056,44 @@ def apply_visa(request):
 def about(request):
     return render(request, 'about.html')
 
+def umrah(request):
+    """Umrah package inquiry form"""
+    from .forms import UmrahForm
+    from .models import Umrah
+    
+    if request.method == 'POST':
+        form = UmrahForm(request.POST)
+        if form.is_valid():
+            try:
+                umrah = Umrah.objects.create(
+                    full_name=form.cleaned_data['full_name'],
+                    email=form.cleaned_data['email'],
+                    phone=form.cleaned_data['phone'],
+                    duration=form.cleaned_data['duration'],
+                    preferred_date=form.cleaned_data['preferred_date'],
+                    number_of_passengers=form.cleaned_data['number_of_passengers'],
+                    special_requests=form.cleaned_data.get('special_requests', ''),
+                )
+                messages.success(request, f'Your Umrah inquiry has been submitted successfully! Reference ID: {umrah.reference_id}. We will contact you soon.')
+                return redirect('umrah_thanks', umrah_id=umrah.id)
+            except Exception as e:
+                messages.error(request, f'Error submitting inquiry: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.title()}: {error}")
+    else:
+        form = UmrahForm()
+    
+    today = date.today()
+    return render(request, 'umrah.html', {'form': form, 'today': today})
+
+def umrah_thanks(request, umrah_id):
+    """Thank you page after Umrah inquiry submission"""
+    from .models import Umrah
+    umrah = get_object_or_404(Umrah, id=umrah_id)
+    return render(request, 'umrah_thanks.html', {'umrah': umrah})
+
 def privacy_policy(request):
     """Privacy Policy page"""
     return render(request, 'privacy_policy.html')
@@ -1136,37 +1200,29 @@ def dashboard(request):
 
 @login_required
 def my_trips(request):
-    """My Trips page with date range filtering and Past/Upcoming/Completed tabs"""
-    from datetime import datetime, date
-    from django.db.models import Q
-    
     today = timezone.now().date()
     
-    # Get filter parameters
+    trip_type = request.GET.get('trip_type', 'all')
     from_date_str = request.GET.get('from_date', '')
     to_date_str = request.GET.get('to_date', '')
-    trip_type_filter = request.GET.get('trip_type', 'all')  # all, upcoming, past, completed
     
-    # Parse date filters
     from_date = None
     to_date = None
     if from_date_str:
         try:
             from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
-        except ValueError:
+        except:
             pass
     if to_date_str:
         try:
             to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
-        except ValueError:
+        except:
             pass
     
-    # Get all bookings for the user
-    all_bookings = Booking.objects.filter(user=request.user).select_related(
-        'schedule__route', 'return_schedule__route'
-    ).prefetch_related('passengers').order_by('-schedule__departure_date', '-created_at')
+    # Get all bookings for user - NO STATUS FILTER for 'all'
+    all_bookings = Booking.objects.filter(user=request.user).select_related('schedule__route')
     
-    # Apply date range filter
+    # Apply date filters if provided
     if from_date:
         all_bookings = all_bookings.filter(schedule__departure_date__gte=from_date)
     if to_date:
@@ -1178,49 +1234,51 @@ def my_trips(request):
         status=Booking.Status.CONFIRMED
     )
     
+    # Past bookings - ALL past bookings regardless of status
     past_bookings = all_bookings.filter(
-        schedule__departure_date__lt=today,
-        status=Booking.Status.CONFIRMED
+        schedule__departure_date__lt=today
     )
     
-    completed_bookings = all_bookings.filter(
-        status=Booking.Status.COMPLETED
-    )
+    completed_bookings = all_bookings.filter(status=Booking.Status.COMPLETED)
+    cancelled_bookings = all_bookings.filter(status=Booking.Status.CANCELLED)
     
-    cancelled_bookings = all_bookings.filter(
-        status=Booking.Status.CANCELLED
-    )
-    
-    # Get airport codes for display
-    airport_codes = get_airport_codes()
-    
-    # Apply trip type filter if specified
-    if trip_type_filter == 'upcoming':
-        filtered_bookings = upcoming_bookings
-    elif trip_type_filter == 'past':
-        filtered_bookings = past_bookings
-    elif trip_type_filter == 'completed':
-        filtered_bookings = completed_bookings
-    elif trip_type_filter == 'cancelled':
-        filtered_bookings = cancelled_bookings
+    # Select display bookings based on trip type
+    if trip_type == 'upcoming':
+        display_bookings = upcoming_bookings
+    elif trip_type == 'past':
+        display_bookings = past_bookings
+    elif trip_type == 'completed':
+        display_bookings = completed_bookings
+    elif trip_type == 'cancelled':
+        display_bookings = cancelled_bookings
     else:
-        filtered_bookings = all_bookings
+        # For 'all', show ALL bookings (no status filter)
+        display_bookings = all_bookings
     
+    try:
+        cash_balance = CashBalanceWallet.objects.get(user=request.user).balance
+    except CashBalanceWallet.DoesNotExist:
+        CashBalanceWallet.objects.create(user=request.user)
+        cash_balance = Decimal('0')
+    
+    # Evaluate querysets to lists to ensure they work in templates
     context = {
-        'all_bookings': filtered_bookings,
-        'upcoming_bookings': upcoming_bookings,
-        'past_bookings': past_bookings,
-        'completed_bookings': completed_bookings,
-        'cancelled_bookings': cancelled_bookings,
+        'bookings': list(display_bookings),
+        'all_bookings': list(all_bookings),
+        'upcoming_bookings': list(upcoming_bookings),
+        'past_bookings': list(past_bookings),
+        'completed_bookings': list(completed_bookings),
+        'cancelled_bookings': list(cancelled_bookings),
         'upcoming_count': upcoming_bookings.count(),
         'past_count': past_bookings.count(),
         'completed_count': completed_bookings.count(),
         'cancelled_count': cancelled_bookings.count(),
         'total_count': all_bookings.count(),
+        'trip_type': trip_type,
         'from_date': from_date_str,
         'to_date': to_date_str,
-        'trip_type_filter': trip_type_filter,
-        'airport_codes': airport_codes,
+        'airport_codes': get_airport_codes(),
+        'cash_balance': cash_balance,
         'today': today,
     }
     
@@ -1345,12 +1403,50 @@ def payment_page(request, booking_id):
         cash_balance_wallet = CashBalanceWallet.objects.create(user=request.user)
         cash_balance = Decimal('0')
     
-    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
     # Check if Razorpay is configured
-    # razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    # razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
     
-    # Always show payment page with wallet option (if available)
+    # Initialize Razorpay client and create order
+    order_id = None
+    amount_in_paise = 0
+    
+    if razorpay_key_id and razorpay_key_secret:
+        try:
+            client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+            
+            # Create order
+            amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
+            order_data = {
+                'amount': amount_in_paise,
+                'currency': 'INR',
+                'receipt': booking.booking_reference,
+                'notes': {
+                    'booking_id': str(booking.id),
+                    'booking_reference': booking.booking_reference,
+                }
+            }
+            
+            razorpay_order = client.order.create(data=order_data)
+            order_id = razorpay_order['id']
+            
+            # Store order_id in booking
+            if not booking.notes:
+                booking.notes = json.dumps({'razorpay_order_id': order_id})
+            else:
+                try:
+                    notes = json.loads(booking.notes) if booking.notes else {}
+                except:
+                    notes = {}
+                notes['razorpay_order_id'] = order_id
+                booking.notes = json.dumps(notes)
+            booking.save()
+            
+        except Exception as e:
+            # If Razorpay fails, log error but continue with wallet options
+            print(f"Razorpay error: {str(e)}")
+            order_id = None
+    
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
     
@@ -1363,154 +1459,96 @@ def payment_page(request, booking_id):
         'cash_balance_wallet': cash_balance_wallet,
         'cash_balance': cash_balance,
         'can_use_cash_balance': can_use_cash_balance,
+        'razorpay_key_id': razorpay_key_id if order_id else None,
+        'order_id': order_id,
+        'amount': amount_in_paise,
     }
     return render(request, 'payment.html', context)
-    
-    # ========== COMMENTED RAZORPAY CODE (UNCOMMENT WHEN READY FOR PRODUCTION) ==========
-    # # Initialize Razorpay client
-    # try:
-    #     client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    # except Exception as e:
-    #     # If Razorpay initialization fails, skip payment and confirm directly
-    #     booking.payment_status = Booking.PaymentStatus.PAID
-    #     booking.status = Booking.Status.CONFIRMED
-    #     
-    #     seats_booked = booking.passengers.count() or 1
-    #     if booking.schedule.available_seats >= seats_booked:
-    #         booking.schedule.available_seats -= seats_booked
-    #         booking.schedule.save()
-    #     
-    #     booking.save()
-    #     
-    #     messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway unavailable - booking confirmed directly)')
-    #     return redirect('booking_confirmation', booking_id=booking.id)
-    # 
-    # # Create order
-    # amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
-    # order_data = {
-    #     'amount': amount_in_paise,
-    #     'currency': 'INR',
-    #     'receipt': booking.booking_reference,
-    #     'notes': {
-    #         'booking_id': booking.id,
-    #         'booking_reference': booking.booking_reference,
-    #     }
-    # }
-    # 
-    # try:
-    #     razorpay_order = client.order.create(data=order_data)
-    #     order_id = razorpay_order['id']
-    #     
-    #     # Store order_id in booking
-    #     if not booking.notes:
-    #         booking.notes = json.dumps({'razorpay_order_id': order_id})
-    #     else:
-    #         notes = json.loads(booking.notes) if booking.notes else {}
-    #         notes['razorpay_order_id'] = order_id
-    #         booking.notes = json.dumps(notes)
-    #     booking.save()
-    #     
-    # except Exception as e:
-    #     # If order creation fails, skip payment and confirm directly
-    #     booking.payment_status = Booking.PaymentStatus.PAID
-    #     booking.status = Booking.Status.CONFIRMED
-    #     
-    #     seats_booked = booking.passengers.count() or 1
-    #     if booking.schedule.available_seats >= seats_booked:
-    #         booking.schedule.available_seats -= seats_booked
-    #         booking.schedule.save()
-    #     
-    #     booking.save()
-    #     
-    #     messages.success(request, f'Booking confirmed: {booking.booking_reference} (Payment gateway error - booking confirmed directly)')
-    #     return redirect('booking_confirmation', booking_id=booking.id)
-    # 
-    # # Get comprehensive airport codes
-    # airport_codes = get_airport_codes()
-    # 
-    # context = {
-    #     'booking': booking,
-    #     'razorpay_key_id': razorpay_key_id,
-    #     'order_id': order_id,
-    #     'amount': amount_in_paise,
-    #     'airport_codes': airport_codes,
-    #     'wallet': wallet,
-    #     'wallet_balance': wallet_balance,
-    #     'can_use_wallet': can_use_wallet,
-    # }
-    # return render(request, 'payment.html', context)
 
 
 @login_required
 @require_POST
 def payment_success(request):
     """Handle successful payment callback"""
-    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
-    # payment_id = request.POST.get('razorpay_payment_id')
-    # order_id = request.POST.get('razorpay_order_id')
-    # signature = request.POST.get('razorpay_signature')
-    # 
-    # # Verify payment signature
-    # razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', 'rzp_test_xxxxxxxxxxxxx')
-    # razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', 'xxxxxxxxxxxxxxxxxxxxx')
-    # client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    # 
-    # try:
-    #     # Find booking by order_id
-    #     bookings = Booking.objects.filter(notes__icontains=order_id)
-    #     booking = None
-    #     for b in bookings:
-    #         try:
-    #             notes = json.loads(b.notes) if b.notes else {}
-    #             if notes.get('razorpay_order_id') == order_id:
-    #                 booking = b
-    #                 break
-    #         except:
-    #             continue
-    #     
-    #     if not booking:
-    #         messages.error(request, 'Booking not found.')
-    #         return redirect('dashboard')
-    #     
-    #     # Verify signature
-    #     params_dict = {
-    #         'razorpay_order_id': order_id,
-    #         'razorpay_payment_id': payment_id,
-    #         'razorpay_signature': signature
-    #     }
-    #     
-    #     client.utility.verify_payment_signature(params_dict)
-    #     
-    #     # Update booking status
-    #     booking.payment_status = Booking.PaymentStatus.PAID
-    #     booking.status = Booking.Status.CONFIRMED
-    #     
-    #     # Update notes with payment info
-    #     notes = json.loads(booking.notes) if booking.notes else {}
-    #     notes['razorpay_payment_id'] = payment_id
-    #     notes['razorpay_order_id'] = order_id
-    #     booking.notes = json.dumps(notes)
-    #     
-    #     # Update schedule - reduce available seats
-    #     seats_booked = booking.passengers.count()
-    #     booking.schedule.available_seats -= seats_booked
-    #     booking.schedule.save()
-    #     
-    #     booking.save()
-    #     
-    #     messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
-    #     return redirect('booking_confirmation', booking_id=booking.id)
-    #     
-    # except razorpay.errors.SignatureVerificationError:
-    #     messages.error(request, 'Payment verification failed.')
-    #     return redirect('payment_failed')
-    # except Exception as e:
-    #     messages.error(request, f'Payment processing error: {str(e)}')
-    #     return redirect('payment_failed')
+    payment_id = request.POST.get('razorpay_payment_id')
+    order_id = request.POST.get('razorpay_order_id')
+    signature = request.POST.get('razorpay_signature')
     
-    # FOR TESTING: Direct confirmation without payment gateway
-    messages.info(request, 'Payment gateway is disabled for testing. Please use the booking flow directly.')
-    return redirect('dashboard')
+    if not payment_id or not order_id or not signature:
+        messages.error(request, 'Invalid payment data received.')
+        return redirect('payment_failed')
+    
+    # Verify payment signature
+    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    
+    if not razorpay_key_id or not razorpay_key_secret:
+        messages.error(request, 'Payment gateway not configured.')
+        return redirect('payment_failed')
+    
+    client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    
+    try:
+        # Find booking by order_id
+        bookings = Booking.objects.filter(notes__icontains=order_id)
+        booking = None
+        for b in bookings:
+            try:
+                notes = json.loads(b.notes) if b.notes else {}
+                if notes.get('razorpay_order_id') == order_id:
+                    booking = b
+                    break
+            except:
+                continue
+        
+        if not booking:
+            messages.error(request, 'Booking not found.')
+            return redirect('dashboard')
+        
+        # Check if already paid
+        if booking.payment_status == Booking.PaymentStatus.PAID:
+            messages.info(request, 'This booking is already paid.')
+            return redirect('booking_confirmation', booking_id=booking.id)
+        
+        # Verify signature
+        params_dict = {
+            'razorpay_order_id': order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        }
+        
+        client.utility.verify_payment_signature(params_dict)
+        
+        # Update booking status
+        booking.payment_status = Booking.PaymentStatus.PAID
+        booking.status = Booking.Status.CONFIRMED
+        
+        # Update notes with payment info
+        try:
+            notes = json.loads(booking.notes) if booking.notes else {}
+        except:
+            notes = {}
+        notes['razorpay_payment_id'] = payment_id
+        notes['razorpay_order_id'] = order_id
+        booking.notes = json.dumps(notes)
+        
+        # Update schedule - reduce available seats
+        seats_booked = booking.passengers.count() or 1
+        if booking.schedule.available_seats >= seats_booked:
+            booking.schedule.available_seats -= seats_booked
+            booking.schedule.save()
+        
+        booking.save()
+        
+        messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
+        return redirect('booking_confirmation', booking_id=booking.id)
+        
+    except razorpay.errors.SignatureVerificationError:
+        messages.error(request, 'Payment verification failed. Please contact support.')
+        return redirect('payment_failed')
+    except Exception as e:
+        messages.error(request, f'Payment processing error: {str(e)}')
+        return redirect('payment_failed')
 
 
 @login_required
@@ -1524,149 +1562,145 @@ def wallet_recharge(request):
     # Get or create cash balance wallet for user (auto-created for all users)
     wallet, created = CashBalanceWallet.objects.get_or_create(user=request.user)
     
-    # ========== PAYMENT GATEWAY COMMENTED FOR TESTING ==========
     # Handle successful payment callback
-    # if request.method == 'POST' and request.POST.get('razorpay_payment_id'):
-    #     payment_id = request.POST.get('razorpay_payment_id')
-    #     order_id = request.POST.get('razorpay_order_id')
-    #     signature = request.POST.get('razorpay_signature')
-    #     amount = request.POST.get('amount')
-    #     
-    #     # Verify payment signature
-    #     razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    #     razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
-    #     
-    #     if not razorpay_key_id or not razorpay_key_secret:
-    #         messages.error(request, 'Payment gateway not configured.')
-    #         return redirect('wallet_recharge')
-    #     
-    #     try:
-    #         client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    #         
-    #         # Verify signature
-    #         params_dict = {
-    #             'razorpay_order_id': order_id,
-    #             'razorpay_payment_id': payment_id,
-    #             'razorpay_signature': signature
-    #         }
-    #         
-    #         client.utility.verify_payment_signature(params_dict)
-    #         
-    #         # Get amount from session or order
-    #         recharge_amount = Decimal(request.session.get('wallet_recharge_amount', amount)) / 100 if amount else Decimal('0')
-    #         description = request.session.get('wallet_recharge_description', 'Wallet Recharge via UPI/Card')
-    #         
-    #         # Check if adding this amount would exceed max balance
-    #         if (wallet.balance + recharge_amount) > wallet.max_balance:
-    #             messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
-    #         else:
-    #             # Add balance to wallet
-    #             wallet.add_balance(
-    #                 amount=recharge_amount,
-    #                 transaction_type='recharge',
-    #                 description=description,
-    #                 reference_id=payment_id
-    #             )
-    #             messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
-    #             
-    #             # Clear session
-    #             if 'wallet_recharge_amount' in request.session:
-    #                 del request.session['wallet_recharge_amount']
-    #             if 'wallet_recharge_description' in request.session:
-    #                 del request.session['wallet_recharge_description']
-    #             
-    #             return redirect('wallet_history')
-    #             
-    #     except razorpay.errors.SignatureVerificationError:
-    #         messages.error(request, 'Payment verification failed. Please try again.')
-    #     except Exception as e:
-    #         messages.error(request, f'Recharge failed: {str(e)}')
+    if request.method == 'POST' and request.POST.get('razorpay_payment_id'):
+        payment_id = request.POST.get('razorpay_payment_id')
+        order_id = request.POST.get('razorpay_order_id')
+        signature = request.POST.get('razorpay_signature')
+        amount = request.POST.get('amount')
+        
+        if not payment_id or not order_id or not signature:
+            messages.error(request, 'Invalid payment data received.')
+            return redirect('wallet_recharge')
+        
+        # Verify payment signature
+        razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+        razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+        
+        if not razorpay_key_id or not razorpay_key_secret:
+            messages.error(request, 'Payment gateway not configured.')
+            return redirect('wallet_recharge')
+        
+        try:
+            client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+            
+            # Verify signature
+            params_dict = {
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            }
+            
+            client.utility.verify_payment_signature(params_dict)
+            
+            # Get amount from session or order
+            recharge_amount = Decimal(request.session.get('wallet_recharge_amount', amount)) / 100 if amount else Decimal('0')
+            if not recharge_amount:
+                # Try to get from order
+                try:
+                    order = client.order.fetch(order_id)
+                    recharge_amount = Decimal(order['amount']) / 100
+                except:
+                    messages.error(request, 'Could not determine recharge amount.')
+                    return redirect('wallet_recharge')
+            
+            description = request.session.get('wallet_recharge_description', 'Wallet Recharge via Razorpay')
+            
+            # Check if adding this amount would exceed max balance
+            if (wallet.balance + recharge_amount) > wallet.max_balance:
+                messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
+            else:
+                # Add balance to wallet
+                wallet.add_balance(
+                    amount=recharge_amount,
+                    transaction_type='recharge',
+                    description=description,
+                    reference_id=payment_id
+                )
+                messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
+                
+                # Clear session
+                if 'wallet_recharge_amount' in request.session:
+                    del request.session['wallet_recharge_amount']
+                if 'wallet_recharge_description' in request.session:
+                    del request.session['wallet_recharge_description']
+                
+                return redirect('wallet_history')
+                
+        except razorpay.errors.SignatureVerificationError:
+            messages.error(request, 'Payment verification failed. Please try again.')
+        except Exception as e:
+            messages.error(request, f'Recharge failed: {str(e)}')
+            form = WalletRechargeForm()
     
-    # Handle form submission - FOR TESTING: Directly add balance without payment gateway
-    if request.method == 'POST':
+    # Handle form submission - create Razorpay order
+    elif request.method == 'POST':
         form = WalletRechargeForm(request.POST)
         if form.is_valid():
             amount = form.cleaned_data['amount']
-            description = form.cleaned_data.get('description', 'Wallet Recharge (Testing Mode)')
+            description = form.cleaned_data.get('description', 'Wallet Recharge')
             
             # Check if adding this amount would exceed max balance
             if (wallet.balance + amount) > wallet.max_balance:
                 messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
                 form = WalletRechargeForm(initial={'amount': amount, 'description': description})
             else:
-                # FOR TESTING: Directly add balance without payment gateway
-                wallet.add_balance(
-                    amount=amount,
-                    transaction_type='recharge',
-                    description=description,
-                    reference_id=f'TEST_{int(timezone.now().timestamp())}'
-                )
-                messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance} (Testing mode - no payment gateway)')
-                return redirect('wallet_history')
+                # Store in session for after payment
+                request.session['wallet_recharge_amount'] = str(amount)
+                request.session['wallet_recharge_description'] = description
+                request.session.modified = True  # Ensure session is saved
+                
+                # Initialize Razorpay client
+                razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+                razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+                
+                if not razorpay_key_id or not razorpay_key_secret:
+                    messages.error(request, 'Payment gateway not configured. Please contact support.')
+                    form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                else:
+                    try:
+                        client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+                        
+                        # Create order
+                        amount_in_paise = int(amount * 100)  # Convert to paise
+                        order_data = {
+                            'amount': amount_in_paise,
+                            'currency': 'INR',
+                            'receipt': f'WALLET_{request.user.id}_{int(timezone.now().timestamp())}',
+                            'notes': {
+                                'user_id': str(request.user.id),
+                                'type': 'wallet_recharge',
+                                'description': description,
+                            }
+                        }
+                        
+                        razorpay_order = client.order.create(data=order_data)
+                        order_id = razorpay_order['id']
+                        
+                        context = {
+                            'form': form,
+                            'wallet': wallet,
+                            'wallet_balance': wallet.balance,
+                            'max_balance': wallet.max_balance,
+                            'razorpay_key_id': razorpay_key_id,
+                            'order_id': order_id,
+                            'amount': amount_in_paise,
+                            'recharge_amount': amount,
+                        }
+                        return render(request, 'wallet_recharge.html', context)
+                        
+                    except Exception as e:
+                        import traceback
+                        print(f"Razorpay error: {str(e)}")
+                        print(traceback.format_exc())
+                        messages.error(request, f'Payment gateway error: {str(e)}. Please try again.')
+                        form = WalletRechargeForm(initial={'amount': amount, 'description': description})
         else:
-            form = WalletRechargeForm()
-    
-    # ========== COMMENTED RAZORPAY CODE (UNCOMMENT WHEN READY FOR PRODUCTION) ==========
-    # # Handle form submission - create Razorpay order
-    # elif request.method == 'POST':
-    #     form = WalletRechargeForm(request.POST)
-    #     if form.is_valid():
-    #         amount = form.cleaned_data['amount']
-    #         description = form.cleaned_data.get('description', 'Wallet Recharge')
-    #         
-    #         # Check if adding this amount would exceed max balance
-    #         if (wallet.balance + amount) > wallet.max_balance:
-    #             messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
-    #             form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-    #         else:
-    #             # Store in session for after payment
-    #             request.session['wallet_recharge_amount'] = str(amount)
-    #             request.session['wallet_recharge_description'] = description
-    #             
-    #             # Initialize Razorpay client
-    #             razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    #             razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
-    #             
-    #             if not razorpay_key_id or not razorpay_key_secret:
-    #                 messages.error(request, 'Payment gateway not configured. Please contact support.')
-    #                 form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-    #             else:
-    #                 try:
-    #                     client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    #                     
-    #                     # Create order
-    #                     amount_in_paise = int(amount * 100)  # Convert to paise
-    #                     order_data = {
-    #                         'amount': amount_in_paise,
-    #                         'currency': 'INR',
-    #                         'receipt': f'WALLET_{request.user.id}_{int(timezone.now().timestamp())}',
-    #                         'notes': {
-    #                             'user_id': request.user.id,
-    #                             'type': 'wallet_recharge',
-    #                             'description': description,
-    #                         }
-    #                     }
-    #                     
-    #                     razorpay_order = client.order.create(data=order_data)
-    #                     order_id = razorpay_order['id']
-    #                     
-    #                     context = {
-    #                         'form': form,
-    #                         'wallet': wallet,
-    #                         'wallet_balance': wallet.balance,
-    #                         'max_balance': wallet.max_balance,
-    #                         'razorpay_key_id': razorpay_key_id,
-    #                         'order_id': order_id,
-    #                         'amount': amount_in_paise,
-    #                         'recharge_amount': amount,
-    #                     }
-    #                     return render(request, 'wallet_recharge.html', context)
-    #                     
-    #                 except Exception as e:
-    #                     messages.error(request, f'Payment gateway error: {str(e)}')
-    #                     form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-    #     else:
-    #         form = WalletRechargeForm()
+            # Form is invalid - show errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.title()}: {error}")
+            form = WalletRechargeForm(request.POST)  # Keep the submitted data
     else:
         form = WalletRechargeForm()
     
@@ -2228,16 +2262,39 @@ def edit_booking_fare(request, booking_id):
 def user_login(request):
     """Handle user login with email and password"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        if request.user.is_approved:
+            return redirect('homepage')
+        else:
+            logout(request)
+            messages.warning(request, 'Your account is under review. Please wait for approval.')
+            return redirect('login')
         
     if request.method == 'POST':
-        form = UserLoginForm(request, data=request.POST)
+        # Handle remember_me field separately if not in POST
+        post_data = request.POST.copy()
+        if 'remember_me' not in post_data:
+            post_data['remember_me'] = False
+        
+        form = UserLoginForm(request, data=post_data)
         if form.is_valid():
-            email = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, email=email, password=password)
+            # Use form's get_user() method which handles authentication correctly
+            user = form.get_user()
             
             if user is not None:
+                # Check if user account is approved
+                if not user.is_approved:
+                    messages.warning(request, 'Your account is under review. Your account will be activated within 24 hours. Please wait for approval.')
+                    return redirect('login')
+                
+                # Handle remember me - set session expiry
+                remember_me = form.cleaned_data.get('remember_me', False)
+                if remember_me:
+                    # Session expires in 2 weeks
+                    request.session.set_expiry(1209600)  # 14 days in seconds
+                else:
+                    # Session expires when browser closes
+                    request.session.set_expiry(0)
+                
                 login(request, user)
                 # Get user's full name safely (create profile if it doesn't exist)
                 try:
@@ -2252,7 +2309,7 @@ def user_login(request):
                     full_name = user.get_full_name() or user.email.split('@')[0]
                 
                 messages.success(request, f'Welcome back, {full_name}!')
-                next_url = request.POST.get('next') or 'dashboard'
+                next_url = request.POST.get('next') or 'homepage'
                 return redirect(next_url)
             else:
                 messages.error(request, 'Invalid email or password')
@@ -2395,9 +2452,14 @@ def verify_otp(request):
 
 
 def user_signup(request):
-    """Handle new user registration (OTP verification disabled for now)"""
+    """Handle new user registration - account needs admin approval"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        if request.user.is_approved:
+            return redirect('homepage')
+        else:
+            logout(request)
+            messages.info(request, 'Your account is under review. Please wait for approval.')
+            return redirect('login')
         
     if request.method == 'POST':
         form = UserRegisterForm(request.POST, request.FILES)
@@ -2405,12 +2467,19 @@ def user_signup(request):
         if form.is_valid():
             try:
                 # Save the user (which also creates the profile)
+                # User will NOT be approved by default - needs admin approval
                 user = form.save()
                 
-                # Log the user in
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                messages.success(request, 'Account created successfully! Welcome to Safar Zone Travels.')
-                return redirect('dashboard')
+                # Set is_approved to False (default, but explicit)
+                user.is_approved = False
+                user.save()
+                
+                # DO NOT log the user in - they need to wait for approval
+                messages.success(request, 'Your form has been submitted successfully! Your account will be reviewed and activated within 24 hours. You will receive an email once your account is approved.')
+                return render(request, 'signup_success.html', {
+                    'message': 'Your form has been submitted successfully!',
+                    'submessage': 'Your account will be reviewed and activated within 24 hours. You will receive an email once your account is approved.'
+                })
                 
             except Exception as e:
                 messages.error(request, f'Error creating account: {str(e)}')

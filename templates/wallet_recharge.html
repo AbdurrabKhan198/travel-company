@@ -155,7 +155,34 @@
 
             <!-- Recharge Form -->
             <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 lg:p-10 animate-fade-in-up" style="animation-delay: 0.2s;">
-                <form method="POST" class="space-y-6 md:space-y-8" id="recharge-form">
+                <!-- Display Messages -->
+                {% if messages %}
+                    <div class="mb-6 space-y-2">
+                        {% for message in messages %}
+                            <div class="p-3 rounded-xl {% if message.tags == 'error' %}bg-red-500/90{% elif message.tags == 'success' %}bg-green-500/90{% else %}bg-blue-500/90{% endif %} text-white text-sm">
+                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Display Form Errors -->
+                {% if form.errors %}
+                    <div class="mb-6 p-4 bg-red-500/90 rounded-xl text-white text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <strong>Please correct the following errors:</strong>
+                        <ul class="mt-2 list-disc list-inside">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <form method="POST" action="{% url 'wallet_recharge' %}" class="space-y-6 md:space-y-8" id="recharge-form">
                     {% csrf_token %}
                     
                     <!-- Amount Field -->
@@ -241,63 +268,7 @@
 
                     <!-- Submit Button -->
                     <div class="pt-2">
-                        {% if order_id %}
-                            <!-- Payment Form (after order creation) -->
-                            <form id="payment-form" method="POST" action="{% url 'wallet_recharge' %}" class="space-y-4">
-                                {% csrf_token %}
-                                <input type="hidden" name="razorpay_order_id" value="{{ order_id }}">
-                                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-                                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-                                <input type="hidden" name="amount" value="{{ amount }}">
-                                
-                                <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 mb-4 border-2 border-amber-200">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-sm font-semibold" style="color: #374151 !important;">Recharge Amount:</span>
-                                        <span class="text-xl font-black" style="color: #d97706 !important;">₹{{ recharge_amount|floatformat:2 }}</span>
-                                    </div>
-                                </div>
-                                
-                                <button type="submit" id="pay-button" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
-                                    <i class="fas fa-credit-card text-xl" style="color: #ffffff !important;"></i>
-                                    <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card</span>
-                                </button>
-                                
-                                <div class="pt-4 border-t border-gray-200">
-                                    <div class="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs md:text-sm mb-3" style="color: #4b5563 !important;">
-                                        <div class="flex items-center space-x-2">
-                                            <i class="fas fa-lock text-green-500"></i>
-                                            <span style="color: #4b5563 !important;">SSL Secured</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <i class="fas fa-shield-alt text-green-500"></i>
-                                            <span style="color: #4b5563 !important;">Protected</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <i class="fas fa-check-circle text-green-500"></i>
-                                            <span style="color: #4b5563 !important;">Verified</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-wrap items-center justify-center gap-3 md:gap-4">
-                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
-                                            <i class="fab fa-google-pay text-blue-600"></i>
-                                            <span>GPay</span>
-                                        </div>
-                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
-                                            <i class="fas fa-mobile-alt text-purple-600"></i>
-                                            <span>UPI</span>
-                                        </div>
-                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
-                                            <i class="fas fa-credit-card text-blue-600"></i>
-                                            <span>Cards</span>
-                                        </div>
-                                        <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
-                                            <i class="fas fa-university text-green-600"></i>
-                                            <span>Net Banking</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        {% else %}
+                        {% if not order_id %}
                             <button type="submit" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
                                 <i class="fas fa-arrow-right text-xl" style="color: #ffffff !important;"></i>
                                 <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Continue to Payment</span>
@@ -306,12 +277,80 @@
                     </div>
 
                     <!-- Back Link -->
+                    {% if not order_id %}
                     <div class="text-center pt-4">
                         <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sky-600 hover:text-sky-700 font-semibold transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
                         </a>
                     </div>
+                    {% endif %}
                 </form>
+                
+                {% if order_id %}
+                <!-- Payment Form (outside main form to avoid nesting) -->
+                <div class="mt-6 bg-white rounded-2xl shadow-xl p-6 md:p-8 animate-fade-in-up">
+                    <form id="payment-form" method="POST" action="{% url 'wallet_recharge' %}" class="space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="razorpay_order_id" value="{{ order_id }}">
+                        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+                        <input type="hidden" name="amount" value="{{ amount }}">
+                        
+                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 mb-4 border-2 border-amber-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold" style="color: #374151 !important;">Recharge Amount:</span>
+                                <span class="text-xl font-black" style="color: #d97706 !important;">₹{{ recharge_amount|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="pay-button" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
+                            <i class="fas fa-credit-card text-xl" style="color: #ffffff !important;"></i>
+                            <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card</span>
+                        </button>
+                        
+                        <div class="pt-4 border-t border-gray-200">
+                            <div class="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs md:text-sm mb-3" style="color: #4b5563 !important;">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-lock text-green-500"></i>
+                                    <span style="color: #4b5563 !important;">SSL Secured</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-shield-alt text-green-500"></i>
+                                    <span style="color: #4b5563 !important;">Protected</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <span style="color: #4b5563 !important;">Verified</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-center gap-3 md:gap-4">
+                                <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                    <i class="fab fa-google-pay text-blue-600"></i>
+                                    <span>GPay</span>
+                                </div>
+                                <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                    <i class="fas fa-mobile-alt text-purple-600"></i>
+                                    <span>UPI</span>
+                                </div>
+                                <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                    <i class="fas fa-credit-card text-blue-600"></i>
+                                    <span>Cards</span>
+                                </div>
+                                <div class="flex items-center space-x-1 text-xs" style="color: #6b7280 !important;">
+                                    <i class="fas fa-university text-green-600"></i>
+                                    <span>Net Banking</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center pt-4">
+                        <a href="{% url 'wallet_recharge' %}" class="inline-flex items-center text-sky-600 hover:text-sky-700 font-semibold transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>Cancel & Go Back
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Info Card -->
@@ -410,50 +449,76 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-{# ========== RAZORPAY PAYMENT GATEWAY COMMENTED FOR TESTING ========== #}
-{# {% if order_id %} #}
-{# <!-- Razorpay Checkout Script --> #}
-{# <script src="https://checkout.razorpay.com/v1/checkout.js"></script> #}
-{# <script> #}
-{#     document.getElementById('payment-form').addEventListener('submit', function(e) { #}
-{#         e.preventDefault(); #}
-{#         #}
-{#         const button = document.getElementById('pay-button'); #}
-{#         button.disabled = true; #}
-{#         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...'; #}
-{#         #}
-{#         const options = { #}
-{#             "key": "{{ razorpay_key_id }}", #}
-{#             "amount": {{ amount }}, #}
-{#             "currency": "INR", #}
-{#             "name": "Safar Zone Travels", #}
-{#             "description": "Wallet Recharge - ₹{{ recharge_amount|floatformat:2 }}", #}
-{#             "order_id": "{{ order_id }}", #}
-{#             "handler": function(response) { #}
-{#                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id; #}
-{#                 document.getElementById('razorpay_signature').value = response.razorpay_signature; #}
-{#                 document.getElementById('payment-form').submit(); #}
-{#             }, #}
-{#             "prefill": { #}
-{#                 "name": "{% if user.profile and user.profile.full_name %}{{ user.profile.full_name }}{% else %}{{ user.username }}{% endif %}", #}
-{#                 "email": "{{ user.email }}", #}
-{#                 "contact": "{% if user.profile.phone %}{{ user.profile.phone }}{% else %}9999999999{% endif %}" #}
-{#             }, #}
-{#             "theme": { #}
-{#                 "color": "#f59e0b" #}
-{#             }, #}
-{#             "modal": { #}
-{#                 "ondismiss": function() { #}
-{#                     button.disabled = false; #}
-{#                     button.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card'; #}
-{#                 } #}
-{#             } #}
-{#         }; #}
-{#         #}
-{#         const rzp = new Razorpay(options); #}
-{#         rzp.open(); #}
-{#     }); #}
-{# </script> #}
-{# {% endif %} #}
+{% if order_id %}
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentForm = document.getElementById('payment-form');
+        if (!paymentForm) {
+            console.error('Payment form not found');
+            return;
+        }
+        
+        paymentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('pay-button');
+            if (!button) {
+                console.error('Pay button not found');
+                return;
+            }
+            
+            const originalButtonHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            
+            const options = {
+                "key": "{{ razorpay_key_id }}",
+                "amount": {{ amount }},
+                "currency": "INR",
+                "name": "Safar Zone Travels",
+                "description": "Wallet Recharge - ₹{{ recharge_amount|floatformat:2 }}",
+                "order_id": "{{ order_id }}",
+                "handler": function(response) {
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                    document.getElementById('payment-form').submit();
+                },
+                "prefill": {
+                    "name": "{% if request.user.profile and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.email }}{% endif %}",
+                    "email": "{{ request.user.email }}",
+                    "contact": "{% if request.user.profile.phone %}{{ request.user.profile.phone }}{% else %}{{ request.user.phone|default:'9999999999' }}{% endif %}"
+                },
+                "theme": {
+                    "color": "#f59e0b"
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        button.disabled = false;
+                        button.innerHTML = originalButtonHTML;
+                    }
+                }
+            };
+            
+            try {
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function(response) {
+                    alert('Payment failed. Please try again.');
+                    button.disabled = false;
+                    button.innerHTML = originalButtonHTML;
+                });
+                rzp.open();
+            } catch (error) {
+                console.error('Razorpay error:', error);
+                alert('Payment gateway error. Please try again.');
+                button.disabled = false;
+                button.innerHTML = originalButtonHTML;
+            }
+        });
+    });
+</script>
+{% endif %}
 {% endblock %}
 

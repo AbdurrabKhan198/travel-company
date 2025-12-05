@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Welcome to Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    .landing-hero {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .landing-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .landing-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        color: white;
+        max-width: 800px;
+        padding: 2rem;
+    }
+    
+    .landing-logo {
+        width: 200px;
+        height: auto;
+        margin: 0 auto 2rem;
+        filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));
+    }
+    
+    .landing-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .landing-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 3rem;
+        opacity: 0.95;
+        animation: fadeInUp 1s ease-out;
+    }
+    
+    .landing-buttons {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeInUp 1.2s ease-out;
+    }
+    
+    .btn-landing {
+        padding: 1rem 3rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary-landing {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .btn-primary-landing:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        color: white;
+    }
+    
+    .btn-secondary-landing {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-secondary-landing:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-5px);
+        color: white;
+    }
+    
+    .landing-features {
+        margin-top: 4rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        animation: fadeInUp 1.4s ease-out;
+    }
+    
+    .feature-item {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1.5rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .feature-desc {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .landing-title {
+            font-size: 2.5rem;
+        }
+        
+        .landing-subtitle {
+            font-size: 1.2rem;
+        }
+        
+        .landing-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-landing {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="landing-hero">
+    <div class="landing-content">
+        {% if logo %}
+        <img src="{{ logo }}" alt="Safar Zone Travels" class="landing-logo">
+        {% else %}
+        <div class="landing-logo" style="font-size: 4rem; margin-bottom: 2rem;">✈️</div>
+        {% endif %}
+        
+        <h1 class="landing-title">Welcome to Safar Zone Travels</h1>
+        <p class="landing-subtitle">Your trusted partner for seamless travel experiences</p>
+        
+        <div class="landing-buttons">
+            <a href="{% url 'signup' %}" class="btn-landing btn-primary-landing">
+                <i class="fas fa-user-plus"></i>
+                Create Account
+            </a>
+            <a href="{% url 'login' %}" class="btn-landing btn-secondary-landing">
+                <i class="fas fa-sign-in-alt"></i>
+                Login
+            </a>
+        </div>
+        
+        <div class="landing-features">
+            <div class="feature-item">
+                <div class="feature-icon">✈️</div>
+                <div class="feature-title">Flight Booking</div>
+                <div class="feature-desc">Book flights to your favorite destinations</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🏨</div>
+                <div class="feature-title">Umrah Booking</div>
+                <div class="feature-desc">Book your umrah package</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🎒</div>
+                <div class="feature-title">Travel Packages</div>
+                <div class="feature-desc">Explore amazing travel packages</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🛂</div>
+                <div class="feature-title">Visa Services</div>
+                <div class="feature-desc">Get visa assistance for your travels</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

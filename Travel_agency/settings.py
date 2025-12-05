@@ -174,8 +174,8 @@ LOGOUT_REDIRECT_URL = 'homepage'
 
 # Razorpay Payment Gateway Settings
 # Get your keys from https://dashboard.razorpay.com/app/keys
-RAZORPAY_KEY_ID = 'rzp_test_xxxxxxxxxxxxx'  # Replace with your Razorpay Key ID
-RAZORPAY_KEY_SECRET = 'xxxxxxxxxxxxxxxxxxxxx'  # Replace with your Razorpay Key Secret
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
 
 # Email Configuration
 # For development, emails will be printed to console

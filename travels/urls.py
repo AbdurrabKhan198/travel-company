@@ -5,8 +5,10 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    # Public pages
-    path('', views.homepage, name='homepage'),
+    # Root URL - shows login page directly
+    path('', views.user_login, name='login'),
+    # Homepage (only for authenticated and approved users)
+    path('home/', views.homepage, name='homepage'),
     path('contact/', views.contact, name='contact'),
     path('contact/thanks/<int:contact_id>/', views.contact_thanks, name='contact_thanks'),
     path('about/',views.about, name='about'),
@@ -15,6 +17,8 @@ urlpatterns = [
     path('faq/', views.faq, name='faq'),
     path('visit-visa/', views.visit_visa, name='visit_visa'),
     path('apply-visa/', views.apply_visa, name='apply_visa'),
+    path('umrah/', views.umrah, name='umrah'),
+    path('umrah/thanks/<int:umrah_id>/', views.umrah_thanks, name='umrah_thanks'),
     path('apply-package/<str:package_name>/', views.apply_package, name='apply_package'),
     path('apply-package/', views.apply_package, name='apply_package'),
     path('test-colors/', TemplateView.as_view(template_name='test_colors.html'), name='test_colors'),
@@ -36,7 +40,7 @@ urlpatterns = [
     # User pages
     path('dashboard/', views.dashboard, name='dashboard'),
     path('my-trips/', views.my_trips, name='my_trips'),
-    path('login/', views.user_login, name='login'),
+    # Login path removed - root URL (/) now serves as login page
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),
     

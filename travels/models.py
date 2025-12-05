@@ -53,6 +53,7 @@ class User(AbstractUser):
     phone = models.CharField(_('phone number'), validators=[phone_regex], max_length=17, blank=True)
     user_type = models.CharField(_('user type'), max_length=20, choices=UserType.choices, default=UserType.CUSTOMER)
     is_verified = models.BooleanField(_('verified'), default=False)
+    is_approved = models.BooleanField(_('approved'), default=False, help_text=_('Account approval status - user can login only after approval'))
     client_id = models.CharField(
         _('client ID'), 
         max_length=20, 
@@ -183,12 +184,19 @@ class UserProfile(TimestampedModel):
     )
     
     # Signup Document Uploads
-    aadhar_card = models.ImageField(
-        _('Aadhar Card'),
-        upload_to='user_documents/aadhar/',
-        blank=False,
-        null=False,
-        help_text=_('Upload your Aadhar card image (Required)')
+    aadhar_card_front = models.ImageField(
+        _('Aadhar Card Front'),
+        upload_to='user_documents/aadhar/front/',
+        blank=True,
+        null=True,
+        help_text=_('Upload front side of your Aadhar card (Required)')
+    )
+    aadhar_card_back = models.ImageField(
+        _('Aadhar Card Back'),
+        upload_to='user_documents/aadhar/back/',
+        blank=True,
+        null=True,
+        help_text=_('Upload back side of your Aadhar card (Required)')
     )
     
     # Logo Upload (Optional)
@@ -1317,3 +1325,68 @@ class GroupRequest(TimestampedModel):
     
     def __str__(self):
         return f"Group Request {self.reference_id} - {self.contact_name} ({self.number_of_passengers} passengers)"
+
+
+class Umrah(TimestampedModel):
+    """Umrah package inquiry/application model"""
+    
+    class DurationChoices(models.TextChoices):
+        DAYS_14 = '14', _('14 Days')
+        DAYS_20 = '20', _('20 Days')
+    
+    class StatusChoices(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        CONTACTED = 'contacted', _('Contacted')
+        CONFIRMED = 'confirmed', _('Confirmed')
+        CANCELLED = 'cancelled', _('Cancelled')
+    
+    # Personal Information
+    full_name = models.CharField(_('Full Name'), max_length=200)
+    email = models.EmailField(_('Email Address'))
+    phone = models.CharField(_('Phone Number'), max_length=20)
+    
+    # Umrah Details
+    duration = models.CharField(
+        _('Duration'),
+        max_length=10,
+        choices=DurationChoices.choices,
+        default=DurationChoices.DAYS_14
+    )
+    preferred_date = models.DateField(_('Preferred Travel Date'))
+    number_of_passengers = models.PositiveIntegerField(_('Number of Passengers'), default=1)
+    
+    # Additional Information
+    special_requests = models.TextField(_('Special Requests or Requirements'), blank=True, null=True)
+    notes = models.TextField(_('Admin Notes'), blank=True, null=True)
+    
+    # Status
+    status = models.CharField(
+        _('Status'),
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING
+    )
+    
+    # Reference ID
+    reference_id = models.CharField(_('Reference ID'), max_length=50, unique=True, blank=True, editable=False)
+    
+    class Meta:
+        verbose_name = _('Umrah Application')
+        verbose_name_plural = _('Umrah Applications')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at'], name='umrah_status_idx'),
+            models.Index(fields=['duration', 'preferred_date'], name='umrah_duration_date_idx'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            # Generate unique reference ID: UM + timestamp + random
+            import random
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            random_str = str(random.randint(1000, 9999))
+            self.reference_id = f'UM{timestamp}{random_str}'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Umrah {self.reference_id} - {self.full_name} ({self.get_duration_display()})"

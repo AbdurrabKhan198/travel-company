@@ -10,7 +10,7 @@ from django.contrib import messages
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
     Package, PackageImage, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah
 )
 
 class UserProfileInline(admin.StackedInline):
@@ -23,8 +23,8 @@ class UserProfileInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'client_id', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_active')
-    list_filter = ('user_type', 'is_staff', 'is_active')
+    list_display = ('email', 'client_id', 'first_name', 'last_name', 'user_type', 'is_approved', 'is_staff', 'is_active')
+    list_filter = ('user_type', 'is_approved', 'is_staff', 'is_active', 'date_joined')
     search_fields = ('email', 'client_id', 'first_name', 'last_name')
     ordering = ('email',)
     readonly_fields = ('client_id',)
@@ -33,11 +33,29 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone', 'client_id')}),
+        (_('Account Status'), {
+            'fields': ('is_approved', 'is_active', 'is_verified'),
+            'description': 'is_approved: User can login only if approved. Account will be reviewed within 24 hours.'
+        }),
         (_('Permissions'), {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'user_type'),
+            'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions', 'user_type'),
         }),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
+    
+    actions = ['approve_users', 'unapprove_users']
+    
+    def approve_users(self, request, queryset):
+        """Approve selected users"""
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} user(s) approved successfully.')
+    approve_users.short_description = 'Approve selected users'
+    
+    def unapprove_users(self, request, queryset):
+        """Unapprove selected users"""
+        updated = queryset.update(is_approved=False)
+        self.message_user(request, f'{updated} user(s) unapproved.')
+    unapprove_users.short_description = 'Unapprove selected users'
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
@@ -665,4 +683,52 @@ class ExecutiveAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
         self.message_user(request, f'{queryset.count()} executive(s) deactivated.')
     deactivate_executives.short_description = 'Deactivate selected executives'
+
+@admin.register(Umrah)
+class UmrahAdmin(admin.ModelAdmin):
+    """Admin interface for Umrah applications"""
+    list_display = ('reference_id', 'full_name', 'email', 'phone', 'duration', 'preferred_date', 'number_of_passengers', 'status', 'created_at')
+    list_filter = ('status', 'duration', 'created_at', 'preferred_date')
+    search_fields = ('reference_id', 'full_name', 'email', 'phone')
+    readonly_fields = ('reference_id', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Reference Information', {
+            'fields': ('reference_id',)
+        }),
+        ('Personal Information', {
+            'fields': ('full_name', 'email', 'phone')
+        }),
+        ('Umrah Details', {
+            'fields': ('duration', 'preferred_date', 'number_of_passengers')
+        }),
+        ('Additional Information', {
+            'fields': ('special_requests',)
+        }),
+        ('Status & Admin Notes', {
+            'fields': ('status', 'notes')
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    
+    actions = ['mark_as_contacted', 'mark_as_confirmed', 'mark_as_cancelled']
+    
+    def mark_as_contacted(self, request, queryset):
+        queryset.update(status=Umrah.StatusChoices.CONTACTED)
+        self.message_user(request, f'{queryset.count()} application(s) marked as contacted.')
+    mark_as_contacted.short_description = 'Mark selected as contacted'
+    
+    def mark_as_confirmed(self, request, queryset):
+        queryset.update(status=Umrah.StatusChoices.CONFIRMED)
+        self.message_user(request, f'{queryset.count()} application(s) marked as confirmed.')
+    mark_as_confirmed.short_description = 'Mark selected as confirmed'
+    
+    def mark_as_cancelled(self, request, queryset):
+        queryset.update(status=Umrah.StatusChoices.CANCELLED)
+        self.message_user(request, f'{queryset.count()} application(s) marked as cancelled.')
+    mark_as_cancelled.short_description = 'Mark selected as cancelled'
 

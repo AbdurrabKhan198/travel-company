@@ -215,17 +215,31 @@ class UserRegisterForm(UserCreationForm):
         }
     )
     
-    aadhar_card = forms.ImageField(
-        label=_('Aadhar Card'),
+    aadhar_card_front = forms.ImageField(
+        label=_('Aadhar Card Front'),
         required=True,
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*',
             'required': 'required',
         }),
-        help_text=_('Upload your Aadhar card image (Required)'),
+        help_text=_('Upload front side of your Aadhar card (Required)'),
         error_messages={
-            'required': _('Aadhar card upload is mandatory')
+            'required': _('Aadhar card front upload is mandatory')
+        }
+    )
+    
+    aadhar_card_back = forms.ImageField(
+        label=_('Aadhar Card Back'),
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*',
+            'required': 'required',
+        }),
+        help_text=_('Upload back side of your Aadhar card (Required)'),
+        error_messages={
+            'required': _('Aadhar card back upload is mandatory')
         }
     )
     
@@ -275,6 +289,12 @@ class UserRegisterForm(UserCreationForm):
         if password1 and password2 and password1 != password2:
             self.add_error('password2', _("The two password fields didn't match."))
         
+        # Ensure both aadhar cards are uploaded
+        if not cleaned_data.get('aadhar_card_front'):
+            self.add_error('aadhar_card_front', _('Aadhar card front is required'))
+        if not cleaned_data.get('aadhar_card_back'):
+            self.add_error('aadhar_card_back', _('Aadhar card back is required'))
+        
         return cleaned_data
     
     def save(self, commit=True):
@@ -313,8 +333,10 @@ class UserRegisterForm(UserCreationForm):
                 profile.pincode = self.cleaned_data.get('pincode', '')
             
             # Handle file uploads
-            if self.cleaned_data.get('aadhar_card'):
-                profile.aadhar_card = self.cleaned_data.get('aadhar_card')
+            if self.cleaned_data.get('aadhar_card_front'):
+                profile.aadhar_card_front = self.cleaned_data.get('aadhar_card_front')
+            if self.cleaned_data.get('aadhar_card_back'):
+                profile.aadhar_card_back = self.cleaned_data.get('aadhar_card_back')
             
             profile.save()
         return user
@@ -359,9 +381,13 @@ class UserLoginForm(AuthenticationForm):
     )
     
     remember_me = forms.BooleanField(
-        required=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label=_('Remember me')
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'id_remember_me'
+        }),
+        label=_('Remember me'),
+        initial=False
     )
     
     error_messages = {
@@ -809,7 +835,7 @@ class WalletRechargeForm(forms.Form):
     
     description = forms.CharField(
         label=_('Description (Optional)'),
-        required=True,
+        required=False,
         max_length=200,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -824,3 +850,102 @@ class WalletRechargeForm(forms.Form):
         if amount > Decimal('100000.00'):
             raise ValidationError(_('Maximum recharge amount is ₹1,00,000'))
         return amount
+
+
+class UmrahForm(forms.Form):
+    """Form for Umrah package inquiry"""
+    full_name = forms.CharField(
+        label=_('Full Name'),
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter your full name'),
+            'required': 'required',
+        })
+    )
+    
+    email = forms.EmailField(
+        label=_('Email Address'),
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter your email address'),
+            'required': 'required',
+        })
+    )
+    
+    phone = forms.CharField(
+        label=_('Phone Number'),
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter your phone number'),
+            'required': 'required',
+        })
+    )
+    
+    duration = forms.ChoiceField(
+        label=_('Package Duration'),
+        choices=[
+            ('14', _('14 Days')),
+            ('20', _('20 Days')),
+        ],
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'required': 'required',
+        })
+    )
+    
+    preferred_date = forms.DateField(
+        label=_('Preferred Travel Date'),
+        required=True,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+            'min': str(date.today().strftime('%Y-%m-%d')),
+            'required': 'required',
+        })
+    )
+    
+    number_of_passengers = forms.IntegerField(
+        label=_('Number of Passengers'),
+        min_value=1,
+        max_value=50,
+        initial=1,
+        required=True,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': 1,
+            'max': 50,
+            'required': 'required',
+        })
+    )
+    
+    special_requests = forms.CharField(
+        label=_('Special Requests or Requirements'),
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': _('Any special requests or requirements? (Optional)'),
+        })
+    )
+    
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '').strip()
+        if not phone:
+            raise ValidationError(_('Phone number is required'))
+        # Remove any non-digit characters except +
+        phone = ''.join(c for c in phone if c.isdigit() or c == '+')
+        if len(phone) < 10:
+            raise ValidationError(_('Please enter a valid phone number'))
+        return phone
+    
+    def clean_preferred_date(self):
+        preferred_date = self.cleaned_data.get('preferred_date')
+        if preferred_date and preferred_date < date.today():
+            raise ValidationError(_('Preferred date cannot be in the past'))
+        return preferred_date

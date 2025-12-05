@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Umrah Packages - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12 animate-fade-in-up">
+            <div class="inline-block p-4 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl mb-6 shadow-lg">
+                <i class="fas fa-kaaba text-white text-4xl"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                Umrah <span class="gradient-text">Packages</span>
+            </h1>
+            <p class="text-xl text-gray-600">Fill in your details and we'll get back to you with the best Umrah package options</p>
+        </div>
+
+        <!-- Display Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500 text-white{% elif message.tags == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Form Card -->
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-10 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <form method="POST" action="{% url 'umrah' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Personal Information Section -->
+                <div class="border-b-2 border-gray-200 pb-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-user-circle text-sky-500 mr-3"></i>
+                        Personal Information
+                    </h2>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Full Name -->
+                        <div>
+                            <label for="{{ form.full_name.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Full Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="{{ form.full_name.id_for_label }}" 
+                                   name="{{ form.full_name.name }}"
+                                   value="{{ form.full_name.value|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none"
+                                   placeholder="Enter your full name">
+                            {% if form.full_name.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.full_name.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Email Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" 
+                                   id="{{ form.email.id_for_label }}" 
+                                   name="{{ form.email.name }}"
+                                   value="{{ form.email.value|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none"
+                                   placeholder="your@email.com">
+                            {% if form.email.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.email.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label for="{{ form.phone.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Phone Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" 
+                                   id="{{ form.phone.id_for_label }}" 
+                                   name="{{ form.phone.name }}"
+                                   value="{{ form.phone.value|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none"
+                                   placeholder="+91 9876543210">
+                            {% if form.phone.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.phone.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Umrah Details Section -->
+                <div class="border-b-2 border-gray-200 pb-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-calendar-alt text-sky-500 mr-3"></i>
+                        Umrah Package Details
+                    </h2>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Duration -->
+                        <div>
+                            <label for="{{ form.duration.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Package Duration <span class="text-red-500">*</span>
+                            </label>
+                            <select id="{{ form.duration.id_for_label }}" 
+                                    name="{{ form.duration.name }}"
+                                    required
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none">
+                                <option value="">Select Duration</option>
+                                <option value="14" {% if form.duration.value == '14' %}selected{% endif %}>14 Days</option>
+                                <option value="20" {% if form.duration.value == '20' %}selected{% endif %}>20 Days</option>
+                            </select>
+                            {% if form.duration.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.duration.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Preferred Date -->
+                        <div>
+                            <label for="{{ form.preferred_date.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Preferred Travel Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" 
+                                   id="{{ form.preferred_date.id_for_label }}" 
+                                   name="{{ form.preferred_date.name }}"
+                                   value="{{ form.preferred_date.value|default:'' }}"
+                                   min="{{ today|date:'Y-m-d' }}"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none">
+                            {% if form.preferred_date.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.preferred_date.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Number of Passengers -->
+                        <div>
+                            <label for="{{ form.number_of_passengers.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Number of Passengers <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" 
+                                   id="{{ form.number_of_passengers.id_for_label }}" 
+                                   name="{{ form.number_of_passengers.name }}"
+                                   value="{{ form.number_of_passengers.value|default:1 }}"
+                                   min="1"
+                                   max="50"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none"
+                                   placeholder="1">
+                            {% if form.number_of_passengers.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.number_of_passengers.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Special Requests Section -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-comments text-sky-500 mr-3"></i>
+                        Additional Information
+                    </h2>
+                    
+                    <div>
+                        <label for="{{ form.special_requests.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Special Requests or Requirements <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <textarea id="{{ form.special_requests.id_for_label }}" 
+                                  name="{{ form.special_requests.name }}"
+                                  rows="4"
+                                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all outline-none"
+                                  placeholder="Any special requests or requirements?">{{ form.special_requests.value|default:'' }}</textarea>
+                        {% if form.special_requests.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.special_requests.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center pt-6">
+                    <button type="submit" 
+                            class="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-3">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Submit Inquiry</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Card -->
+        <div class="mt-8 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 animate-fade-in-up" style="animation-delay: 0.2s;">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-info-circle text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">About Our Umrah Packages</h3>
+                    <p class="text-gray-700 mb-3">We offer comprehensive Umrah packages with 14-day and 20-day options. Our team will contact you with detailed pricing and itinerary based on your requirements.</p>
+                    <ul class="list-disc list-inside text-gray-700 space-y-1">
+                        <li>Complete visa assistance</li>
+                        <li>Accommodation arrangements</li>
+                        <li>Transportation services</li>
+                        <li>24/7 customer support</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

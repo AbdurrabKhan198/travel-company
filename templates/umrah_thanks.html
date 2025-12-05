@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thank You - Umrah Inquiry Submitted{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl w-full">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-10 text-center animate-fade-in-up">
+            <!-- Success Icon -->
+            <div class="inline-block p-6 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full mb-6 shadow-lg">
+                <i class="fas fa-check-circle text-white text-5xl"></i>
+            </div>
+            
+            <!-- Success Message -->
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Thank You!
+            </h1>
+            <p class="text-xl text-gray-600 mb-8">
+                Your Umrah inquiry has been submitted successfully.
+            </p>
+            
+            <!-- Reference ID -->
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-8 border-2 border-green-200">
+                <p class="text-sm text-gray-600 mb-2">Your Reference ID:</p>
+                <p class="text-2xl font-bold text-green-600 font-mono">{{ umrah.reference_id }}</p>
+                <p class="text-xs text-gray-500 mt-2">Please save this reference ID for future communication</p>
+            </div>
+            
+            <!-- Details Summary -->
+            <div class="bg-gray-50 rounded-xl p-6 mb-8 text-left">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Inquiry Details:</h3>
+                <div class="space-y-2 text-gray-700">
+                    <p><span class="font-semibold">Name:</span> {{ umrah.full_name }}</p>
+                    <p><span class="font-semibold">Email:</span> {{ umrah.email }}</p>
+                    <p><span class="font-semibold">Phone:</span> {{ umrah.phone }}</p>
+                    <p><span class="font-semibold">Duration:</span> {{ umrah.get_duration_display }}</p>
+                    <p><span class="font-semibold">Preferred Date:</span> {{ umrah.preferred_date|date:"F d, Y" }}</p>
+                    <p><span class="font-semibold">Number of Passengers:</span> {{ umrah.number_of_passengers }}</p>
+                </div>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="mb-8">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">What's Next?</h3>
+                <div class="space-y-3 text-left">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">1</div>
+                        <p class="text-gray-700">Our team will review your inquiry and contact you within 24-48 hours.</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">2</div>
+                        <p class="text-gray-700">We'll provide you with detailed package options, pricing, and itinerary.</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">3</div>
+                        <p class="text-gray-700">You can proceed with booking once you're satisfied with the package.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'homepage' %}" 
+                   class="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    <i class="fas fa-home mr-2"></i>Back to Home
+                </a>
+                <a href="{% url 'umrah' %}" 
+                   class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>Submit Another Inquiry
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
