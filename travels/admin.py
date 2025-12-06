@@ -10,7 +10,7 @@ from django.contrib import messages
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
     Package, PackageImage, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah, PNRStock
 )
 
 class UserProfileInline(admin.StackedInline):
@@ -46,9 +46,14 @@ class UserAdmin(BaseUserAdmin):
     actions = ['approve_users', 'unapprove_users']
     
     def approve_users(self, request, queryset):
-        """Approve selected users"""
-        updated = queryset.update(is_approved=True)
-        self.message_user(request, f'{updated} user(s) approved successfully.')
+        """Approve selected users and send approval emails"""
+        count = 0
+        for user in queryset:
+            if not user.is_approved:
+                user.is_approved = True
+                user.save()  # This will trigger the signal to send approval email
+                count += 1
+        self.message_user(request, f'{count} user(s) approved successfully. Approval emails have been sent.')
     approve_users.short_description = 'Approve selected users'
     
     def unapprove_users(self, request, queryset):
@@ -193,7 +198,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 class BookingPassengerInline(admin.TabularInline):
     model = BookingPassenger
     extra = 0
-    readonly_fields = ('full_name', 'age', 'passenger_type')
+    readonly_fields = ('full_name', 'pnr', 'age', 'passenger_type')
     can_delete = False
     
     def has_add_permission(self, request, obj):
@@ -731,4 +736,49 @@ class UmrahAdmin(admin.ModelAdmin):
         queryset.update(status=Umrah.StatusChoices.CANCELLED)
         self.message_user(request, f'{queryset.count()} application(s) marked as cancelled.')
     mark_as_cancelled.short_description = 'Mark selected as cancelled'
+
+@admin.register(PNRStock)
+class PNRStockAdmin(admin.ModelAdmin):
+    """Admin interface for PNR Stock Management - Route-specific PNRs"""
+    list_display = ('pnr', 'route_info', 'is_assigned', 'assigned_to_passenger', 'assigned_at', 'created_at')
+    list_filter = ('is_assigned', 'route', 'created_at', 'assigned_at')
+    search_fields = ('pnr', 'route__from_location', 'route__to_location', 'route__carrier_number', 
+                     'assigned_to__first_name', 'assigned_to__last_name', 'assigned_to__booking__booking_reference')
+    readonly_fields = ('assigned_to', 'assigned_at', 'created_at', 'updated_at')
+    fieldsets = (
+        ('PNR Information', {
+            'fields': ('pnr', 'route', 'is_assigned'),
+            'description': 'PNR is route-specific. Each route has its own pool of PNRs.'
+        }),
+        ('Assignment Information', {
+            'fields': ('assigned_to', 'assigned_at'),
+            'description': 'Shows which passenger this PNR is assigned to (if assigned)'
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    ordering = ('route', '-created_at')
+    date_hierarchy = 'created_at'
+    
+    def route_info(self, obj):
+        if obj.route:
+            return f"{obj.route.from_location} → {obj.route.to_location} ({obj.route.carrier_number})"
+        return "No Route"
+    route_info.short_description = 'Route'
+    
+    def assigned_to_passenger(self, obj):
+        if obj.assigned_to:
+            booking_ref = obj.assigned_to.booking.booking_reference if obj.assigned_to.booking else 'N/A'
+            return f"{obj.assigned_to.full_name} (Booking: {booking_ref})"
+        return "Not assigned"
+    assigned_to_passenger.short_description = 'Assigned To'
+    
+    actions = ['bulk_add_pnrs']
+    
+    def bulk_add_pnrs(self, request, queryset):
+        """Bulk add PNRs - This is a placeholder action"""
+        self.message_user(request, "To add PNRs in bulk, use the management command: python manage.py add_pnr_stock --route <route_id> --generate <count>")
+    bulk_add_pnrs.short_description = "Bulk add PNRs (use management command)"
 

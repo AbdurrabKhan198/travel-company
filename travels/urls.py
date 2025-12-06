@@ -5,9 +5,11 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    # Root URL - shows login page directly
-    path('', views.user_login, name='login'),
-    # Homepage (only for authenticated and approved users)
+    # Root URL - shows homepage (visible to everyone)
+    path('', views.homepage, name='homepage'),
+    # Login page
+    path('login/', views.user_login, name='login'),
+    # Home page (alias for root)
     path('home/', views.homepage, name='homepage'),
     path('contact/', views.contact, name='contact'),
     path('contact/thanks/<int:contact_id>/', views.contact_thanks, name='contact_thanks'),
@@ -32,6 +34,7 @@ urlpatterns = [
     path('payment/success/', views.payment_success, name='payment_success'),
     path('payment/failed/', views.payment_failed, name='payment_failed'),
     path('booking/confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
+    path('ticket/<int:booking_id>/view/', views.view_ticket, name='view_ticket'),
     path('ticket/<int:booking_id>/pdf/', views.download_ticket_pdf, name='download_ticket_pdf'),
     path('ticket/<int:booking_id>/print/', views.print_ticket_pdf, name='print_ticket_pdf'),
     path('ticket/<int:booking_id>/email/', views.email_ticket, name='email_ticket'),
@@ -43,6 +46,12 @@ urlpatterns = [
     # Login path removed - root URL (/) now serves as login page
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),
+    
+    # Password Reset
+    path('password-reset/', views.password_reset_request, name='password_reset'),
+    path('password-reset/done/', views.password_reset_done, name='password_reset_done'),
+    path('password-reset/confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+    path('password-reset/complete/', views.password_reset_complete, name='password_reset_complete'),
     
     # OTP Verification
     path('api/send-otp/', views.send_otp, name='send_otp'),

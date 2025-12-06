@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Permission
 from django.utils import timezone
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.db import transaction
 from django.core.validators import MinLengthValidator, RegexValidator, MinValueValidator, MaxValueValidator
@@ -272,6 +272,86 @@ def create_user_profile(sender, instance, created, **kwargs):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f'Error creating user profile: {str(e)}')
+
+@receiver(pre_save, sender=User)
+def store_old_is_approved(sender, instance, **kwargs):
+    """Store old is_approved value before save"""
+    if instance.pk:
+        try:
+            old_instance = User.objects.get(pk=instance.pk)
+            instance._old_is_approved = old_instance.is_approved
+        except User.DoesNotExist:
+            instance._old_is_approved = False
+    else:
+        instance._old_is_approved = False
+
+@receiver(post_save, sender=User)
+def send_approval_email(sender, instance, created, **kwargs):
+    """Send approval email when user is approved"""
+    # Only send email if user is approved and this is not a new user creation
+    if not created and instance.is_approved:
+        # Check if is_approved was just changed to True
+        was_approved = getattr(instance, '_old_is_approved', False)
+        
+        # Only send if user was not approved before
+        if not was_approved and instance.is_approved:
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                from django.template.loader import render_to_string
+                from django.urls import reverse
+                
+                user_name = instance.get_full_name() or instance.email.split('@')[0]
+                
+                # Get login URL
+                try:
+                    from django.contrib.sites.models import Site
+                    current_site = Site.objects.get_current()
+                    login_url = f"https://{current_site.domain}{reverse('login')}"
+                except:
+                    login_url = f"https://safarzonetravels.com{reverse('login')}"
+                
+                subject = 'Account Approved - Safar Zone Travels'
+                
+                # Plain text fallback
+                plain_message = f'''
+Hello {user_name},
+
+Your account has been successfully approved!
+
+You can now use all services of Safar Zone Travels:
+- Flight Booking
+- Hotel Booking
+- Package Booking
+- And much more...
+
+You can login with your email and password.
+
+Thank you,
+Safar Zone Travels Team
+                '''
+                
+                # HTML email template
+                html_message = render_to_string('emails/approval_email.html', {
+                    'user_name': user_name,
+                    'login_url': login_url,
+                })
+                
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
+                
+                send_mail(
+                    subject,
+                    plain_message,
+                    from_email,
+                    [instance.email],
+                    fail_silently=False,
+                    html_message=html_message,
+                )
+            except Exception as e:
+                # Log error but don't fail the save
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error sending approval email: {str(e)}')
 
 class OTPVerification(models.Model):
     """Model to store OTP for email verification during signup"""
@@ -888,6 +968,15 @@ class BookingPassenger(models.Model):
     )
     special_requests = models.TextField(_('special requests'), blank=True)
     seat_preference = models.CharField(_('seat preference'), max_length=20, blank=True)
+    pnr = models.CharField(
+        _('PNR'), 
+        max_length=10, 
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=_('Passenger Name Record - automatically assigned from stock during booking')
+    )
     
     class Meta:
         verbose_name = _('passenger')
@@ -1390,3 +1479,89 @@ class Umrah(TimestampedModel):
     
     def __str__(self):
         return f"Umrah {self.reference_id} - {self.full_name} ({self.get_duration_display()})"
+
+
+class PNRStock(TimestampedModel):
+    """Model to store available PNRs in stock - Route-specific PNRs"""
+    pnr = models.CharField(
+        _('PNR'), 
+        max_length=10, 
+        unique=True,
+        help_text=_('Passenger Name Record - unique identifier for each passenger')
+    )
+    route = models.ForeignKey(
+        Route,
+        on_delete=models.CASCADE,
+        related_name='pnr_stock',
+        verbose_name=_('route'),
+        null=True,
+        blank=True,
+        help_text=_('Route for which this PNR is valid. PNR can only be assigned to passengers booking this route.')
+    )
+    is_assigned = models.BooleanField(_('assigned'), default=False, help_text=_('Whether this PNR has been assigned to a passenger'))
+    assigned_to = models.ForeignKey(
+        'BookingPassenger',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_pnr',
+        verbose_name=_('assigned to passenger')
+    )
+    assigned_at = models.DateTimeField(_('assigned at'), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('PNR Stock')
+        verbose_name_plural = _('PNR Stock')
+        ordering = ['route', '-created_at']
+        indexes = [
+            models.Index(fields=['pnr'], name='pnr_stock_pnr_idx'),
+            models.Index(fields=['route', 'is_assigned'], name='pnr_stock_route_assigned_idx'),
+            models.Index(fields=['is_assigned'], name='pnr_stock_assigned_idx'),
+        ]
+        unique_together = [['pnr', 'route']]
+    
+    def __str__(self):
+        status = "Assigned" if self.is_assigned else "Available"
+        route_info = f"{self.route.from_location}-{self.route.to_location}" if self.route else "No Route"
+        return f"{self.pnr} ({route_info}) - {status}"
+    
+    def assign_to_passenger(self, passenger):
+        """Assign this PNR to a passenger"""
+        if self.is_assigned:
+            raise ValidationError(_('This PNR is already assigned'))
+        
+        # Verify route matches (if route is set)
+        if self.route and passenger.booking.schedule.route != self.route:
+            raise ValidationError(
+                _('PNR route ({pnr_route}) does not match booking route ({booking_route})').format(
+                    pnr_route=f"{self.route.from_location}-{self.route.to_location}",
+                    booking_route=f"{passenger.booking.schedule.route.from_location}-{passenger.booking.schedule.route.to_location}"
+                )
+            )
+        
+        self.is_assigned = True
+        self.assigned_to = passenger
+        self.assigned_at = timezone.now()
+        self.save()
+    
+    @classmethod
+    def get_available_pnr(cls, route):
+        """Get an available PNR from stock for a specific route"""
+        if not route:
+            raise ValidationError(_('Route is required to get PNR'))
+        
+        pnr = cls.objects.filter(route=route, is_assigned=False).first()
+        if not pnr:
+            raise ValidationError(
+                _('No PNRs available in stock for route {route}. Please add more PNRs for this route.').format(
+                    route=f"{route.from_location}-{route.to_location}"
+                )
+            )
+        return pnr
+    
+    @classmethod
+    def assign_pnr_to_passenger(cls, passenger, route):
+        """Assign an available PNR to a passenger for a specific route"""
+        pnr_stock = cls.get_available_pnr(route)
+        pnr_stock.assign_to_passenger(passenger)
+        return pnr_stock.pnr

@@ -169,6 +169,12 @@
                                     <p class="text-xs text-gray-600 mb-1">Full Name</p>
                                     <p class="font-semibold text-gray-900">{{ passenger.full_name }}</p>
                                 </div>
+                                {% if passenger.pnr %}
+                                <div>
+                                    <p class="text-xs text-gray-600 mb-1">PNR</p>
+                                    <p class="font-semibold text-gray-900 text-lg text-sky-600">{{ passenger.pnr }}</p>
+                                </div>
+                                {% endif %}
                                 <div>
                                     <p class="text-xs text-gray-600 mb-1">Date of Birth</p>
                                     <p class="font-semibold text-gray-900">{{ passenger.date_of_birth|date:"d M Y" }}</p>

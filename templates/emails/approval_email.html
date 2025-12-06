@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Approved - Safar Zone Travels</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+        }
+        .logo-icon {
+            font-size: 32px;
+            color: #fbbf24;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .success-icon {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .success-icon-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .success-icon-circle i {
+            font-size: 40px;
+            color: #ffffff;
+        }
+        .greeting {
+            font-size: 24px;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .message {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #475569;
+            margin-bottom: 25px;
+        }
+        .features-box {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .features-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #047857;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .features-list {
+            list-style: none;
+            padding: 0;
+        }
+        .features-list li {
+            padding: 10px 0;
+            color: #065f46;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .features-list li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            font-size: 18px;
+            width: 24px;
+            height: 24px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #ffffff;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px auto;
+            display: block;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer-text {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .footer-brand {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0ea5e9;
+            margin-top: 10px;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+            margin: 25px 0;
+        }
+        .bilingual-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px dashed #e2e8f0;
+        }
+        .bilingual-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header with Logo -->
+        <div class="header">
+            <div class="logo-container">
+                <span class="logo-text">safarzonetravels</span>
+                <span class="logo-icon">✈️</span>
+            </div>
+            <div class="header-subtitle">Travel Agency Online</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Success Icon -->
+            <div class="success-icon">
+                <div class="success-icon-circle">
+                    <i>✓</i>
+                </div>
+            </div>
+
+            <div class="greeting">
+                Account Approved Successfully! 🎉
+            </div>
+            
+            <div class="message">
+                Hello <strong>{{ user_name }}</strong>,<br><br>
+                We are pleased to inform you that your account has been successfully approved! You can now access all the services of Safar Zone Travels.
+            </div>
+
+            <!-- Features Box -->
+            <div class="features-box">
+                <div class="features-title">What You Can Do Now:</div>
+                <ul class="features-list">
+                    <li>Flight Booking</li>
+                    <li>Hotel Booking</li>
+                    <li>Package Booking</li>
+                    <li>Visa Services</li>
+                    <li>Umrah Packages</li>
+                    <li>And much more...</li>
+                </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <a href="{{ login_url }}" class="cta-button">
+                Login to Your Account →
+            </a>
+
+            <div class="divider"></div>
+
+            
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">
+                Thank you for choosing Safar Zone Travels!
+            </div>
+            <div class="footer-brand">
+                Safar Zone Travels
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

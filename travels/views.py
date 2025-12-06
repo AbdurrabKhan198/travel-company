@@ -14,7 +14,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf import settings
 from decimal import Decimal
 from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, PackageApplication
-from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm
+from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm, PasswordResetRequestForm, SetNewPasswordForm
 import random
 import string
 import json
@@ -309,16 +309,9 @@ def get_client_ip(request):
 # Landing page removed - root URL now goes directly to login
 
 def homepage(request):
-    """Homepage with search and featured packages - only for authenticated and approved users"""
-    # If user is not authenticated, redirect to login page
-    if not request.user.is_authenticated:
-        return redirect('login')
-    
-    # If user is authenticated but not approved, show message and redirect to login
-    if request.user.is_authenticated and not request.user.is_approved:
-        messages.info(request, 'Your account is under review. You will be able to access the site once your account is approved (within 24 hours).')
-        logout(request)
-        return redirect('login')
+    """Homepage with search and featured packages - visible to everyone, but booking requires login"""
+    # Homepage is now visible to everyone (no authentication required)
+    # Booking functionality is protected with @login_required decorator
     
     packages = Package.objects.filter(is_featured=True)[:6]
     
@@ -938,14 +931,16 @@ def handle_booking_confirmation(request, schedule_id):
         user_agent=request.META.get('HTTP_USER_AGENT', '')
     )
     
-    # Create BookingPassenger records
+    # Create BookingPassenger records and assign PNRs
     from datetime import datetime
+    from .models import PNRStock
     passenger_data = booking_data.get('passenger_data', [])
     for passenger in passenger_data:
         dob = datetime.strptime(passenger['dob'], '%Y-%m-%d').date() if passenger.get('dob') else None
         passport_expiry = datetime.strptime(passenger['passport_expiry'], '%Y-%m-%d').date() if passenger.get('passport_expiry') and passenger['passport_expiry'] else None
         
-        BookingPassenger.objects.create(
+        # Create passenger record
+        passenger_obj = BookingPassenger.objects.create(
             booking=booking,
             title=passenger.get('title', 'Mr'),
             first_name=passenger['first_name'],
@@ -957,6 +952,21 @@ def handle_booking_confirmation(request, schedule_id):
             passport_expiry=passport_expiry,
             nationality=passenger.get('nationality', 'Indian')
         )
+        
+        # Assign PNR from stock (only for adults and children, not infants)
+        # PNR is route-specific - assign based on the booking's route
+        if passenger_obj.passenger_type in ['adult', 'child']:
+            try:
+                # Get route from booking schedule
+                route = booking.schedule.route
+                pnr = PNRStock.assign_pnr_to_passenger(passenger_obj, route)
+                passenger_obj.pnr = pnr
+                passenger_obj.save()
+            except Exception as e:
+                # Log error but don't fail booking - PNR can be assigned later
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error assigning PNR to passenger {passenger_obj.id} for route {booking.schedule.route}: {str(e)}')
     
     # Clear session data
     if 'booking_data' in request.session:
@@ -1945,8 +1955,70 @@ def booking_confirmation(request, booking_id):
     return render(request, 'booking_confirmation.html', context)
 
 
+@login_required
+@xframe_options_sameorigin
+def view_ticket(request, booking_id):
+    """View ticket HTML page"""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Only allow view for confirmed and paid bookings
+    if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
+        messages.error(request, 'Ticket can only be viewed for confirmed and paid bookings.')
+        return redirect('dashboard')
+    
+    # Get comprehensive airport codes
+    airport_codes = get_airport_codes()
+    
+    context = {
+        'booking': booking,
+        'airport_codes': airport_codes,
+    }
+    return render(request, 'print_pdf.html', context)
+
+
 def _generate_ticket_pdf(booking, hide_fare=False):
-    """Helper function to generate ticket PDF with optional fare hiding"""
+    """Helper function to generate ticket PDF from HTML template"""
+    from io import BytesIO
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    
+    try:
+        # Try using xhtml2pdf (pisa) for HTML to PDF conversion
+        from xhtml2pdf import pisa
+        
+        # Get comprehensive airport codes
+        airport_codes = get_airport_codes()
+        
+        # Render HTML template
+        html_string = render_to_string('print_pdf.html', {
+            'booking': booking,
+            'airport_codes': airport_codes,
+        })
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        
+        # Convert HTML to PDF
+        pisa_status = pisa.CreatePDF(
+            html_string,
+            dest=buffer,
+            encoding='utf-8'
+        )
+        
+        if pisa_status.err:
+            # Fallback to old method if xhtml2pdf fails
+            return _generate_ticket_pdf_old(booking, hide_fare)
+        
+        buffer.seek(0)
+        return buffer
+        
+    except ImportError:
+        # If xhtml2pdf is not installed, use old method
+        return _generate_ticket_pdf_old(booking, hide_fare)
+
+
+def _generate_ticket_pdf_old(booking, hide_fare=False):
+    """Old helper function to generate ticket PDF using ReportLab (fallback)"""
     from io import BytesIO
     
     buffer = BytesIO()
@@ -2047,17 +2119,18 @@ def _generate_ticket_pdf(booking, hide_fare=False):
     story.append(Spacer(1, 0.2*inch))
     
     passengers = booking.passengers.all()
-    passenger_data = [['Name', 'Date of Birth', 'Gender', 'Passport Number']]
+    passenger_data = [['Name', 'PNR', 'Date of Birth', 'Gender', 'Passport Number']]
     
     for passenger in passengers:
         passenger_data.append([
             passenger.full_name,
+            passenger.pnr or 'N/A',
             passenger.date_of_birth.strftime('%d %b %Y') if passenger.date_of_birth else 'N/A',
             passenger.get_gender_display(),
             passenger.passport_number or 'N/A'
         ])
     
-    passenger_table = Table(passenger_data, colWidths=[2*inch, 1.5*inch, 1*inch, 1.5*inch])
+    passenger_table = Table(passenger_data, colWidths=[2*inch, 1*inch, 1.5*inch, 1*inch, 1.5*inch])
     passenger_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0ea5e9')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -2359,10 +2432,15 @@ def send_otp(request):
                 expires_at=expires_at
             )
             
-            # Send OTP via Email
+            # Send OTP via Email with HTML template
             try:
-                subject = 'Your OTP for Safar Zone Account Verification'
-                message = f'''
+                from django.template.loader import render_to_string
+                from django.core.mail import send_mail
+                
+                subject = 'Safar Zone - One Time Password'
+                
+                # Plain text fallback
+                plain_message = f'''
 Hello,
 
 Thank you for registering with Safar Zone Travels!
@@ -2376,14 +2454,21 @@ If you did not request this OTP, please ignore this email.
 Best regards,
 Safar Zone Travels Team
                 '''
-                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com')
+                
+                # HTML email template
+                html_message = render_to_string('emails/otp_email.html', {
+                    'otp': otp,
+                })
+                
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
                 send_mail(
                     subject,
-                    message,
+                    plain_message,
                     from_email,
                     [email],
                     fail_silently=False,
+                    html_message=html_message,
                 )
             except Exception as e:
                 # If email fails, still return success but log the error
@@ -2452,7 +2537,7 @@ def verify_otp(request):
 
 
 def user_signup(request):
-    """Handle new user registration - account needs admin approval"""
+    """Handle new user registration - account needs admin approval with OTP verification"""
     if request.user.is_authenticated:
         if request.user.is_approved:
             return redirect('homepage')
@@ -2465,6 +2550,17 @@ def user_signup(request):
         form = UserRegisterForm(request.POST, request.FILES)
         
         if form.is_valid():
+            # Check if email is verified via OTP
+            email = form.cleaned_data.get('email', '').strip().lower()
+            email_verified = request.session.get('email_verified')
+            
+            if not email_verified or email_verified != email:
+                messages.error(request, 'Please verify your email address with OTP before creating an account.')
+                return render(request, 'signup.html', {
+                    'form': form,
+                    'otp_required': True
+                })
+            
             try:
                 # Save the user (which also creates the profile)
                 # User will NOT be approved by default - needs admin approval
@@ -2473,6 +2569,12 @@ def user_signup(request):
                 # Set is_approved to False (default, but explicit)
                 user.is_approved = False
                 user.save()
+                
+                # Clear OTP verification from session
+                if 'email_verified' in request.session:
+                    del request.session['email_verified']
+                if 'otp_verified_at' in request.session:
+                    del request.session['otp_verified_at']
                 
                 # DO NOT log the user in - they need to wait for approval
                 messages.success(request, 'Your form has been submitted successfully! Your account will be reviewed and activated within 24 hours. You will receive an email once your account is approved.')
@@ -2506,6 +2608,142 @@ def user_logout(request):
     logout(request)
     messages.success(request, 'Logged out successfully!')
     return redirect('homepage')
+
+
+# Password Reset Views
+@require_http_methods(['GET', 'POST'])
+def password_reset_request(request):
+    """Handle password reset request"""
+    if request.user.is_authenticated:
+        return redirect('homepage')
+    
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            try:
+                from django.contrib.auth.tokens import default_token_generator
+                from django.utils.http import urlsafe_base64_encode
+                from django.utils.encoding import force_bytes
+                from django.core.mail import send_mail
+                from django.conf import settings
+                from django.urls import reverse
+                
+                User = get_user_model()
+                user = User.objects.get(email__iexact=email, is_active=True)
+                
+                # Generate token
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                
+                # Create reset link
+                reset_link = request.build_absolute_uri(
+                    reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+                )
+                
+                # Send email with HTML template
+                from django.template.loader import render_to_string
+                
+                user_name = user.get_full_name() or user.email.split('@')[0]
+                subject = 'Password Reset Request - Safar Zone Travels'
+                
+                # Plain text fallback
+                plain_message = f'''
+Hello {user_name},
+
+You have requested to reset your password.
+
+Please click on the link below to set your new password:
+{reset_link}
+
+This link will be valid for 24 hours.
+
+If you did not make this request, please ignore this email.
+
+Thank you,
+Safar Zone Travels Team
+                '''
+                
+                # HTML email template
+                html_message = render_to_string('emails/password_reset_email.html', {
+                    'user_name': user_name,
+                    'reset_link': reset_link,
+                })
+                
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
+                
+                send_mail(
+                    subject,
+                    plain_message,
+                    from_email,
+                    [email],
+                    fail_silently=False,
+                    html_message=html_message,
+                )
+                
+                messages.success(request, 'Password reset link has been sent to your email address. Please check your inbox.')
+                return redirect('password_reset_done')
+            except User.DoesNotExist:
+                # Don't reveal if user exists or not for security
+                messages.success(request, 'If an account exists with this email, a password reset link has been sent.')
+                return redirect('password_reset_done')
+            except Exception as e:
+                messages.error(request, f'Error sending password reset email: {str(e)}')
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error sending password reset email: {str(e)}')
+    else:
+        form = PasswordResetRequestForm()
+    
+    return render(request, 'password_reset_request.html', {'form': form})
+
+
+def password_reset_done(request):
+    """Password reset email sent confirmation"""
+    return render(request, 'password_reset_done.html')
+
+
+@require_http_methods(['GET', 'POST'])
+def password_reset_confirm(request, uidb64, token):
+    """Handle password reset confirmation and set new password"""
+    if request.user.is_authenticated:
+        return redirect('homepage')
+    
+    User = get_user_model()
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.http import urlsafe_base64_decode
+    from django.utils.encoding import force_str
+    
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid, is_active=True)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            form = SetNewPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password has been reset successfully! You can now login with your new password.')
+                return redirect('password_reset_complete')
+        else:
+            form = SetNewPasswordForm(user)
+        
+        return render(request, 'password_reset_confirm.html', {
+            'form': form,
+            'validlink': True
+        })
+    else:
+        return render(request, 'password_reset_confirm.html', {
+            'form': None,
+            'validlink': False
+        })
+
+
+def password_reset_complete(request):
+    """Password reset complete confirmation"""
+    return render(request, 'password_reset_complete.html')
 
 
 # Admin Views

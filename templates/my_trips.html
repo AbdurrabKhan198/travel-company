@@ -488,6 +488,9 @@
                                                 {% for passenger in booking.passengers.all %}
                                                 <li class="text-sm">
                                                     {{ passenger.first_name|upper }} {{ passenger.last_name|upper }}
+                                                    {% if passenger.pnr %}
+                                                    <span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">PNR: {{ passenger.pnr }}</span>
+                                                    {% endif %}
                                                 </li>
                                                 {% endfor %}
                                             </ul>
@@ -643,6 +646,9 @@
                                                 {% for passenger in booking.passengers.all %}
                                                 <li class="text-sm">
                                                     {{ passenger.first_name|upper }} {{ passenger.last_name|upper }}
+                                                    {% if passenger.pnr %}
+                                                    <span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">PNR: {{ passenger.pnr }}</span>
+                                                    {% endif %}
                                                 </li>
                                                 {% endfor %}
                                             </ul>

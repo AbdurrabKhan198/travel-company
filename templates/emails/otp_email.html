@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safar Zone - OTP Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #6366f1 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+        }
+        .logo-icon {
+            font-size: 32px;
+            color: #fbbf24;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+        .logo-image {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        .otp-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .otp-label {
+            font-size: 16px;
+            color: #78350f;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .otp-code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #92400e;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            padding: 25px 35px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin: 15px 0;
+            border: 2px solid #fbbf24;
+        }
+        .otp-validity {
+            font-size: 14px;
+            color: #78350f;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .message {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #475569;
+            margin-bottom: 15px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer-text {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .footer-brand {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0ea5e9;
+            margin-top: 10px;
+        }
+        .warning {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-text {
+            font-size: 13px;
+            color: #991b1b;
+            line-height: 1.5;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+            margin: 25px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header with Logo -->
+        <div class="header">
+            <div class="logo-container">
+                <span class="logo-text">safarzonetravels</span>
+                <span class="logo-icon">✈️</span>
+            </div>
+            <div class="header-subtitle">Travel Agency Online</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <div class="greeting">
+                Safar Zone Travels - One Time Password
+            </div>
+            
+            <div class="message">
+                Hello,<br><br>
+                Here is your One Time Password (OTP) for Safar Zone Travels. Please enter this OTP to complete the process.
+            </div>
+
+            <!-- OTP Display Box -->
+            <div class="otp-section">
+                <div class="otp-label">Your OTP Code</div>
+                <div class="otp-code">{{ otp }}</div>
+                <div class="otp-validity">
+                    ⏱️ This is valid for 10 minutes only.
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Warning Message -->
+            <div class="warning">
+                <div class="warning-text">
+                    <strong>⚠️ Security Notice:</strong><br>
+                    If you did not request this OTP, please ignore this email. Do not share this OTP with anyone.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">
+                Thank you for choosing Safar Zone Travels!
+            </div>
+            <div class="footer-brand">
+                Safar Zone Travels
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
