@@ -197,8 +197,10 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
 # IMPORTANT: Get API key from: https://app.brevo.com/settings/keys/api
 # DO NOT use SMTP key - API key is different!
 # For production, set BREVO_API_KEY as environment variable on server!
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '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')  # Brevo API key (from API keys page, NOT SMTP)
-BREVO_SMTP_KEY = os.environ.get('BREVO_SMTP_KEY', 'xsmtpsib-6b0398d2fc0edcd5bd53acd551bfe6c56ec94d70b507bc22d1bb02075cb0681c-vmKQQ32EtVYZ6poV')  # Fallback to SMTP key if API key not set
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')  # Brevo API key (from API keys page, NOT SMTP)
+# IMPORTANT: Set BREVO_API_KEY as environment variable on server!
+# Do NOT hardcode API keys in code - use environment variables
+BREVO_SMTP_KEY = os.environ.get('BREVO_SMTP_KEY', '')  # Fallback to SMTP key if API key not set (not needed if using API key)
 BREVO_SMTP_USER = os.environ.get('BREVO_SMTP_USER', 'noreply@safarzonetravels.com')  # Brevo account email (for reference)
 DEFAULT_FROM_EMAIL_NAME = 'Safar Zone Travels'  # Sender name for emails
 
