@@ -3038,14 +3038,143 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                send_mail(
-                    subject,
-                    plain_message,
-                    from_email,
-                    [email],
-                    fail_silently=False,
-                    html_message=html_message,
-                )
+                # Use same fallback logic as OTP emails (GoDaddy → Brevo → Gmail → Outlook)
+                from django.core.mail import get_connection
+                import logging
+                import traceback
+                
+                logger = logging.getLogger('django.core.mail')
+                
+                # Try ALL possible email configurations (same as send_otp)
+                email_sent = False
+                last_error = None
+                smtp_configs = []
+                
+                # GoDaddy SMTP servers
+                godaddy_servers = [
+                    'smtpout.secureserver.net',
+                    'smtp.secureserver.net',
+                    'relay-hosting.secureserver.net',
+                ]
+                
+                port_configs = [
+                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},
+                    {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
+                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
+                    {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
+                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
+                    {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
+                    {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
+                    {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
+                    {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
+                ]
+                
+                # Create all GoDaddy combinations
+                for server in godaddy_servers:
+                    for port_config in port_configs:
+                        smtp_configs.append({
+                            'host': server,
+                            'port': port_config['port'],
+                            'use_tls': port_config['use_tls'],
+                            'use_ssl': port_config['use_ssl'],
+                            'username': settings.EMAIL_HOST_USER,
+                            'password': settings.EMAIL_HOST_PASSWORD,
+                            'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
+                        })
+                
+                # Brevo (Sendinblue) SMTP - FREE 300 emails/day
+                brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
+                brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
+                if brevo_key and brevo_user:
+                    smtp_configs.extend([
+                        {
+                            'host': 'smtp-relay.brevo.com',
+                            'port': 587,
+                            'use_tls': True,
+                            'use_ssl': False,
+                            'username': brevo_user,
+                            'password': brevo_key,
+                            'name': 'Brevo-Port587'
+                        },
+                        {
+                            'host': 'smtp-relay.brevo.com',
+                            'port': 465,
+                            'use_tls': False,
+                            'use_ssl': True,
+                            'username': brevo_user,
+                            'password': brevo_key,
+                            'name': 'Brevo-Port465'
+                        },
+                    ])
+                
+                # Gmail SMTP as fallback
+                gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
+                gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
+                if gmail_user and gmail_password:
+                    smtp_configs.append({
+                        'host': 'smtp.gmail.com',
+                        'port': 587,
+                        'use_tls': True,
+                        'use_ssl': False,
+                        'username': gmail_user,
+                        'password': gmail_password,
+                        'name': 'Gmail-Free'
+                    })
+                
+                # Outlook SMTP as fallback
+                outlook_user = getattr(settings, 'OUTLOOK_USER', '') or os.environ.get('OUTLOOK_USER', '')
+                outlook_password = getattr(settings, 'OUTLOOK_PASSWORD', '') or os.environ.get('OUTLOOK_PASSWORD', '')
+                if outlook_user and outlook_password:
+                    smtp_configs.append({
+                        'host': 'smtp-mail.outlook.com',
+                        'port': 587,
+                        'use_tls': True,
+                        'use_ssl': False,
+                        'username': outlook_user,
+                        'password': outlook_password,
+                        'name': 'Outlook-Free'
+                    })
+                
+                # Try each configuration
+                for config in smtp_configs:
+                    try:
+                        logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+                        
+                        connection = get_connection(
+                            host=config['host'],
+                            port=config['port'],
+                            username=config['username'],
+                            password=config['password'],
+                            use_tls=config['use_tls'],
+                            use_ssl=config['use_ssl'],
+                            timeout=10,
+                        )
+                        
+                        result = send_mail(
+                            subject,
+                            plain_message,
+                            from_email,
+                            [email],
+                            fail_silently=False,
+                            html_message=html_message,
+                            connection=connection,
+                        )
+                        
+                        if result:
+                            email_sent = True
+                            logger.info(f"✓ Password reset email sent successfully using {config.get('name', 'SMTP')}")
+                            break
+                            
+                    except Exception as config_error:
+                        last_error = config_error
+                        logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
+                        continue
+                
+                if not email_sent:
+                    error_msg = f"All email configurations failed. Last error: {str(last_error)}"
+                    logger.error(error_msg)
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    raise Exception(error_msg)
                 
                 messages.success(request, 'Password reset link has been sent to your email address. Please check your inbox.')
                 return redirect('password_reset_done')
