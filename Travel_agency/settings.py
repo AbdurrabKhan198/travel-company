@@ -178,9 +178,9 @@ RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
 
 # Email Configuration
-# Priority: GoDaddy (port 2525) → Brevo (FREE) → Gmail (free) → Outlook (free)
-# DigitalOcean blocks ports 25, 465, 587 - so we try alternatives
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Using Brevo HTTP API (not SMTP) - DigitalOcean blocks ALL SMTP ports
+# Brevo API uses HTTP/HTTPS (ports 80/443) which are NOT blocked
+EMAIL_BACKEND = 'travels.email_backend.BrevoAPIEmailBackend'  # Custom backend using Brevo API
 
 # GoDaddy SMTP Settings (Primary - will try port 2525 first)
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')

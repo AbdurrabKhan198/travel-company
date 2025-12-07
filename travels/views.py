@@ -2338,125 +2338,31 @@ For support, contact: support@safarzone.com | +91 98765 43210
 Thank you for choosing Safar Zone Travels!
         """
         
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com')
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
         
-        # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
-        email_sent = False
-        last_error = None
-        smtp_configs = []
+        # Use Brevo HTTP API (via custom email backend) - no SMTP needed!
+        # DigitalOcean blocks ALL SMTP ports, so we use HTTP API instead
+        logger.info(f"Sending ticket email to {recipient_email} via Brevo API")
         
-        # Brevo (Sendinblue) SMTP - FREE 300 emails/day
-        brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
-        brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
-        
-        # Debug logging
-        logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
-        
-        if brevo_key and brevo_user:
-            smtp_configs.extend([
-                {
-                    'host': 'smtp-relay.brevo.com',
-                    'port': 587,
-                    'use_tls': True,
-                    'use_ssl': False,
-                    'username': brevo_user,
-                    'password': brevo_key,
-                    'name': 'Brevo-Port587'
-                },
-                {
-                    'host': 'smtp-relay.brevo.com',
-                    'port': 465,
-                    'use_tls': False,
-                    'use_ssl': True,
-                    'username': brevo_user,
-                    'password': brevo_key,
-                    'name': 'Brevo-Port465'
-                },
-            ])
-        
-        # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
-        gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
-        gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
-        if gmail_user and gmail_password:
-            smtp_configs.append({
-                'host': 'smtp.gmail.com',
-                'port': 587,
-                'use_tls': True,
-                'use_ssl': False,
-                'username': gmail_user,
-                'password': gmail_password,
-                'name': 'Gmail-Free'
-            })
-        
-        # FREE Outlook SMTP as fallback (100% FREE, 300 emails/day)
-        outlook_user = os.environ.get('OUTLOOK_USER', '')
-        outlook_password = os.environ.get('OUTLOOK_PASSWORD', '')
-        if outlook_user and outlook_password:
-            smtp_configs.append({
-                'host': 'smtp-mail.outlook.com',
-                'port': 587,
-                'use_tls': True,
-                'use_ssl': False,
-                'username': outlook_user,
-                'password': outlook_password,
-                'name': 'Outlook-Free'
-            })
-        
-        # In development, also try Brevo first
-        if settings.DEBUG and brevo_key and brevo_user:
-            smtp_configs.insert(0, {
-                'host': 'smtp-relay.brevo.com',
-                'port': 587,
-                'use_tls': True,
-                'use_ssl': False,
-                'username': brevo_user,
-                'password': brevo_key,
-                'name': 'Brevo-Configured'
-            })
-        
-        # Try each configuration
-        for config in smtp_configs:
-            try:
-                logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+        try:
+            email = EmailMessage(
+                subject,
+                body,
+                from_email,
+                [recipient_email]
+            )
                 
-                connection = get_connection(
-                    host=config['host'],
-                    port=config['port'],
-                    username=config['username'],
-                    password=config['password'],
-                    use_tls=config['use_tls'],
-                    use_ssl=config['use_ssl'],
-                    timeout=10,  # Reduced timeout to fail faster and try more configs
-                )
-                
-                email = EmailMessage(
-                    subject,
-                    body,
-                    from_email,
-                    [recipient_email],
-                    connection=connection
-                )
-                
-                email.attach(
-                    f'ticket_{booking.booking_reference}.pdf',
-                    buffer.read(),
-                    'application/pdf'
-                )
-                
-                email.send()
-                email_sent = True
-                logger.info(f"✓ Email sent successfully to {recipient_email} using {config.get('name', 'SMTP')}")
-                break
-                
-            except Exception as config_error:
-                last_error = config_error
-                logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
-                # Reset buffer for next attempt
-                buffer.seek(0)
-                continue
-        
-        if not email_sent:
-            error_msg = f"All email configurations failed. Last error: {str(last_error)}"
+            email.attach(
+                f'ticket_{booking.booking_reference}.pdf',
+                buffer.read(),
+                'application/pdf'
+            )
+            
+            email.send()
+            logger.info(f"✓ Ticket email sent successfully to {recipient_email} via Brevo API")
+            
+        except Exception as e:
+            error_msg = f"Failed to send ticket email: {str(e)}"
             logger.error(error_msg)
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise Exception(error_msg)
@@ -2643,133 +2549,22 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
-                email_sent = False
-                last_error = None
-                smtp_configs = []
+                # Use Brevo HTTP API (via custom email backend) - no SMTP needed!
+                # DigitalOcean blocks ALL SMTP ports, so we use HTTP API instead
+                logger.info(f"Sending OTP email to {email} via Brevo API")
                 
-                # Brevo (Sendinblue) SMTP - FREE 300 emails/day
-                # Works reliably on DigitalOcean, no port blocking issues
-                brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
-                brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
-                
-                # Debug logging
-                logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
-                
-                if brevo_key and brevo_user:
-                    # Brevo supports multiple ports - try all
-                    smtp_configs.extend([
-                        {
-                            'host': 'smtp-relay.brevo.com',
-                            'port': 587,
-                            'use_tls': True,
-                            'use_ssl': False,
-                            'username': brevo_user,
-                            'password': brevo_key,
-                            'name': 'Brevo-Port587'
-                        },
-                        {
-                            'host': 'smtp-relay.brevo.com',
-                            'port': 465,
-                            'use_tls': False,
-                            'use_ssl': True,
-                            'username': brevo_user,
-                            'password': brevo_key,
-                            'name': 'Brevo-Port465'
-                        },
-                        {
-                            'host': 'smtp-relay.sendinblue.com',  # Old domain
-                            'port': 587,
-                            'use_tls': True,
-                            'use_ssl': False,
-                            'username': brevo_user,
-                            'password': brevo_key,
-                            'name': 'Brevo-OldDomain'
-                        },
-                    ])
-                
-                # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
-                gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
-                gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
-                if gmail_user and gmail_password:
-                    smtp_configs.append({
-                        'host': 'smtp.gmail.com',
-                        'port': 587,
-                        'use_tls': True,
-                        'use_ssl': False,
-                        'username': gmail_user,
-                        'password': gmail_password,
-                        'name': 'Gmail-Free'
-                    })
-                
-                # FREE Outlook SMTP as fallback (100% FREE, 300 emails/day)
-                outlook_user = getattr(settings, 'OUTLOOK_USER', '') or os.environ.get('OUTLOOK_USER', '')
-                outlook_password = getattr(settings, 'OUTLOOK_PASSWORD', '') or os.environ.get('OUTLOOK_PASSWORD', '')
-                if outlook_user and outlook_password:
-                    smtp_configs.append({
-                        'host': 'smtp-mail.outlook.com',
-                        'port': 587,
-                        'use_tls': True,
-                        'use_ssl': False,
-                        'username': outlook_user,
-                        'password': outlook_password,
-                        'name': 'Outlook-Free'
-                    })
-                
-                # In development, also try Brevo first
-                if settings.DEBUG and brevo_key and brevo_user:
-                    smtp_configs.insert(0, {
-                        'host': 'smtp-relay.brevo.com',
-                        'port': 587,
-                        'use_tls': True,
-                        'use_ssl': False,
-                        'username': brevo_user,
-                        'password': brevo_key,
-                        'name': 'Brevo-Configured'
-                    })
-                
-                # Try each configuration
-                for config in smtp_configs:
-                    try:
-                        logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
-                        
-                        connection = get_connection(
-                            host=config['host'],
-                            port=config['port'],
-                            username=config['username'],
-                            password=config['password'],
-                            use_tls=config['use_tls'],
-                            use_ssl=config['use_ssl'],
-                            timeout=10,  # Reduced timeout to fail faster and try more configs
-                        )
-                        connection.open()
-                        logger.info(f"✓ Connection successful to {config['host']}:{config['port']}")
-                        
-                        # Try sending email with this configuration
-                        result = send_mail(
-                    subject,
-                    plain_message,
-                    from_email,
-                    [email],
-                    fail_silently=False,
-                    html_message=html_message,
-                            connection=connection,
-                        )
-                        
-                        connection.close()
-                        
-                        if result:
-                            email_sent = True
-                            logger.info(f"✓ Email sent successfully to {email} using {config.get('name', 'SMTP')}")
-                            break
-                            
-                    except Exception as config_error:
-                        last_error = config_error
-                        logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
-                        continue
-                
-                if not email_sent:
-                    error_msg = f"All email configurations failed. Last error: {str(last_error)}"
+                try:
+                    send_mail(
+                        subject,
+                        plain_message,
+                        from_email,
+                        [email],
+                        fail_silently=False,
+                        html_message=html_message,
+                    )
+                    logger.info(f"✓ OTP email sent successfully to {email} via Brevo API")
+                except Exception as e:
+                    error_msg = f"Failed to send OTP email: {str(e)}"
                     logger.error(error_msg)
                     logger.error(f"Traceback: {traceback.format_exc()}")
                     raise Exception(error_msg)
@@ -2993,112 +2788,28 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
-                from django.core.mail import get_connection
+                # Use Brevo HTTP API (via custom email backend) - no SMTP needed!
+                # DigitalOcean blocks ALL SMTP ports, so we use HTTP API instead
+                from django.core.mail import send_mail
                 import logging
                 import traceback
                 
                 logger = logging.getLogger('django.core.mail')
                 
-                # Try ONLY Brevo (GoDaddy removed - all ports blocked)
-                email_sent = False
-                last_error = None
-                smtp_configs = []
+                logger.info(f"Sending password reset email to {email} via Brevo API")
                 
-                # Brevo (Sendinblue) SMTP - FREE 300 emails/day
-                brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
-                brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
-                
-                # Debug logging
-                logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
-                
-                if brevo_key and brevo_user:
-                    smtp_configs.extend([
-                        {
-                            'host': 'smtp-relay.brevo.com',
-                            'port': 587,
-                            'use_tls': True,
-                            'use_ssl': False,
-                            'username': brevo_user,
-                            'password': brevo_key,
-                            'name': 'Brevo-Port587'
-                        },
-                        {
-                            'host': 'smtp-relay.brevo.com',
-                            'port': 465,
-                            'use_tls': False,
-                            'use_ssl': True,
-                            'username': brevo_user,
-                            'password': brevo_key,
-                            'name': 'Brevo-Port465'
-                        },
-                    ])
-                
-                # Gmail SMTP as fallback
-                gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
-                gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
-                if gmail_user and gmail_password:
-                    smtp_configs.append({
-                        'host': 'smtp.gmail.com',
-                        'port': 587,
-                        'use_tls': True,
-                        'use_ssl': False,
-                        'username': gmail_user,
-                        'password': gmail_password,
-                        'name': 'Gmail-Free'
-                    })
-                
-                # Outlook SMTP as fallback
-                outlook_user = getattr(settings, 'OUTLOOK_USER', '') or os.environ.get('OUTLOOK_USER', '')
-                outlook_password = getattr(settings, 'OUTLOOK_PASSWORD', '') or os.environ.get('OUTLOOK_PASSWORD', '')
-                if outlook_user and outlook_password:
-                    smtp_configs.append({
-                        'host': 'smtp-mail.outlook.com',
-                        'port': 587,
-                        'use_tls': True,
-                        'use_ssl': False,
-                        'username': outlook_user,
-                        'password': outlook_password,
-                        'name': 'Outlook-Free'
-                    })
-                
-                # Try each configuration
-                for config in smtp_configs:
-                    try:
-                        logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
-                        
-                        connection = get_connection(
-                            host=config['host'],
-                            port=config['port'],
-                            username=config['username'],
-                            password=config['password'],
-                            use_tls=config['use_tls'],
-                            use_ssl=config['use_ssl'],
-                            timeout=10,
-                        )
-                        
-                        result = send_mail(
-                            subject,
-                            plain_message,
-                            from_email,
-                            [email],
-                            fail_silently=False,
-                            html_message=html_message,
-                            connection=connection,
-                        )
-                        
-                        if result:
-                            email_sent = True
-                            logger.info(f"✓ Password reset email sent successfully using {config.get('name', 'SMTP')}")
-                            break
-                            
-                    except Exception as config_error:
-                        last_error = config_error
-                        logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
-                        continue
-                
-                if not email_sent:
-                    error_msg = f"All email configurations failed. Last error: {str(last_error)}"
+                try:
+                    send_mail(
+                        subject,
+                        plain_message,
+                        from_email,
+                        [email],
+                        fail_silently=False,
+                        html_message=html_message,
+                    )
+                    logger.info(f"✓ Password reset email sent successfully to {email} via Brevo API")
+                except Exception as e:
+                    error_msg = f"Failed to send password reset email: {str(e)}"
                     logger.error(error_msg)
                     logger.error(f"Traceback: {traceback.format_exc()}")
                     raise Exception(error_msg)
