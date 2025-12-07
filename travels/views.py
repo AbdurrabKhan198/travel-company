@@ -2307,8 +2307,12 @@ def email_ticket(request, booking_id):
     recipient_email = request.POST.get('email', booking.contact_email or request.user.email)
     
     try:
-        from django.core.mail import EmailMessage
+        from django.core.mail import EmailMessage, get_connection
         from django.conf import settings
+        import logging
+        import traceback
+        
+        logger = logging.getLogger('django.core.mail')
         
         # Generate PDF
         buffer = _generate_ticket_pdf(booking, hide_fare=hide_fare)
@@ -2333,28 +2337,91 @@ For support, contact: support@safarzone.com | +91 98765 43210
 Thank you for choosing Safar Zone Travels!
         """
         
-        email = EmailMessage(
-            subject,
-            body,
-            getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com'),
-            [recipient_email]
-        )
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com')
         
-        email.attach(
-            f'ticket_{booking.booking_reference}.pdf',
-            buffer.read(),
-            'application/pdf'
-        )
-        email.send()
+        # Try multiple SMTP configurations for production (DigitalOcean blocks common ports)
+        email_sent = False
+        smtp_configs = []
+        
+        if not settings.DEBUG:
+            # Production: Try multiple port configurations that DigitalOcean doesn't block
+            smtp_configs = [
+                {'host': 'smtpout.secureserver.net', 'port': 80, 'use_tls': False, 'use_ssl': False},
+                {'host': 'smtpout.secureserver.net', 'port': 3535, 'use_tls': True, 'use_ssl': False},
+                {'host': 'smtpout.secureserver.net', 'port': 25, 'use_tls': False, 'use_ssl': False},
+                {'host': 'smtpout.secureserver.net', 'port': 465, 'use_tls': False, 'use_ssl': True},
+                {'host': 'smtpout.secureserver.net', 'port': 587, 'use_tls': True, 'use_ssl': False},
+            ]
+        else:
+            # Development: Use current settings
+            smtp_configs = [{
+                'host': settings.EMAIL_HOST,
+                'port': settings.EMAIL_PORT,
+                'use_tls': settings.EMAIL_USE_TLS,
+                'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
+            }]
+        
+        # Try each configuration
+        last_error = None
+        for config in smtp_configs:
+            try:
+                logger.info(f"Trying SMTP: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+                
+                connection = get_connection(
+                    host=config['host'],
+                    port=config['port'],
+                    username=settings.EMAIL_HOST_USER,
+                    password=settings.EMAIL_HOST_PASSWORD,
+                    use_tls=config['use_tls'],
+                    use_ssl=config['use_ssl'],
+                    timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
+                )
+                
+                email = EmailMessage(
+                    subject,
+                    body,
+                    from_email,
+                    [recipient_email],
+                    connection=connection
+                )
+                
+                email.attach(
+                    f'ticket_{booking.booking_reference}.pdf',
+                    buffer.read(),
+                    'application/pdf'
+                )
+                
+                email.send()
+                email_sent = True
+                logger.info(f"✓ Email sent successfully to {recipient_email} using {config['host']}:{config['port']}")
+                break
+                
+            except Exception as config_error:
+                last_error = config_error
+                logger.warning(f"✗ Failed with {config['host']}:{config['port']}: {str(config_error)}")
+                # Reset buffer for next attempt
+                buffer.seek(0)
+                continue
+        
+        if not email_sent:
+            error_msg = f"All SMTP configurations failed. Last error: {str(last_error)}"
+            logger.error(error_msg)
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise Exception(error_msg)
         
         return JsonResponse({
             'success': True,
             'message': f'Ticket has been sent to {recipient_email} successfully!'
         })
     except Exception as e:
+        import logging
+        logger = logging.getLogger('django.core.mail')
+        logger.error(f"Email sending failed for {recipient_email}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
         return JsonResponse({
             'success': False,
-            'message': f'Failed to send email: {str(e)}'
+            'message': f'Failed to send email. Please contact support. Error: {str(e)}'
         })
 
 
@@ -2493,7 +2560,11 @@ def send_otp(request):
             # Send OTP via Email with HTML template
             try:
                 from django.template.loader import render_to_string
-                from django.core.mail import send_mail
+                from django.core.mail import send_mail, get_connection
+                import logging
+                import traceback
+                
+                logger = logging.getLogger('django.core.mail')
                 
                 subject = 'Safar Zone - One Time Password'
                 
@@ -2520,21 +2591,96 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                send_mail(
-                    subject,
-                    plain_message,
-                    from_email,
-                    [email],
-                    fail_silently=False,
-                    html_message=html_message,
-                )
+                # Try multiple SMTP configurations for production (DigitalOcean blocks common ports)
+                email_sent = False
+                smtp_configs = []
+                
+                if not settings.DEBUG:
+                    # Production: Try multiple port configurations that DigitalOcean doesn't block
+                    smtp_configs = [
+                        {'host': 'smtpout.secureserver.net', 'port': 80, 'use_tls': False, 'use_ssl': False},
+                        {'host': 'smtpout.secureserver.net', 'port': 3535, 'use_tls': True, 'use_ssl': False},
+                        {'host': 'smtpout.secureserver.net', 'port': 25, 'use_tls': False, 'use_ssl': False},
+                        {'host': 'smtpout.secureserver.net', 'port': 465, 'use_tls': False, 'use_ssl': True},
+                        {'host': 'smtpout.secureserver.net', 'port': 587, 'use_tls': True, 'use_ssl': False},
+                    ]
+                else:
+                    # Development: Use current settings
+                    smtp_configs = [{
+                        'host': settings.EMAIL_HOST,
+                        'port': settings.EMAIL_PORT,
+                        'use_tls': settings.EMAIL_USE_TLS,
+                        'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
+                    }]
+                
+                # Try each configuration
+                last_error = None
+                for config in smtp_configs:
+                    try:
+                        logger.info(f"Trying SMTP: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+                        
+                        connection = get_connection(
+                            host=config['host'],
+                            port=config['port'],
+                            username=settings.EMAIL_HOST_USER,
+                            password=settings.EMAIL_HOST_PASSWORD,
+                            use_tls=config['use_tls'],
+                            use_ssl=config['use_ssl'],
+                            timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
+                        )
+                        connection.open()
+                        logger.info(f"✓ Connection successful to {config['host']}:{config['port']}")
+                        
+                        # Try sending email with this configuration
+                        result = send_mail(
+                            subject,
+                            plain_message,
+                            from_email,
+                            [email],
+                            fail_silently=False,
+                            html_message=html_message,
+                            connection=connection,
+                        )
+                        
+                        connection.close()
+                        
+                        if result:
+                            email_sent = True
+                            logger.info(f"✓ Email sent successfully to {email} using {config['host']}:{config['port']}")
+                            break
+                            
+                    except Exception as config_error:
+                        last_error = config_error
+                        logger.warning(f"✗ Failed with {config['host']}:{config['port']}: {str(config_error)}")
+                        continue
+                
+                if not email_sent:
+                    error_msg = f"All SMTP configurations failed. Last error: {str(last_error)}"
+                    logger.error(error_msg)
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    raise Exception(error_msg)
+                    
             except Exception as e:
-                # Log the error
-                print(f"Email sending failed: {str(e)}")
+                # Log detailed error information
+                import logging
+                logger = logging.getLogger('django.core.mail')
+                logger.error(f"Email sending failed for {email}: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                
+                # Log email configuration (without password)
+                logger.error(f"Email config - Host: {settings.EMAIL_HOST}, Port: {settings.EMAIL_PORT}, "
+                           f"TLS: {settings.EMAIL_USE_TLS}, SSL: {getattr(settings, 'EMAIL_USE_SSL', False)}, "
+                           f"User: {settings.EMAIL_HOST_USER}, Timeout: {getattr(settings, 'EMAIL_TIMEOUT', 30)}")
+                
+                # In development, print OTP to console
+                if settings.DEBUG:
+                    print(f"Email sending failed: {str(e)}")
+                    print(f"OTP for {email}: {otp}")
+                
                 # Return failure to the user so they know it didn't work
                 return JsonResponse({
                     'success': False, 
-                    'message': f'Email sending failed: {str(e)}'
+                    'message': f'Email sending failed. Please contact support. Error: {str(e)}'
                 })
             
             return JsonResponse({

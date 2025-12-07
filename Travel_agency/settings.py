@@ -179,13 +179,86 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7p
 
 # Email Configuration
 # GoDaddy Business Email SMTP Settings
+# DigitalOcean blocks common SMTP ports, so we need to use alternative ports
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtpout.secureserver.net'  # GoDaddy SMTP server
+
+# Try multiple GoDaddy SMTP servers and ports for production
 if DEBUG:
-    EMAIL_PORT = 587  # Standard port for local development
+    # Local development - use standard settings
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 else:
-    EMAIL_PORT = 3535  # Bypass DigitalOcean block in production
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'noreply@safarzonetravels.com'
-EMAIL_HOST_PASSWORD = 'SafarZone@123'
-DEFAULT_FROM_EMAIL = 'noreply@safarzonetravels.com'
+    # Production - try alternative ports that DigitalOcean doesn't block
+    # GoDaddy alternative ports: 80, 3535, 25, 465
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
+    
+    # Try port 80 first (HTTP port, usually not blocked)
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '80'))
+    EMAIL_USE_TLS = False  # Port 80 doesn't use TLS
+    EMAIL_USE_SSL = False
+    
+    # Alternative: If port 80 doesn't work, try these in order:
+    # - Port 3535 (GoDaddy alternative)
+    # - Port 25 (if not blocked)
+    # - Port 465 with SSL
+
+# Email credentials - use environment variables for security
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@safarzonetravels.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+# Email timeout (important for production)
+EMAIL_TIMEOUT = 30  # seconds
+
+# Server email for error reporting
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+ADMINS = [
+    ('Admin', os.environ.get('ADMIN_EMAIL', 'admin@safarzonetravels.com')),
+]
+
+# Logging configuration for email debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'email.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django.core.mail': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'travels.views': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
