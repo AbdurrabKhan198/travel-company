@@ -20,10 +20,18 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
     
     def __init__(self, fail_silently=False, **kwargs):
         super().__init__(fail_silently=fail_silently, **kwargs)
-        self.api_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
+        # Brevo API needs API key (not SMTP key)
+        # Get from: https://app.brevo.com/settings/keys/api
+        self.api_key = getattr(settings, 'BREVO_API_KEY', '') or os.environ.get('BREVO_API_KEY', '') or getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
         self.api_url = 'https://api.brevo.com/v3/smtp/email'
         self.from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
         self.from_name = getattr(settings, 'DEFAULT_FROM_EMAIL_NAME', 'Safar Zone Travels')
+        
+        # Log key status (first 10 chars only for security)
+        if self.api_key:
+            logger.info(f"Brevo API backend initialized with key: {self.api_key[:10]}...")
+        else:
+            logger.warning("Brevo API key not found!")
     
     def send_messages(self, email_messages):
         """
@@ -111,6 +119,8 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
                 }
                 
                 logger.info(f"Sending email via Brevo API to {', '.join(message.to)}")
+                logger.debug(f"Using API key: {self.api_key[:15]}... (first 15 chars)")
+                
                 response = requests.post(
                     self.api_url,
                     headers=headers,
@@ -122,7 +132,15 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
                     logger.info(f"✓ Email sent successfully via Brevo API to {', '.join(message.to)}")
                     num_sent += 1
                 else:
-                    error_msg = f"Brevo API error: {response.status_code} - {response.text}"
+                    # Better error message for 401
+                    if response.status_code == 401:
+                        error_msg = f"Brevo API authentication failed (401). Please check:\n"
+                        error_msg += f"1. Get API key from: https://app.brevo.com/settings/keys/api (NOT SMTP settings)\n"
+                        error_msg += f"2. API key format should be different from SMTP key\n"
+                        error_msg += f"3. Current key starts with: {self.api_key[:15]}...\n"
+                        error_msg += f"4. Response: {response.text}"
+                    else:
+                        error_msg = f"Brevo API error: {response.status_code} - {response.text}"
                     logger.error(error_msg)
                     if not self.fail_silently:
                         raise Exception(error_msg)
