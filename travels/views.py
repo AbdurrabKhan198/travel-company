@@ -2340,53 +2340,43 @@ Thank you for choosing Safar Zone Travels!
         
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com')
         
-        # Try ALL possible GoDaddy SMTP configurations
-        # DigitalOcean blocks some ports, so we try EVERY possible combination
+        # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
         email_sent = False
         last_error = None
-        
-        # ALL GoDaddy SMTP servers and ports - trying EVERY combination
         smtp_configs = []
         
-        # GoDaddy SMTP servers (all known servers)
-        godaddy_servers = [
-            'smtpout.secureserver.net',  # Primary outgoing server
-            'smtp.secureserver.net',     # Alternative server
-            'relay-hosting.secureserver.net',  # Relay server for hosted email
-        ]
+        # Brevo (Sendinblue) SMTP - FREE 300 emails/day
+        brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
+        brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
         
-        # All possible port/encryption combinations for each server
-        # DigitalOcean blocks 25, 465, 587 - but MAY allow 2525 and 3535
-        # Try unblocked ports FIRST
-        port_configs = [
-            {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Try FIRST - not mentioned as blocked
-            {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
-            {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},  # GoDaddy alternative
-            {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
-            {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},  # HTTP port
-            # These are blocked by DigitalOcean but try anyway
-            {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
-            {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
-            {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
-            {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
-        ]
+        # Debug logging
+        logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
         
-        # Create all combinations
-        for server in godaddy_servers:
-            for port_config in port_configs:
-                smtp_configs.append({
-                    'host': server,
-                    'port': port_config['port'],
-                    'use_tls': port_config['use_tls'],
-                    'use_ssl': port_config['use_ssl'],
-                    'username': settings.EMAIL_HOST_USER,
-                    'password': settings.EMAIL_HOST_PASSWORD,
-                    'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
-                })
+        if brevo_key and brevo_user:
+            smtp_configs.extend([
+                {
+                    'host': 'smtp-relay.brevo.com',
+                    'port': 587,
+                    'use_tls': True,
+                    'use_ssl': False,
+                    'username': brevo_user,
+                    'password': brevo_key,
+                    'name': 'Brevo-Port587'
+                },
+                {
+                    'host': 'smtp-relay.brevo.com',
+                    'port': 465,
+                    'use_tls': False,
+                    'use_ssl': True,
+                    'username': brevo_user,
+                    'password': brevo_key,
+                    'name': 'Brevo-Port465'
+                },
+            ])
         
         # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
-        gmail_user = os.environ.get('GMAIL_USER', '')
-        gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+        gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
+        gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
         if gmail_user and gmail_password:
             smtp_configs.append({
                 'host': 'smtp.gmail.com',
@@ -2412,16 +2402,16 @@ Thank you for choosing Safar Zone Travels!
                 'name': 'Outlook-Free'
             })
         
-        # In development, also try the configured settings first
-        if settings.DEBUG:
+        # In development, also try Brevo first
+        if settings.DEBUG and brevo_key and brevo_user:
             smtp_configs.insert(0, {
-                'host': settings.EMAIL_HOST,
-                'port': settings.EMAIL_PORT,
-                'use_tls': settings.EMAIL_USE_TLS,
-                'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
-                'username': settings.EMAIL_HOST_USER,
-                'password': settings.EMAIL_HOST_PASSWORD,
-                'name': 'GoDaddy-Configured'
+                'host': 'smtp-relay.brevo.com',
+                'port': 587,
+                'use_tls': True,
+                'use_ssl': False,
+                'username': brevo_user,
+                'password': brevo_key,
+                'name': 'Brevo-Configured'
             })
         
         # Try each configuration
@@ -2653,54 +2643,19 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                # Try ALL possible GoDaddy SMTP configurations
-                # DigitalOcean blocks some ports, so we try EVERY possible combination
+                # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
                 email_sent = False
                 last_error = None
-                
-                # ALL GoDaddy SMTP servers and ports - trying EVERY combination
                 smtp_configs = []
                 
-                # GoDaddy SMTP servers (all known servers)
-                godaddy_servers = [
-                    'smtpout.secureserver.net',  # Primary outgoing server
-                    'smtp.secureserver.net',     # Alternative server
-                    'relay-hosting.secureserver.net',  # Relay server for hosted email
-                ]
-                
-                # All possible port/encryption combinations for each server
-                # DigitalOcean blocks 25, 465, 587 - but MAY allow 2525 and 3535
-                # Try unblocked ports FIRST
-                port_configs = [
-                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Try FIRST - not mentioned as blocked
-                    {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
-                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},  # GoDaddy alternative
-                    {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
-                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},  # HTTP port
-                    # These are blocked by DigitalOcean but try anyway
-                    {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
-                    {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
-                    {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
-                    {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
-                ]
-                
-                # Create all combinations
-                for server in godaddy_servers:
-                    for port_config in port_configs:
-                        smtp_configs.append({
-                            'host': server,
-                            'port': port_config['port'],
-                            'use_tls': port_config['use_tls'],
-                            'use_ssl': port_config['use_ssl'],
-                            'username': settings.EMAIL_HOST_USER,
-                            'password': settings.EMAIL_HOST_PASSWORD,
-                            'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
-                        })
-                
-                # Brevo (Sendinblue) SMTP - FREE 300 emails/day (RECOMMENDED)
+                # Brevo (Sendinblue) SMTP - FREE 300 emails/day
                 # Works reliably on DigitalOcean, no port blocking issues
                 brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
                 brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
+                
+                # Debug logging
+                logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
+                
                 if brevo_key and brevo_user:
                     # Brevo supports multiple ports - try all
                     smtp_configs.extend([
@@ -2761,16 +2716,16 @@ Safar Zone Travels Team
                         'name': 'Outlook-Free'
                     })
                 
-                # In development, also try the configured settings first
-                if settings.DEBUG:
+                # In development, also try Brevo first
+                if settings.DEBUG and brevo_key and brevo_user:
                     smtp_configs.insert(0, {
-                        'host': settings.EMAIL_HOST,
-                        'port': settings.EMAIL_PORT,
-                        'use_tls': settings.EMAIL_USE_TLS,
-                        'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
-                        'username': settings.EMAIL_HOST_USER,
-                        'password': settings.EMAIL_HOST_PASSWORD,
-                        'name': 'GoDaddy-Configured'
+                        'host': 'smtp-relay.brevo.com',
+                        'port': 587,
+                        'use_tls': True,
+                        'use_ssl': False,
+                        'username': brevo_user,
+                        'password': brevo_key,
+                        'name': 'Brevo-Configured'
                     })
                 
                 # Try each configuration
@@ -3038,53 +2993,25 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                # Use same fallback logic as OTP emails (GoDaddy → Brevo → Gmail → Outlook)
+                # Use ONLY Brevo - GoDaddy removed (all ports blocked by DigitalOcean)
                 from django.core.mail import get_connection
                 import logging
                 import traceback
                 
                 logger = logging.getLogger('django.core.mail')
                 
-                # Try ALL possible email configurations (same as send_otp)
+                # Try ONLY Brevo (GoDaddy removed - all ports blocked)
                 email_sent = False
                 last_error = None
                 smtp_configs = []
                 
-                # GoDaddy SMTP servers
-                godaddy_servers = [
-                    'smtpout.secureserver.net',
-                    'smtp.secureserver.net',
-                    'relay-hosting.secureserver.net',
-                ]
-                
-                port_configs = [
-                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},
-                    {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
-                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
-                    {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
-                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
-                    {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
-                    {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
-                    {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
-                    {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
-                ]
-                
-                # Create all GoDaddy combinations
-                for server in godaddy_servers:
-                    for port_config in port_configs:
-                        smtp_configs.append({
-                            'host': server,
-                            'port': port_config['port'],
-                            'use_tls': port_config['use_tls'],
-                            'use_ssl': port_config['use_ssl'],
-                            'username': settings.EMAIL_HOST_USER,
-                            'password': settings.EMAIL_HOST_PASSWORD,
-                            'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
-                        })
-                
                 # Brevo (Sendinblue) SMTP - FREE 300 emails/day
                 brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
                 brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
+                
+                # Debug logging
+                logger.info(f"Brevo check - User: {brevo_user[:10] if brevo_user else 'NOT SET'}..., Key: {'SET' if brevo_key else 'NOT SET'}")
+                
                 if brevo_key and brevo_user:
                     smtp_configs.extend([
                         {
