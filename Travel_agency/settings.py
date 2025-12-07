@@ -177,34 +177,18 @@ LOGOUT_REDIRECT_URL = 'homepage'
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
 
-# Email Configuration
-# GoDaddy Business Email SMTP Settings
-# DigitalOcean blocks common SMTP ports, so we need to use alternative ports
+# Email Configuration - GoDaddy Business Email ONLY
+# Using ALL possible GoDaddy SMTP servers and ports to work around DigitalOcean port blocking
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# Try multiple GoDaddy SMTP servers and ports for production
-if DEBUG:
-    # Local development - use standard settings
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
-    EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
-else:
-    # Production - try alternative ports that DigitalOcean doesn't block
-    # GoDaddy alternative ports: 80, 3535, 25, 465
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
-    
-    # Try port 80 first (HTTP port, usually not blocked)
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '80'))
-    EMAIL_USE_TLS = False  # Port 80 doesn't use TLS
-    EMAIL_USE_SSL = False
-    
-    # Alternative: If port 80 doesn't work, try these in order:
-    # - Port 3535 (GoDaddy alternative)
-    # - Port 25 (if not blocked)
-    # - Port 465 with SSL
+# GoDaddy SMTP Settings
+# Primary server (will try multiple ports automatically in views)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))  # Default, but code will try all ports
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 
-# Email credentials - use environment variables for security
+# GoDaddy email credentials
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@safarzonetravels.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

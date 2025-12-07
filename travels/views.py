@@ -2339,39 +2339,67 @@ Thank you for choosing Safar Zone Travels!
         
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzone.com')
         
-        # Try multiple SMTP configurations for production (DigitalOcean blocks common ports)
+        # Try ALL possible GoDaddy SMTP configurations
+        # DigitalOcean blocks some ports, so we try EVERY possible combination
         email_sent = False
+        last_error = None
+        
+        # ALL GoDaddy SMTP servers and ports - trying EVERY combination
         smtp_configs = []
         
-        if not settings.DEBUG:
-            # Production: Try multiple port configurations that DigitalOcean doesn't block
-            smtp_configs = [
-                {'host': 'smtpout.secureserver.net', 'port': 80, 'use_tls': False, 'use_ssl': False},
-                {'host': 'smtpout.secureserver.net', 'port': 3535, 'use_tls': True, 'use_ssl': False},
-                {'host': 'smtpout.secureserver.net', 'port': 25, 'use_tls': False, 'use_ssl': False},
-                {'host': 'smtpout.secureserver.net', 'port': 465, 'use_tls': False, 'use_ssl': True},
-                {'host': 'smtpout.secureserver.net', 'port': 587, 'use_tls': True, 'use_ssl': False},
-            ]
-        else:
-            # Development: Use current settings
-            smtp_configs = [{
+        # GoDaddy SMTP servers (all known servers)
+        godaddy_servers = [
+            'smtpout.secureserver.net',  # Primary outgoing server
+            'smtp.secureserver.net',     # Alternative server
+            'relay-hosting.secureserver.net',  # Relay server for hosted email
+        ]
+        
+        # All possible port/encryption combinations for each server
+        port_configs = [
+            {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
+            {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
+            {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
+            {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
+            {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
+            {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
+            {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
+        ]
+        
+        # Create all combinations
+        for server in godaddy_servers:
+            for port_config in port_configs:
+                smtp_configs.append({
+                    'host': server,
+                    'port': port_config['port'],
+                    'use_tls': port_config['use_tls'],
+                    'use_ssl': port_config['use_ssl'],
+                    'username': settings.EMAIL_HOST_USER,
+                    'password': settings.EMAIL_HOST_PASSWORD,
+                    'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
+                })
+        
+        # In development, also try the configured settings first
+        if settings.DEBUG:
+            smtp_configs.insert(0, {
                 'host': settings.EMAIL_HOST,
                 'port': settings.EMAIL_PORT,
                 'use_tls': settings.EMAIL_USE_TLS,
                 'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
-            }]
+                'username': settings.EMAIL_HOST_USER,
+                'password': settings.EMAIL_HOST_PASSWORD,
+                'name': 'GoDaddy-Configured'
+            })
         
         # Try each configuration
-        last_error = None
         for config in smtp_configs:
             try:
-                logger.info(f"Trying SMTP: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+                logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
                 
                 connection = get_connection(
                     host=config['host'],
                     port=config['port'],
-                    username=settings.EMAIL_HOST_USER,
-                    password=settings.EMAIL_HOST_PASSWORD,
+                    username=config['username'],
+                    password=config['password'],
                     use_tls=config['use_tls'],
                     use_ssl=config['use_ssl'],
                     timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
@@ -2393,18 +2421,18 @@ Thank you for choosing Safar Zone Travels!
                 
                 email.send()
                 email_sent = True
-                logger.info(f"✓ Email sent successfully to {recipient_email} using {config['host']}:{config['port']}")
+                logger.info(f"✓ Email sent successfully to {recipient_email} using {config.get('name', 'SMTP')}")
                 break
                 
             except Exception as config_error:
                 last_error = config_error
-                logger.warning(f"✗ Failed with {config['host']}:{config['port']}: {str(config_error)}")
+                logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
                 # Reset buffer for next attempt
                 buffer.seek(0)
                 continue
         
         if not email_sent:
-            error_msg = f"All SMTP configurations failed. Last error: {str(last_error)}"
+            error_msg = f"All email configurations failed. Last error: {str(last_error)}"
             logger.error(error_msg)
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise Exception(error_msg)
@@ -2591,39 +2619,67 @@ Safar Zone Travels Team
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
-                # Try multiple SMTP configurations for production (DigitalOcean blocks common ports)
+                # Try ALL possible GoDaddy SMTP configurations
+                # DigitalOcean blocks some ports, so we try EVERY possible combination
                 email_sent = False
+                last_error = None
+                
+                # ALL GoDaddy SMTP servers and ports - trying EVERY combination
                 smtp_configs = []
                 
-                if not settings.DEBUG:
-                    # Production: Try multiple port configurations that DigitalOcean doesn't block
-                    smtp_configs = [
-                        {'host': 'smtpout.secureserver.net', 'port': 80, 'use_tls': False, 'use_ssl': False},
-                        {'host': 'smtpout.secureserver.net', 'port': 3535, 'use_tls': True, 'use_ssl': False},
-                        {'host': 'smtpout.secureserver.net', 'port': 25, 'use_tls': False, 'use_ssl': False},
-                        {'host': 'smtpout.secureserver.net', 'port': 465, 'use_tls': False, 'use_ssl': True},
-                        {'host': 'smtpout.secureserver.net', 'port': 587, 'use_tls': True, 'use_ssl': False},
-                    ]
-                else:
-                    # Development: Use current settings
-                    smtp_configs = [{
+                # GoDaddy SMTP servers (all known servers)
+                godaddy_servers = [
+                    'smtpout.secureserver.net',  # Primary outgoing server
+                    'smtp.secureserver.net',     # Alternative server
+                    'relay-hosting.secureserver.net',  # Relay server for hosted email
+                ]
+                
+                # All possible port/encryption combinations for each server
+                port_configs = [
+                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
+                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
+                    {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
+                    {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
+                    {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
+                    {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
+                    {'port': 587, 'use_tls': False, 'use_ssl': False, 'name': 'Port587-NoTLS'},
+                ]
+                
+                # Create all combinations
+                for server in godaddy_servers:
+                    for port_config in port_configs:
+                        smtp_configs.append({
+                            'host': server,
+                            'port': port_config['port'],
+                            'use_tls': port_config['use_tls'],
+                            'use_ssl': port_config['use_ssl'],
+                            'username': settings.EMAIL_HOST_USER,
+                            'password': settings.EMAIL_HOST_PASSWORD,
+                            'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
+                        })
+                
+                # In development, also try the configured settings first
+                if settings.DEBUG:
+                    smtp_configs.insert(0, {
                         'host': settings.EMAIL_HOST,
                         'port': settings.EMAIL_PORT,
                         'use_tls': settings.EMAIL_USE_TLS,
                         'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False),
-                    }]
+                        'username': settings.EMAIL_HOST_USER,
+                        'password': settings.EMAIL_HOST_PASSWORD,
+                        'name': 'GoDaddy-Configured'
+                    })
                 
                 # Try each configuration
-                last_error = None
                 for config in smtp_configs:
                     try:
-                        logger.info(f"Trying SMTP: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
+                        logger.info(f"Trying {config.get('name', 'SMTP')}: {config['host']}:{config['port']} (TLS:{config['use_tls']}, SSL:{config['use_ssl']})")
                         
                         connection = get_connection(
                             host=config['host'],
                             port=config['port'],
-                            username=settings.EMAIL_HOST_USER,
-                            password=settings.EMAIL_HOST_PASSWORD,
+                            username=config['username'],
+                            password=config['password'],
                             use_tls=config['use_tls'],
                             use_ssl=config['use_ssl'],
                             timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
@@ -2646,16 +2702,16 @@ Safar Zone Travels Team
                         
                         if result:
                             email_sent = True
-                            logger.info(f"✓ Email sent successfully to {email} using {config['host']}:{config['port']}")
+                            logger.info(f"✓ Email sent successfully to {email} using {config.get('name', 'SMTP')}")
                             break
                             
                     except Exception as config_error:
                         last_error = config_error
-                        logger.warning(f"✗ Failed with {config['host']}:{config['port']}: {str(config_error)}")
+                        logger.warning(f"✗ Failed with {config.get('name', 'SMTP')}: {str(config_error)}")
                         continue
                 
                 if not email_sent:
-                    error_msg = f"All SMTP configurations failed. Last error: {str(last_error)}"
+                    error_msg = f"All email configurations failed. Last error: {str(last_error)}"
                     logger.error(error_msg)
                     logger.error(f"Traceback: {traceback.format_exc()}")
                     raise Exception(error_msg)
