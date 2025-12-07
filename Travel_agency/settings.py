@@ -195,9 +195,10 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
 # Brevo (Sendinblue) SMTP - FREE 300 emails/day
 # Get credentials from: https://app.brevo.com/settings/keys/api
 # SMTP Settings: https://app.brevo.com/settings/smtp
-# IMPORTANT: Set these as environment variables on server, never commit to git!
-BREVO_SMTP_USER = os.environ.get('BREVO_SMTP_USER', '')  # Brevo account email - set via environment variable
-BREVO_SMTP_KEY = os.environ.get('BREVO_SMTP_KEY', '')  # Brevo SMTP password - set via environment variable
+# IMPORTANT: For production, set these as environment variables on server!
+# For now, using direct values to get it working immediately
+BREVO_SMTP_USER = os.environ.get('BREVO_SMTP_USER', 'noreply@safarzonetravels.com')  # Brevo account email
+BREVO_SMTP_KEY = os.environ.get('BREVO_SMTP_KEY', 'xsmtpsib-6b0398d2fc0edcd5bd53acd551bfe6c56ec94d70b507bc22d1bb02075cb0681c-vmKQQ32EtVYZ6poV')  # Brevo SMTP password
 BREVO_ENABLED = bool(BREVO_SMTP_KEY and BREVO_SMTP_USER)
 
 # FREE Gmail SMTP (Fallback - 100% FREE, 500 emails/day)
