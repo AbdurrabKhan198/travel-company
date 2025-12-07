@@ -1,11 +1,13 @@
 # ✅ Brevo Setup Complete!
 
-## Your Brevo Credentials (Configured)
+## Your Brevo Credentials (Set via Environment Variables)
 
-✅ **Brevo Account Email**: noreply@safarzonetravels.com  
-✅ **Brevo SMTP Key**: xsmtpsib-6b0398d2fc0edcd5bd53acd551bfe6c56ec94d70b507bc22d1bb02075cb0681c-vmKQQ32EtVYZ6poV  
+✅ **Brevo Account Email**: Set as `BREVO_SMTP_USER` environment variable  
+✅ **Brevo SMTP Key**: Set as `BREVO_SMTP_KEY` environment variable  
 ✅ **SMTP Server**: smtp-relay.brevo.com  
-✅ **Port**: 587 (TLS)  
+✅ **Port**: 587 (TLS)
+
+**⚠️ IMPORTANT**: Never commit credentials to git! Always use environment variables.  
 
 ## What Will Happen
 
@@ -55,17 +57,17 @@ After deployment:
 ✅ **No credit card required**  
 ✅ **No expiration**  
 
-## Security Note
+## Security Note - REQUIRED!
 
-For production, consider using environment variables instead of hardcoded credentials:
+**⚠️ CRITICAL**: Credentials are NOT in code. You MUST set them as environment variables on your server:
 
 ```bash
-# On server
+# On server - REQUIRED!
 export BREVO_SMTP_USER="noreply@safarzonetravels.com"
-export BREVO_SMTP_KEY="xsmtpsib-6b0398d2fc0edcd5bd53acd551bfe6c56ec94d70b507bc22d1bb02075cb0681c-vmKQQ32EtVYZ6poV"
+export BREVO_SMTP_KEY="your-brevo-smtp-key-here"
 ```
 
-Then in `settings.py`, it will automatically use these environment variables.
+**Never commit credentials to git!** Always use environment variables for security.
 
 ## Client Communication
 
