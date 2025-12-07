@@ -2355,8 +2355,11 @@ Thank you for choosing Safar Zone Travels!
         ]
         
         # All possible port/encryption combinations for each server
+        # Port 80 and 2525 are often not blocked by cloud providers
         port_configs = [
             {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
+            {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Alternative SMTP port
+            {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
             {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
             {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
             {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
@@ -2402,7 +2405,7 @@ Thank you for choosing Safar Zone Travels!
                     password=config['password'],
                     use_tls=config['use_tls'],
                     use_ssl=config['use_ssl'],
-                    timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
+                    timeout=10,  # Reduced timeout to fail faster and try more configs
                 )
                 
                 email = EmailMessage(
@@ -2635,8 +2638,11 @@ Safar Zone Travels Team
                 ]
                 
                 # All possible port/encryption combinations for each server
+                # Port 80 and 2525 are often not blocked by cloud providers
                 port_configs = [
                     {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
+                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Alternative SMTP port
+                    {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
                     {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
                     {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
                     {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
@@ -2682,7 +2688,7 @@ Safar Zone Travels Team
                             password=config['password'],
                             use_tls=config['use_tls'],
                             use_ssl=config['use_ssl'],
-                            timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
+                            timeout=10,  # Reduced timeout to fail faster and try more configs
                         )
                         connection.open()
                         logger.info(f"✓ Connection successful to {config['host']}:{config['port']}")
