@@ -1969,12 +1969,57 @@ def view_ticket(request, booking_id):
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
     
+    # Get user profile for branding (if available)
+    try:
+        user_profile = booking.user.profile
+    except:
+        user_profile = None
+    
+    # Get user details
+    user = booking.user
+    
     context = {
         'booking': booking,
         'airport_codes': airport_codes,
+        'user_profile': user_profile,
+        'user': user,
+        'is_web_view': True,
     }
     return render(request, 'print_pdf.html', context)
 
+
+def link_callback(uri, rel):
+    """
+    Convert HTML URIs to absolute system paths so xhtml2pdf can access those resources
+    """
+    import os
+    from django.conf import settings
+    
+    # Handle static files
+    sUrl = settings.STATIC_URL        # Typically /static/
+    sRoot = settings.STATIC_ROOT      # Typically /home/user/var/www/static/
+    mUrl = settings.MEDIA_URL         # Typically /media/
+    mRoot = settings.MEDIA_ROOT       # Typically /home/user/var/www/media/
+
+    if uri.startswith(mUrl):
+        path = os.path.join(mRoot, uri.replace(mUrl, ""))
+    elif uri.startswith(sUrl):
+        path = os.path.join(sRoot, uri.replace(sUrl, ""))
+    else:
+        return uri
+
+    # Example: /home/user/var/www/static/css/style.css
+    if not os.path.isfile(path):
+        # For development where STATIC_ROOT might not be set or populated
+        if uri.startswith(sUrl):
+             # check in static directories
+             for static_dir in settings.STATICFILES_DIRS:
+                 potential_path = os.path.join(static_dir, uri.replace(sUrl, ""))
+                 if os.path.isfile(potential_path):
+                     path = potential_path
+                     break
+        
+    return path
 
 def _generate_ticket_pdf(booking, hide_fare=False):
     """Helper function to generate ticket PDF from HTML template"""
@@ -1989,10 +2034,22 @@ def _generate_ticket_pdf(booking, hide_fare=False):
         # Get comprehensive airport codes
         airport_codes = get_airport_codes()
         
+        # Get user profile for branding (if available)
+        try:
+            user_profile = booking.user.profile
+        except:
+            user_profile = None
+        
+        # Get user details
+        user = booking.user
+
         # Render HTML template
         html_string = render_to_string('print_pdf.html', {
             'booking': booking,
             'airport_codes': airport_codes,
+            'user_profile': user_profile,
+            'user': user,
+            'hide_fare': hide_fare,
         })
         
         # Create PDF buffer
@@ -2002,7 +2059,8 @@ def _generate_ticket_pdf(booking, hide_fare=False):
         pisa_status = pisa.CreatePDF(
             html_string,
             dest=buffer,
-            encoding='utf-8'
+            encoding='utf-8',
+            link_callback=link_callback
         )
         
         if pisa_status.err:

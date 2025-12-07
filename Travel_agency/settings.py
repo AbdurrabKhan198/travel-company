@@ -181,7 +181,10 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7p
 # GoDaddy Business Email SMTP Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtpout.secureserver.net'  # GoDaddy SMTP server
-EMAIL_PORT = 587
+if DEBUG:
+    EMAIL_PORT = 587  # Standard port for local development
+else:
+    EMAIL_PORT = 3535  # Bypass DigitalOcean block in production
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'noreply@safarzonetravels.com'
 EMAIL_HOST_PASSWORD = 'SafarZone@123'
