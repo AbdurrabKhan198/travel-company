@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-t%iz5uu+9-^(kl+^s4=35odc331$*hg5qsa1*plz!h@q4$be(=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # Production domain and IP
 DOMAIN_NAME = 'safarzonetravels.com'

@@ -64,7 +64,12 @@
 
         .header-info {
             font-size: 9pt;
-            margin-top: 5px;
+            margin-top: 8px;
+        }
+        
+        .header-info table td {
+            padding: 2px 0;
+            vertical-align: top;
         }
 
         /* Blue Bar Title */
@@ -189,23 +194,64 @@
 
     <!-- 1. Header Section -->
     <div class="header-section">
-        <div class="agency-name">
-            {% if user_profile and user_profile.company_name %}
-            {{ user_profile.company_name|upper }}
-            {% else %}
-            SAFAR ZONE TRAVELS
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 8px;">
+            {% if user_profile and user_profile.logo %}
+            <div style="flex-shrink: 0;">
+                <img src="{{ user_profile.logo.url }}" alt="Company Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
+            </div>
             {% endif %}
+            <div class="agency-name" style="flex: 1;">
+                {% if user_profile and user_profile.company_name %}
+                {{ user_profile.company_name|upper }}
+                {% else %}
+                SAFAR ZONE TRAVELS
+                {% endif %}
+            </div>
         </div>
         <div class="header-info">
-            <table>
+            <table style="width: 100%; font-size: 9pt;">
+                {% if user_profile and user_profile.address %}
                 <tr>
-                    <td width="50">MOB</td>
+                    <td width="80" style="vertical-align: top;">Address</td>
+                    <td>: {{ user_profile.address }}</td>
+                </tr>
+                {% endif %}
+                {% if user_profile and user_profile.city %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">City</td>
+                    <td>: {{ user_profile.city }}{% if user_profile.state %}, {{ user_profile.state }}{% endif %}{% if user_profile.pincode %} - {{ user_profile.pincode }}{% endif %}</td>
+                </tr>
+                {% elif user_profile and user_profile.state %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">State</td>
+                    <td>: {{ user_profile.state }}{% if user_profile.pincode %} - {{ user_profile.pincode }}{% endif %}</td>
+                </tr>
+                {% elif user_profile and user_profile.pincode %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">Pin Code</td>
+                    <td>: {{ user_profile.pincode }}</td>
+                </tr>
+                {% endif %}
+                {% if user_profile and user_profile.country %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">Country</td>
+                    <td>: {{ user_profile.country }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">MOB</td>
                     <td>: {% if user and user.phone %}{{ user.phone }}{% elif user_profile and user_profile.user.phone %}{{ user_profile.user.phone }}{% else %}7379672019{% endif %}</td>
                 </tr>
                 <tr>
-                    <td>Email</td>
+                    <td width="80" style="vertical-align: top;">Email</td>
                     <td>: {% if user and user.email %}{{ user.email }}{% elif user_profile and user_profile.user.email %}{{ user_profile.user.email }}{% else %}safarzonetravels@gmail.com{% endif %}</td>
                 </tr>
+                {% if user_profile and user_profile.gst_number %}
+                <tr>
+                    <td width="80" style="vertical-align: top;">GST No</td>
+                    <td>: {{ user_profile.gst_number }}</td>
+                </tr>
+                {% endif %}
             </table>
         </div>
     </div>
@@ -245,7 +291,7 @@
                 <td>-</td>
                 <td>{{ booking.schedule.route.name|default:"IndiGo" }}</td>
             </tr>
-        </table>
+    </table>
     </div>
 
     <!-- 4. References & Numbers -->
@@ -268,19 +314,19 @@
                         <tr>
                             <td width="100">Booking Ref</td>
                             <td>: {{ booking.booking_reference }}</td>
-                        </tr>
-                        <tr>
+        </tr>
+        <tr>
                             <td>Airline Ref</td>
                             <td>: {% if booking.passengers.first.pnr %}{{ booking.passengers.first.pnr }}{% else %}PENDING{% endif %}</td>
-                        </tr>
-                        <tr>
+        </tr>
+        <tr>
                             <td>CRS Ref</td>
                             <td>: {% if booking.passengers.first.pnr %}{{ booking.passengers.first.pnr }}{% else %}PENDING{% endif %}</td>
                         </tr>
                     </table>
                 </td>
-            </tr>
-        </table>
+        </tr>
+    </table>
     </div>
 
     <!-- 5. Detailed Itinerary -->
@@ -344,7 +390,7 @@
                     <th width="25%">Departure</th>
                     <th width="25%">Arrival</th>
                     <th width="20%">Duration</th>
-                </tr>
+            </tr>
                 <tr>
                     <td>
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IndiGo_Airlines_logo.svg/2560px-IndiGo_Airlines_logo.svg.png"
@@ -363,8 +409,8 @@
                         {{ booking.return_schedule.route.arrival_time|time:"H:i" }}
                     </td>
                     <td>{{ booking.return_schedule.route.formatted_duration }}</td>
-                </tr>
-            </table>
+            </tr>
+    </table>
         </div>
         {% endif %}
 
@@ -374,7 +420,7 @@
     <div style="border: 1px solid #2c3e50; border-top: none;">
         <div class="section-title" style="padding: 10px 10px 0 10px;">In-Flight Services</div>
         <div class="services-bar" style="border: none; margin-top: 5px;">
-            Adult Cabin Baggage: 07 Kilo | Free Baggage: 30 Kilo<br>
+        Adult Cabin Baggage: 07 Kilo | Free Baggage: 30 Kilo<br>
             Infant Cabin Baggage: 10 Kilo | Free Baggage: NIL Kilo
         </div>
     </div>
@@ -411,7 +457,7 @@
         &nbsp;&nbsp;&nbsp;&nbsp;https://www.civilaviation.gov.in/sites/default/files/State_wise_quarantine_regulation-converted.pdf<br>
         - Details should also be confirmed from the website of the concerned State Government.<br>
         - Caution: Customers are advised to check the latest travel guidelines and requirements before travel.
-    </div>
+</div>
 
 </body>
 

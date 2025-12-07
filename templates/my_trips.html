@@ -659,8 +659,7 @@
                                 </h3>
                                 <span class="status-badge ticketed">
                                     <i class="fas fa-check-circle"></i>
-                                    {% if booking.status == 'completed' %}Completed{% else %}{{
-                                    booking.get_status_display }}{% endif %}
+                                    {% if booking.status == 'completed' %}Completed{% else %}{{ booking.get_status_display }}{% endif %}
                                 </span>
                             </div>
 
@@ -1245,8 +1244,7 @@
                                     <span class="font-semibold">Status:</span>
                                     <span
                                         class="{% if booking.status == 'confirmed' %}text-green-600 font-semibold{% elif booking.status == 'cancelled' %}text-red-600{% else %}text-yellow-600{% endif %}">
-                                        {% if booking.status == 'confirmed' %}Ticketed{% else %}{{
-                                        booking.get_status_display }}{% endif %}
+                                        {% if booking.status == 'confirmed' %}Ticketed{% else %}{{ booking.get_status_display }}{% endif %}
                                     </span>
                                 </p>
                             </div>

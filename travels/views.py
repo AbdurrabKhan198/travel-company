@@ -2529,10 +2529,13 @@ Safar Zone Travels Team
                     html_message=html_message,
                 )
             except Exception as e:
-                # If email fails, still return success but log the error
+                # Log the error
                 print(f"Email sending failed: {str(e)}")
-                # For development, print OTP to console
-                print(f"OTP for {email}: {otp}")
+                # Return failure to the user so they know it didn't work
+                return JsonResponse({
+                    'success': False, 
+                    'message': f'Email sending failed: {str(e)}'
+                })
             
             return JsonResponse({
                 'success': True, 
