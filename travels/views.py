@@ -2697,10 +2697,45 @@ Safar Zone Travels Team
                             'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
                         })
                 
+                # Brevo (Sendinblue) SMTP - FREE 300 emails/day (RECOMMENDED)
+                # Works reliably on DigitalOcean, no port blocking issues
+                brevo_key = getattr(settings, 'BREVO_SMTP_KEY', '') or os.environ.get('BREVO_SMTP_KEY', '')
+                brevo_user = getattr(settings, 'BREVO_SMTP_USER', '') or os.environ.get('BREVO_SMTP_USER', '')
+                if brevo_key and brevo_user:
+                    # Brevo supports multiple ports - try all
+                    smtp_configs.extend([
+                        {
+                            'host': 'smtp-relay.brevo.com',
+                            'port': 587,
+                            'use_tls': True,
+                            'use_ssl': False,
+                            'username': brevo_user,
+                            'password': brevo_key,
+                            'name': 'Brevo-Port587'
+                        },
+                        {
+                            'host': 'smtp-relay.brevo.com',
+                            'port': 465,
+                            'use_tls': False,
+                            'use_ssl': True,
+                            'username': brevo_user,
+                            'password': brevo_key,
+                            'name': 'Brevo-Port465'
+                        },
+                        {
+                            'host': 'smtp-relay.sendinblue.com',  # Old domain
+                            'port': 587,
+                            'use_tls': True,
+                            'use_ssl': False,
+                            'username': brevo_user,
+                            'password': brevo_key,
+                            'name': 'Brevo-OldDomain'
+                        },
+                    ])
+                
                 # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
-                # Add your Gmail credentials in settings.py if GoDaddy fails
-                gmail_user = os.environ.get('GMAIL_USER', '')
-                gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+                gmail_user = getattr(settings, 'GMAIL_USER', '') or os.environ.get('GMAIL_USER', '')
+                gmail_password = getattr(settings, 'GMAIL_APP_PASSWORD', '') or os.environ.get('GMAIL_APP_PASSWORD', '')
                 if gmail_user and gmail_password:
                     smtp_configs.append({
                         'host': 'smtp.gmail.com',
@@ -2713,8 +2748,8 @@ Safar Zone Travels Team
                     })
                 
                 # FREE Outlook SMTP as fallback (100% FREE, 300 emails/day)
-                outlook_user = os.environ.get('OUTLOOK_USER', '')
-                outlook_password = os.environ.get('OUTLOOK_PASSWORD', '')
+                outlook_user = getattr(settings, 'OUTLOOK_USER', '') or os.environ.get('OUTLOOK_USER', '')
+                outlook_password = getattr(settings, 'OUTLOOK_PASSWORD', '') or os.environ.get('OUTLOOK_PASSWORD', '')
                 if outlook_user and outlook_password:
                     smtp_configs.append({
                         'host': 'smtp-mail.outlook.com',
@@ -2757,12 +2792,12 @@ Safar Zone Travels Team
                         
                         # Try sending email with this configuration
                         result = send_mail(
-                            subject,
-                            plain_message,
-                            from_email,
-                            [email],
-                            fail_silently=False,
-                            html_message=html_message,
+                    subject,
+                    plain_message,
+                    from_email,
+                    [email],
+                    fail_silently=False,
+                    html_message=html_message,
                             connection=connection,
                         )
                         

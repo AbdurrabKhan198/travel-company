@@ -178,7 +178,7 @@ RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
 
 # Email Configuration
-# Priority: GoDaddy (port 2525) → Gmail (free) → Outlook (free)
+# Priority: GoDaddy (port 2525) → Brevo (FREE) → Gmail (free) → Outlook (free)
 # DigitalOcean blocks ports 25, 465, 587 - so we try alternatives
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
@@ -192,24 +192,21 @@ EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@safarzonetravels.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
 
+# Brevo (Sendinblue) SMTP - FREE 300 emails/day
+# Get credentials from: https://app.brevo.com/settings/keys/api
+# SMTP Settings: https://app.brevo.com/settings/smtp
+BREVO_SMTP_USER = os.environ.get('BREVO_SMTP_USER', 'noreply@safarzonetravels.com')  # Brevo account email
+BREVO_SMTP_KEY = os.environ.get('BREVO_SMTP_KEY', 'xsmtpsib-6b0398d2fc0edcd5bd53acd551bfe6c56ec94d70b507bc22d1bb02075cb0681c-vmKQQ32EtVYZ6poV')  # Brevo SMTP password
+BREVO_ENABLED = bool(BREVO_SMTP_KEY and BREVO_SMTP_USER)
+
 # FREE Gmail SMTP (Fallback - 100% FREE, 500 emails/day)
 # Setup: https://myaccount.google.com/apppasswords
-# Uncomment below and add your Gmail credentials if GoDaddy fails:
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'your-gmail@gmail.com'  # Your Gmail address
-# EMAIL_HOST_PASSWORD = 'your-app-password'  # Gmail App Password (16 chars)
-# DEFAULT_FROM_EMAIL = 'your-gmail@gmail.com'
+GMAIL_USER = os.environ.get('GMAIL_USER', '')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
 # FREE Outlook SMTP (Alternative Fallback - 100% FREE, 300 emails/day)
-# Uncomment below if you want to use Outlook instead:
-# EMAIL_HOST = 'smtp-mail.outlook.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'your-email@outlook.com'
-# EMAIL_HOST_PASSWORD = 'your-outlook-password'
-# DEFAULT_FROM_EMAIL = 'your-email@outlook.com'
+OUTLOOK_USER = os.environ.get('OUTLOOK_USER', '')
+OUTLOOK_PASSWORD = os.environ.get('OUTLOOK_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
