@@ -177,20 +177,40 @@ LOGOUT_REDIRECT_URL = 'homepage'
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
 
-# Email Configuration - GoDaddy Business Email ONLY
-# Using ALL possible GoDaddy SMTP servers and ports to work around DigitalOcean port blocking
+# Email Configuration
+# Priority: GoDaddy (port 2525) → Gmail (free) → Outlook (free)
+# DigitalOcean blocks ports 25, 465, 587 - so we try alternatives
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# GoDaddy SMTP Settings
-# Primary server (will try multiple ports automatically in views)
+# GoDaddy SMTP Settings (Primary - will try port 2525 first)
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtpout.secureserver.net')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))  # Default, but code will try all ports
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '2525'))  # Try 2525 first (not blocked)
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 
 # GoDaddy email credentials
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@safarzonetravels.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'SafarZone@123')
+
+# FREE Gmail SMTP (Fallback - 100% FREE, 500 emails/day)
+# Setup: https://myaccount.google.com/apppasswords
+# Uncomment below and add your Gmail credentials if GoDaddy fails:
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'your-gmail@gmail.com'  # Your Gmail address
+# EMAIL_HOST_PASSWORD = 'your-app-password'  # Gmail App Password (16 chars)
+# DEFAULT_FROM_EMAIL = 'your-gmail@gmail.com'
+
+# FREE Outlook SMTP (Alternative Fallback - 100% FREE, 300 emails/day)
+# Uncomment below if you want to use Outlook instead:
+# EMAIL_HOST = 'smtp-mail.outlook.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'your-email@outlook.com'
+# EMAIL_HOST_PASSWORD = 'your-outlook-password'
+# DEFAULT_FROM_EMAIL = 'your-email@outlook.com'
+
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # Email timeout (important for production)

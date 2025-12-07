@@ -18,6 +18,7 @@ from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactFo
 import random
 import string
 import json
+import os
 import razorpay
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import inch
@@ -2355,13 +2356,15 @@ Thank you for choosing Safar Zone Travels!
         ]
         
         # All possible port/encryption combinations for each server
-        # Port 80 and 2525 are often not blocked by cloud providers
+        # DigitalOcean blocks 25, 465, 587 - but MAY allow 2525 and 3535
+        # Try unblocked ports FIRST
         port_configs = [
-            {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
-            {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Alternative SMTP port
+            {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Try FIRST - not mentioned as blocked
             {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
-            {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
+            {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},  # GoDaddy alternative
             {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
+            {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},  # HTTP port
+            # These are blocked by DigitalOcean but try anyway
             {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
             {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
             {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
@@ -2380,6 +2383,34 @@ Thank you for choosing Safar Zone Travels!
                     'password': settings.EMAIL_HOST_PASSWORD,
                     'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
                 })
+        
+        # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
+        gmail_user = os.environ.get('GMAIL_USER', '')
+        gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+        if gmail_user and gmail_password:
+            smtp_configs.append({
+                'host': 'smtp.gmail.com',
+                'port': 587,
+                'use_tls': True,
+                'use_ssl': False,
+                'username': gmail_user,
+                'password': gmail_password,
+                'name': 'Gmail-Free'
+            })
+        
+        # FREE Outlook SMTP as fallback (100% FREE, 300 emails/day)
+        outlook_user = os.environ.get('OUTLOOK_USER', '')
+        outlook_password = os.environ.get('OUTLOOK_PASSWORD', '')
+        if outlook_user and outlook_password:
+            smtp_configs.append({
+                'host': 'smtp-mail.outlook.com',
+                'port': 587,
+                'use_tls': True,
+                'use_ssl': False,
+                'username': outlook_user,
+                'password': outlook_password,
+                'name': 'Outlook-Free'
+            })
         
         # In development, also try the configured settings first
         if settings.DEBUG:
@@ -2638,13 +2669,15 @@ Safar Zone Travels Team
                 ]
                 
                 # All possible port/encryption combinations for each server
-                # Port 80 and 2525 are often not blocked by cloud providers
+                # DigitalOcean blocks 25, 465, 587 - but MAY allow 2525 and 3535
+                # Try unblocked ports FIRST
                 port_configs = [
-                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},
-                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Alternative SMTP port
+                    {'port': 2525, 'use_tls': True, 'use_ssl': False, 'name': 'Port2525-TLS'},  # Try FIRST - not mentioned as blocked
                     {'port': 2525, 'use_tls': False, 'use_ssl': False, 'name': 'Port2525-NoTLS'},
-                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},
+                    {'port': 3535, 'use_tls': True, 'use_ssl': False, 'name': 'Port3535-TLS'},  # GoDaddy alternative
                     {'port': 3535, 'use_tls': False, 'use_ssl': False, 'name': 'Port3535-NoTLS'},
+                    {'port': 80, 'use_tls': False, 'use_ssl': False, 'name': 'Port80-HTTP'},  # HTTP port
+                    # These are blocked by DigitalOcean but try anyway
                     {'port': 25, 'use_tls': False, 'use_ssl': False, 'name': 'Port25-Standard'},
                     {'port': 465, 'use_tls': False, 'use_ssl': True, 'name': 'Port465-SSL'},
                     {'port': 587, 'use_tls': True, 'use_ssl': False, 'name': 'Port587-TLS'},
@@ -2663,6 +2696,35 @@ Safar Zone Travels Team
                             'password': settings.EMAIL_HOST_PASSWORD,
                             'name': f'GoDaddy-{server.split(".")[0]}-{port_config["name"]}'
                         })
+                
+                # FREE Gmail SMTP as fallback (100% FREE, 500 emails/day)
+                # Add your Gmail credentials in settings.py if GoDaddy fails
+                gmail_user = os.environ.get('GMAIL_USER', '')
+                gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+                if gmail_user and gmail_password:
+                    smtp_configs.append({
+                        'host': 'smtp.gmail.com',
+                        'port': 587,
+                        'use_tls': True,
+                        'use_ssl': False,
+                        'username': gmail_user,
+                        'password': gmail_password,
+                        'name': 'Gmail-Free'
+                    })
+                
+                # FREE Outlook SMTP as fallback (100% FREE, 300 emails/day)
+                outlook_user = os.environ.get('OUTLOOK_USER', '')
+                outlook_password = os.environ.get('OUTLOOK_PASSWORD', '')
+                if outlook_user and outlook_password:
+                    smtp_configs.append({
+                        'host': 'smtp-mail.outlook.com',
+                        'port': 587,
+                        'use_tls': True,
+                        'use_ssl': False,
+                        'username': outlook_user,
+                        'password': outlook_password,
+                        'name': 'Outlook-Free'
+                    })
                 
                 # In development, also try the configured settings first
                 if settings.DEBUG:
