@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf import settings
 from decimal import Decimal
-from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, PackageApplication
+from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, PackageApplication
 from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm, PasswordResetRequestForm, SetNewPasswordForm
 import random
 import string
@@ -444,9 +444,6 @@ def homepage(request):
     # Convert to list of date strings for JavaScript
     available_dates_list = [d.isoformat() for d in available_dates]
     
-    # Get active executives for header
-    executives = Executive.objects.filter(is_active=True).order_by('display_order', 'name')
-    
     context = {
         'packages': packages,
         'popular_packages': popular_packages,
@@ -455,7 +452,6 @@ def homepage(request):
         'today': date.today().isoformat(),
         'available_dates': available_dates_list,
         'airport_codes': airport_codes,
-        'executives': executives,
     }
     return render(request, 'index.html', context)
 
@@ -1064,7 +1060,6 @@ def handle_booking_confirmation(request, schedule_id):
     
     # Create BookingPassenger records and assign PNRs
     from datetime import datetime
-    from .models import PNRStock
     passenger_data = booking_data.get('passenger_data', [])
     for passenger in passenger_data:
         dob = datetime.strptime(passenger['dob'], '%Y-%m-%d').date() if passenger.get('dob') else None
@@ -1084,20 +1079,12 @@ def handle_booking_confirmation(request, schedule_id):
             nationality=passenger.get('nationality', 'Indian')
         )
         
-        # Assign PNR from stock (only for adults and children, not infants)
-        # PNR is route-specific - assign based on the booking's route
+        # Assign PNR from schedule (same PNR for all passengers on same flight and date)
+        # All passengers on the same flight on the same date get the same PNR
         if passenger_obj.passenger_type in ['adult', 'child']:
-            try:
-                # Get route from booking schedule
-                route = booking.schedule.route
-                pnr = PNRStock.assign_pnr_to_passenger(passenger_obj, route)
-                passenger_obj.pnr = pnr
-                passenger_obj.save()
-            except Exception as e:
-                # Log error but don't fail booking - PNR can be assigned later
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'Error assigning PNR to passenger {passenger_obj.id} for route {booking.schedule.route}: {str(e)}')
+            # Get PNR from schedule (route + date specific)
+            passenger_obj.pnr = booking.schedule.pnr
+            passenger_obj.save()
     
     # Clear session data
     if 'booking_data' in request.session:
@@ -1775,6 +1762,18 @@ def payment_success(request):
     else:
         data = request.GET
     
+    # Debug: Print all received data
+    print("=" * 50)
+    print("PAYMENT SUCCESS CALLBACK RECEIVED:")
+    print(f"Method: {request.method}")
+    print("Received Data:")
+    for key, value in data.items():
+        if key == 'hash':
+            print(f"  {key}: {value[:20]}... (truncated)")
+        else:
+            print(f"  {key}: {value}")
+    print("=" * 50)
+    
     txnid = data.get('txnid')
     amount = data.get('amount')
     productinfo = data.get('productinfo')
@@ -1784,7 +1783,13 @@ def payment_success(request):
     hash_value = data.get('hash')
     status = data.get('status')
     
+    print(f"Transaction ID: {txnid}")
+    print(f"Amount: {amount}")
+    print(f"Status: {status}")
+    print(f"Hash: {hash_value[:20] if hash_value else 'None'}... (truncated)")
+    
     if not txnid or not hash_value:
+        print("❌ Missing txnid or hash")
         messages.error(request, 'Invalid payment data received.')
         return redirect('payment_failed')
     
@@ -1824,9 +1829,17 @@ def payment_success(request):
             if key != 'hash' and value:  # Exclude hash and empty values
                 verification_data[key] = value
         
-        if not verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value):
+        print(f"Verifying hash...")
+        print(f"Verification data keys: {list(verification_data.keys())}")
+        hash_valid = verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value)
+        print(f"Hash verification result: {hash_valid}")
+        
+        if not hash_valid:
+            print("❌ Hash verification failed!")
             messages.error(request, 'Payment verification failed. Please contact support.')
             return redirect('payment_failed')
+        else:
+            print("✅ Hash verification successful!")
         
         # Check payment status
         if status != 'success':

@@ -43,3 +43,11 @@ def passenger_type_count(queryset, passenger_type):
         return queryset.filter(passenger_type=passenger_type).count()
     except (AttributeError, TypeError):
         return 0
+
+@register.filter
+def abs_value(value):
+    """Return absolute value of a number"""
+    try:
+        return abs(float(value))
+    except (ValueError, TypeError):
+        return 0

@@ -1,0 +1,413 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load travel_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .agency-details-container {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        font-size: 20px;
+        font-weight: bold;
+        color: #1e40af;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #3b82f6;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .stat-box.green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .stat-box.red {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    .stat-box.blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    
+    .stat-box.orange {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+    }
+    
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .info-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .info-table td:first-child {
+        font-weight: bold;
+        width: 200px;
+        color: #4b5563;
+    }
+    
+    .transactions-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    
+    .transactions-table th {
+        background: #f3f4f6;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+        border-bottom: 2px solid #d1d5db;
+    }
+    
+    .transactions-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .transactions-table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .amount-credit {
+        color: #10b981;
+        font-weight: bold;
+    }
+    
+    .amount-debit {
+        color: #ef4444;
+        font-weight: bold;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .badge-recharge {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .badge-payment {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .badge-refund {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .badge-adjustment {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-approved {
+        color: #10b981;
+        font-weight: bold;
+    }
+    
+    .status-pending {
+        color: #ef4444;
+        font-weight: bold;
+    }
+    
+    .back-button {
+        background: #6366f1;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+    
+    .back-button:hover {
+        background: #4f46e5;
+        color: white;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="agency-details-container">
+    <a href="{% url 'admin:travels_cashbalancetransaction_changelist' %}" class="back-button">
+        ← Back to Balance History
+    </a>
+    
+    <h1 style="color: #1e3a8a; margin-bottom: 30px;">
+        📊 Agency Balance Details - {{ agency_id }}
+    </h1>
+    
+    <!-- User Information Card -->
+    <div class="info-card">
+        <div class="card-header">👤 User Information</div>
+        <table class="info-table">
+            <tr>
+                <td>Email</td>
+                <td>{{ user.email }}</td>
+            </tr>
+            <tr>
+                <td>Agency ID</td>
+                <td><strong style="color: #2563eb;">{{ user.client_id }}</strong></td>
+            </tr>
+            {% if profile %}
+            <tr>
+                <td>Full Name</td>
+                <td>{{ profile.title }} {{ profile.full_name }}</td>
+            </tr>
+            <tr>
+                <td>Phone</td>
+                <td>{{ user.phone|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td>Company Name</td>
+                <td>{{ profile.company_name|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td>GST Number</td>
+                <td>{{ profile.gst_number|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td>City</td>
+                <td>{{ profile.city|default:"N/A" }}, {{ profile.state|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td>Country</td>
+                <td>{{ profile.country|default:"N/A" }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td>User Type</td>
+                <td>{{ user.get_user_type_display }}</td>
+            </tr>
+            <tr>
+                <td>Account Status</td>
+                <td>
+                    {% if user.is_approved %}
+                        <span class="status-approved">✓ Approved</span>
+                    {% else %}
+                        <span class="status-pending">⏳ Pending Approval</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Joined Date</td>
+                <td>{{ user.date_joined|date:"d M Y, h:i A" }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Balance Statistics -->
+    <div class="info-card">
+        <div class="card-header">💰 Balance Statistics</div>
+        <div class="stats-grid">
+            <div class="stat-box blue">
+                <div class="stat-label">Current Balance</div>
+                <div class="stat-value">₹{{ wallet.balance|default:"0.00" }}</div>
+            </div>
+            <div class="stat-box green">
+                <div class="stat-label">Total Credits</div>
+                <div class="stat-value">₹{{ total_credits|floatformat:2 }}</div>
+            </div>
+            <div class="stat-box red">
+                <div class="stat-label">Total Debits</div>
+                <div class="stat-value">₹{{ total_debits|floatformat:2 }}</div>
+            </div>
+            <div class="stat-box orange">
+                <div class="stat-label">Total Transactions</div>
+                <div class="stat-value">{{ total_transactions }}</div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="stat-label">Recharges</div>
+                <div class="stat-value">{{ recharge_count }}</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <div class="stat-label">Payments</div>
+                <div class="stat-value">{{ payment_count }}</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <div class="stat-label">Refunds</div>
+                <div class="stat-value">{{ refund_count }}</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="stat-label">Max Balance Limit</div>
+                <div class="stat-value">₹{{ wallet.max_balance|default:"0" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Complete Transaction History -->
+    <div class="info-card">
+        <div class="card-header">📋 Complete Transaction History ({{ total_transactions }} transactions)</div>
+        
+        {% if transactions %}
+        <div style="overflow-x: auto;">
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date & Time</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Balance After</th>
+                        <th>Description</th>
+                        <th>Reference ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ transaction.created_at|date:"d M Y, h:i A" }}</td>
+                        <td>
+                            {% if transaction.transaction_type == 'recharge' %}
+                                <span class="badge badge-recharge">Recharge</span>
+                            {% elif transaction.transaction_type == 'payment' %}
+                                <span class="badge badge-payment">Payment</span>
+                            {% elif transaction.transaction_type == 'refund' %}
+                                <span class="badge badge-refund">Refund</span>
+                            {% else %}
+                                <span class="badge badge-adjustment">Adjustment</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.amount >= 0 %}
+                                <span class="amount-credit">+₹{{ transaction.amount|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="amount-debit">-₹{{ transaction.amount|abs_value|floatformat:2 }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: bold;">₹{{ transaction.balance_after|floatformat:2 }}</td>
+                        <td>{{ transaction.description|default:"-" }}</td>
+                        <td>{{ transaction.reference_id|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-data">
+            No transactions found for this agency.
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Recent Bookings -->
+    <div class="info-card">
+        <div class="card-header">✈️ Recent Bookings (Last 10)</div>
+        
+        {% if recent_bookings %}
+        <div style="overflow-x: auto;">
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th>Booking Ref</th>
+                        <th>Date</th>
+                        <th>Route</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in recent_bookings %}
+                    <tr>
+                        <td><strong>{{ booking.booking_reference }}</strong></td>
+                        <td>{{ booking.created_at|date:"d M Y" }}</td>
+                        <td>{{ booking.schedule.route.from_location }} → {{ booking.schedule.route.to_location }}</td>
+                        <td>
+                            {% if booking.status == 'confirmed' %}
+                                <span class="badge" style="background: #d1fae5; color: #065f46;">Confirmed</span>
+                            {% elif booking.status == 'pending' %}
+                                <span class="badge" style="background: #fef3c7; color: #92400e;">Pending</span>
+                            {% elif booking.status == 'cancelled' %}
+                                <span class="badge" style="background: #fee2e2; color: #991b1b;">Cancelled</span>
+                            {% else %}
+                                <span class="badge" style="background: #e5e7eb; color: #374151;">{{ booking.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: bold;">₹{{ booking.total_amount|floatformat:2 }}</td>
+                        <td>
+                            {% if booking.payment_status == 'paid' %}
+                                <span class="status-approved">Paid</span>
+                            {% else %}
+                                <span class="status-pending">{{ booking.get_payment_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-data">
+            No bookings found for this agency.
+        </div>
+        {% endif %}
+    </div>
+    
+    <a href="{% url 'admin:travels_cashbalancetransaction_changelist' %}" class="back-button">
+        ← Back to Balance History
+    </a>
+</div>
+{% endblock %}
+

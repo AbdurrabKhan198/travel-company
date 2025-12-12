@@ -55,13 +55,22 @@ class User(AbstractUser):
     is_verified = models.BooleanField(_('verified'), default=False)
     is_approved = models.BooleanField(_('approved'), default=False, help_text=_('Account approval status - user can login only after approval'))
     client_id = models.CharField(
-        _('client ID'), 
+        _('Agency ID'), 
         max_length=20, 
         unique=True, 
         editable=False,
         null=True,
         blank=True,
-        help_text=_('Unique client identifier assigned on registration')
+        help_text=_('Unique agency identifier assigned on registration')
+    )
+    sales_representative = models.ForeignKey(
+        'SalesRepresentative',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_users',
+        verbose_name=_('Sales Representative'),
+        help_text=_('Assigned sales representative for this user')
     )
     
     USERNAME_FIELD = 'email'
@@ -70,8 +79,8 @@ class User(AbstractUser):
     objects = UserManager()
     
     class Meta:
-        verbose_name = _('user')
-        verbose_name_plural = _('users')
+        verbose_name = _('Admin')
+        verbose_name_plural = _('Admins')
         permissions = [
             ('can_manage_bookings', 'Can manage bookings'),
             ('can_manage_routes', 'Can manage routes'),
@@ -232,8 +241,8 @@ class UserProfile(TimestampedModel):
     )
     
     class Meta:
-        verbose_name = _('user profile')
-        verbose_name_plural = _('user profiles')
+        verbose_name = _('Agency')
+        verbose_name_plural = _('Agencies')
     
     def __str__(self):
         return f"{self.full_name}'s profile"
@@ -564,6 +573,15 @@ class Schedule(TimestampedModel):
         null=True,
         blank=True,
         help_text=_('Fare for infants (0-2 years). Typically around ₹4000. Infant travels on mother\'s lap, no seat.')
+    )
+    
+    # PNR - same for all passengers on this flight on this date
+    pnr = models.CharField(
+        _('PNR'), 
+        max_length=10, 
+        blank=True,
+        db_index=True,
+        help_text=_('Passenger Name Record - same for all passengers on this flight on this date')
     )
     
     is_active = models.BooleanField(_('active'), default=True)
@@ -1062,7 +1080,6 @@ class Package(TimestampedModel):
     
     # Images
     main_image = models.ImageField(_('main image'), upload_to='packages/main/')
-    gallery = models.ManyToManyField('PackageImage', blank=True, related_name='package_gallery')
     
     # SEO fields
     meta_title = models.CharField(_('meta title'), max_length=100, blank=True)
@@ -1108,28 +1125,6 @@ class Package(TimestampedModel):
         from django.urls import reverse
         return reverse('package_detail', kwargs={'slug': self.slug})
 
-class PackageImage(models.Model):
-    """Images for travel packages"""
-    package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(_('image'), upload_to='packages/gallery/')
-    caption = models.CharField(_('caption'), max_length=200, blank=True)
-    is_primary = models.BooleanField(_('primary image'), default=False)
-    display_order = models.PositiveIntegerField(_('display order'), default=0)
-    
-    class Meta:
-        verbose_name = _('package image')
-        verbose_name_plural = _('package images')
-        ordering = ['display_order', 'id']
-    
-    def __str__(self):
-        return f"Image for {self.package.title}"
-    
-    def save(self, *args, **kwargs):
-        # If this is set as primary, unset any existing primary for this package
-        if self.is_primary:
-            PackageImage.objects.filter(package=self.package, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
-        super().save(*args, **kwargs)
-
 class BookingPassenger(models.Model):
     """Passenger details for a booking"""
     class PassengerType(models.TextChoices):
@@ -1164,11 +1159,10 @@ class BookingPassenger(models.Model):
     pnr = models.CharField(
         _('PNR'), 
         max_length=10, 
-        unique=True,
         null=True,
         blank=True,
         editable=False,
-        help_text=_('Passenger Name Record - automatically assigned from stock during booking')
+        help_text=_('Passenger Name Record - same for all passengers on same flight and date')
     )
     
     class Meta:
@@ -1436,7 +1430,7 @@ class CashBalanceWallet(TimestampedModel):
         return self.balance
 
 class CashBalanceTransaction(TimestampedModel):
-    """Transaction history for Cash Balance Wallet"""
+    """Balance History Details - Complete transaction history for Cash Balance"""
     class TransactionType(models.TextChoices):
         RECHARGE = 'recharge', _('Recharge')
         PAYMENT = 'payment', _('Payment')
@@ -1451,8 +1445,8 @@ class CashBalanceTransaction(TimestampedModel):
     reference_id = models.CharField(_('reference ID'), max_length=100, blank=True, null=True, help_text=_('Booking reference, payment ID, etc.'))
     
     class Meta:
-        verbose_name = _('Cash Balance Transaction')
-        verbose_name_plural = _('Cash Balance Transactions')
+        verbose_name = _('Balance History Detail')
+        verbose_name_plural = _('Balance History Details')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['cash_balance_wallet', 'created_at'], name='cash_balance_transaction_idx'),
@@ -1471,24 +1465,24 @@ class CashBalanceTransaction(TimestampedModel):
         """Check if transaction is a debit (negative amount)"""
         return self.amount < 0
 
-class Executive(TimestampedModel):
-    """Executive/Contact person model for homepage display"""
+class SalesRepresentative(TimestampedModel):
+    """Sales Representative model for user assignment and homepage display"""
     name = models.CharField(_('name'), max_length=100)
     phone = models.CharField(_('phone number'), max_length=20, help_text=_('Contact number'))
-    city = models.CharField(_('city'), max_length=100, help_text=_('Place/City of executive'))
     is_active = models.BooleanField(_('active'), default=True, help_text=_('Show on homepage'))
-    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text=_('Order in which executives are displayed'))
+    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text=_('Order in which sales representatives are displayed'))
     
     class Meta:
-        verbose_name = _('Executive')
-        verbose_name_plural = _('Executives')
+        verbose_name = _('Sales Representative')
+        verbose_name_plural = _('Sales Representatives')
         ordering = ['display_order', 'name']
         indexes = [
-            models.Index(fields=['is_active', 'display_order'], name='executive_active_idx'),
+            models.Index(fields=['is_active', 'display_order'], name='salesrep_active_idx'),
         ]
+        db_table = 'travels_executive'  # Keep the same table name to preserve existing data
     
     def __str__(self):
-        return f"{self.name} - {self.city} ({self.phone})"
+        return f"{self.name} ({self.phone})"
 
 class PackageApplication(TimestampedModel):
     """Model to store package application details"""
@@ -1681,87 +1675,3 @@ class Umrah(TimestampedModel):
         return f"Umrah {self.reference_id} - {self.full_name} ({self.get_duration_display()})"
 
 
-class PNRStock(TimestampedModel):
-    """Model to store available PNRs in stock - Route-specific PNRs"""
-    pnr = models.CharField(
-        _('PNR'), 
-        max_length=10, 
-        unique=True,
-        help_text=_('Passenger Name Record - unique identifier for each passenger')
-    )
-    route = models.ForeignKey(
-        Route,
-        on_delete=models.CASCADE,
-        related_name='pnr_stock',
-        verbose_name=_('route'),
-        null=True,
-        blank=True,
-        help_text=_('Route for which this PNR is valid. PNR can only be assigned to passengers booking this route.')
-    )
-    is_assigned = models.BooleanField(_('assigned'), default=False, help_text=_('Whether this PNR has been assigned to a passenger'))
-    assigned_to = models.ForeignKey(
-        'BookingPassenger',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='assigned_pnr',
-        verbose_name=_('assigned to passenger')
-    )
-    assigned_at = models.DateTimeField(_('assigned at'), null=True, blank=True)
-    
-    class Meta:
-        verbose_name = _('PNR Stock')
-        verbose_name_plural = _('PNR Stock')
-        ordering = ['route', '-created_at']
-        indexes = [
-            models.Index(fields=['pnr'], name='pnr_stock_pnr_idx'),
-            models.Index(fields=['route', 'is_assigned'], name='pnr_stock_route_assigned_idx'),
-            models.Index(fields=['is_assigned'], name='pnr_stock_assigned_idx'),
-        ]
-        unique_together = [['pnr', 'route']]
-    
-    def __str__(self):
-        status = "Assigned" if self.is_assigned else "Available"
-        route_info = f"{self.route.from_location}-{self.route.to_location}" if self.route else "No Route"
-        return f"{self.pnr} ({route_info}) - {status}"
-    
-    def assign_to_passenger(self, passenger):
-        """Assign this PNR to a passenger"""
-        if self.is_assigned:
-            raise ValidationError(_('This PNR is already assigned'))
-        
-        # Verify route matches (if route is set)
-        if self.route and passenger.booking.schedule.route != self.route:
-            raise ValidationError(
-                _('PNR route ({pnr_route}) does not match booking route ({booking_route})').format(
-                    pnr_route=f"{self.route.from_location}-{self.route.to_location}",
-                    booking_route=f"{passenger.booking.schedule.route.from_location}-{passenger.booking.schedule.route.to_location}"
-                )
-            )
-        
-        self.is_assigned = True
-        self.assigned_to = passenger
-        self.assigned_at = timezone.now()
-        self.save()
-    
-    @classmethod
-    def get_available_pnr(cls, route):
-        """Get an available PNR from stock for a specific route"""
-        if not route:
-            raise ValidationError(_('Route is required to get PNR'))
-        
-        pnr = cls.objects.filter(route=route, is_assigned=False).first()
-        if not pnr:
-            raise ValidationError(
-                _('No PNRs available in stock for route {route}. Please add more PNRs for this route.').format(
-                    route=f"{route.from_location}-{route.to_location}"
-                )
-            )
-        return pnr
-    
-    @classmethod
-    def assign_pnr_to_passenger(cls, passenger, route):
-        """Assign an available PNR to a passenger for a specific route"""
-        pnr_stock = cls.get_available_pnr(route)
-        pnr_stock.assign_to_passenger(passenger)
-        return pnr_stock.pnr

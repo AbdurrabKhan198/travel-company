@@ -294,39 +294,19 @@
     </table>
     </div>
 
-    <!-- 4. References & Numbers -->
+    <!-- 4. Booking Reference -->
     <div class="section-box">
-        <table class="ref-table">
+        <div class="section-title">Booking Reference</div>
+        <table style="width: 100%; font-size: 9pt;">
             <tr>
-                <td width="50%" style="border-right: 1px solid #ddd;">
-                    <div class="section-title">e-Ticket Numbers</div>
-                    {% for passenger in booking.passengers.all %}
-                    {% if passenger.pnr %}
-                    <div>{{ passenger.pnr }}</div>
-                    {% else %}
-                    <div>PENDING</div>
-                    {% endif %}
-                    {% endfor %}
-                </td>
-                <td width="50%" style="padding-left: 20px;">
-                    <div class="section-title">Booking Reference</div>
-                    <table style="width: 100%; font-size: 9pt;">
-                        <tr>
-                            <td width="100">Booking Ref</td>
-                            <td>: {{ booking.booking_reference }}</td>
-        </tr>
-        <tr>
-                            <td>Airline Ref</td>
-                            <td>: {% if booking.passengers.first.pnr %}{{ booking.passengers.first.pnr }}{% else %}PENDING{% endif %}</td>
-        </tr>
-        <tr>
-                            <td>CRS Ref</td>
-                            <td>: {% if booking.passengers.first.pnr %}{{ booking.passengers.first.pnr }}{% else %}PENDING{% endif %}</td>
-                        </tr>
-                    </table>
-                </td>
-        </tr>
-    </table>
+                <td width="100">Booking Ref</td>
+                <td>: {{ booking.booking_reference }}</td>
+            </tr>
+            <tr>
+                <td>Airline Ref</td>
+                <td>: {% if booking.schedule.pnr %}{{ booking.schedule.pnr }}{% else %}PENDING{% endif %}</td>
+            </tr>
+        </table>
     </div>
 
     <!-- 5. Detailed Itinerary -->

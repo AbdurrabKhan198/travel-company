@@ -1,21 +1,29 @@
 from decimal import Decimal
-from .models import ODWallet, CashBalanceWallet, Executive
+from .models import ODWallet, CashBalanceWallet, SalesRepresentative
 
 def wallet_context(request):
-    """Context processor to add wallet information and executives to all templates"""
+    """Context processor to add wallet information and sales representatives to all templates"""
     context = {
         'cash_balance': Decimal('0'),
         'has_cash_balance_wallet': False,
         'od_wallet_balance': Decimal('0'),
         'has_od_wallet': False,
         'has_od_wallet_access': False,
-        'executives': [],
+        'sales_representatives': [],
     }
     
-    # Get active executives for header
+    # Get sales representatives for header - show only assigned rep if user is logged in
     try:
-        executives = Executive.objects.filter(is_active=True).order_by('display_order', 'name')
-        context['executives'] = executives
+        if request.user.is_authenticated and request.user.sales_representative:
+            # Show only the assigned sales representative for this user
+            sales_reps = SalesRepresentative.objects.filter(
+                id=request.user.sales_representative.id,
+                is_active=True
+            )
+        else:
+            # For non-authenticated users or users without assigned rep, show all active
+            sales_reps = SalesRepresentative.objects.filter(is_active=True).order_by('display_order', 'name')
+        context['sales_representatives'] = sales_reps
     except Exception:
         pass
     

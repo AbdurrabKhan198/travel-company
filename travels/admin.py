@@ -2,29 +2,47 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from django.urls import reverse
+from django.urls import reverse, path
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect
 from django.contrib import messages
+from django.shortcuts import render
+from django.db.models import Sum, Count
 
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
-    Package, PackageImage, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah, PNRStock, Coupon
+    Package, Contact, ODWallet, ODWalletTransaction, 
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, Coupon
 )
+
+# Custom Admin Filter for Agency ID
+class AgencyIDFilter(admin.SimpleListFilter):
+    title = _('Agency ID')
+    parameter_name = 'agency_id'
+
+    def lookups(self, request, model_admin):
+        # Get all unique agency IDs from users who have cash balance wallets
+        agency_ids = User.objects.filter(
+            cash_balance_wallet__isnull=False
+        ).values_list('client_id', flat=True).distinct().order_by('client_id')
+        return [(agency_id, agency_id) for agency_id in agency_ids if agency_id]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(cash_balance_wallet__user__client_id=self.value())
 
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
-    verbose_name_plural = 'Profile'
+    verbose_name_plural = 'Agency Details'
     fk_name = 'user'
     extra = 0
     readonly_fields = ('created_at', 'updated_at')
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'client_id', 'first_name', 'last_name', 'user_type', 'is_approved', 'is_staff', 'is_active')
-    list_filter = ('user_type', 'is_approved', 'is_staff', 'is_active', 'date_joined')
+    list_display = ('email', 'agency_id_display', 'first_name', 'last_name', 'sales_rep_display', 'user_type', 'is_approved', 'is_staff', 'is_active')
+    list_filter = ('user_type', 'is_approved', 'sales_representative', 'is_staff', 'is_active', 'date_joined')
     search_fields = ('email', 'client_id', 'first_name', 'last_name')
     ordering = ('email',)
     readonly_fields = ('client_id',)
@@ -34,8 +52,8 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': ('email', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone', 'client_id')}),
         (_('Account Status'), {
-            'fields': ('is_approved', 'is_active', 'is_verified'),
-            'description': 'is_approved: User can login only if approved. Account will be reviewed within 24 hours.'
+            'fields': ('is_approved', 'is_active', 'is_verified', 'sales_representative'),
+            'description': 'is_approved: User can login only if approved. Assign a sales representative during approval.'
         }),
         (_('Permissions'), {
             'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions', 'user_type'),
@@ -44,6 +62,16 @@ class UserAdmin(BaseUserAdmin):
     )
     
     actions = ['approve_users', 'unapprove_users']
+    
+    def agency_id_display(self, obj):
+        return obj.client_id if obj.client_id else 'N/A'
+    agency_id_display.short_description = 'Agency ID'
+    
+    def sales_rep_display(self, obj):
+        if obj.sales_representative:
+            return obj.sales_representative.name
+        return '-'
+    sales_rep_display.short_description = 'Sales Rep'
     
     def approve_users(self, request, queryset):
         """Approve selected users and send approval emails"""
@@ -76,7 +104,7 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'full_name', 'title', 'gst_number', 'id_type', 'city', 'country', 'date_of_birth', 'has_pdfs')
-    search_fields = ('user__email', 'full_name', 'gst_number', 'id_number', 'city', 'country')
+    search_fields = ('user__email', 'user__client_id', 'full_name', 'gst_number', 'id_number', 'city', 'country')
     list_filter = ('gender', 'country', 'city', 'id_type', 'title')
     fieldsets = (
         ('Personal Information', {
@@ -129,7 +157,7 @@ class ScheduleInline(admin.TabularInline):
     model = Schedule
     extra = 1
     readonly_fields = ('created_at', 'updated_at')
-    fields = ('departure_date', 'arrival_date', 'total_seats', 'available_seats', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'is_active', 'notes')
+    fields = ('departure_date', 'arrival_date', 'pnr', 'total_seats', 'available_seats', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'is_active', 'notes')
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
@@ -168,15 +196,16 @@ class RouteAdmin(admin.ModelAdmin):
 
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('route', 'departure_date', 'arrival_date', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'available_seats', 'total_seats', 'is_active')
+    list_display = ('route', 'departure_date', 'arrival_date', 'pnr', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'available_seats', 'total_seats', 'is_active')
     list_filter = ('is_active', 'departure_date', 'route__transport_type')
-    search_fields = ('route__name', 'route__from_location', 'route__to_location', 'route__carrier_number')
+    search_fields = ('route__name', 'route__from_location', 'route__to_location', 'route__carrier_number', 'pnr')
     readonly_fields = ('created_at', 'updated_at')
     date_hierarchy = 'departure_date'
+    actions = ['sync_pnr_to_passengers']
     
     fieldsets = (
         ('Schedule Information', {
-            'fields': ('route', 'departure_date', 'arrival_date', 'is_active')
+            'fields': ('route', 'departure_date', 'arrival_date', 'pnr', 'is_active')
         }),
         ('Seating', {
             'fields': ('total_seats', 'available_seats')
@@ -194,6 +223,39 @@ class ScheduleAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def sync_pnr_to_passengers(self, request, queryset):
+        """Sync PNR from selected schedules to all their passengers"""
+        total_updated = 0
+        schedules_processed = 0
+        
+        for schedule in queryset:
+            if not schedule.pnr:
+                continue
+            
+            # Get all bookings for this schedule
+            bookings = Booking.objects.filter(schedule=schedule)
+            
+            for booking in bookings:
+                # Update PNR for all adult and child passengers
+                passengers = booking.passengers.filter(
+                    passenger_type__in=['adult', 'child']
+                )
+                
+                for passenger in passengers:
+                    if passenger.pnr != schedule.pnr:
+                        passenger.pnr = schedule.pnr
+                        passenger.save()
+                        total_updated += 1
+            
+            schedules_processed += 1
+        
+        self.message_user(
+            request,
+            f'Successfully synced PNR for {schedules_processed} schedules. Updated {total_updated} passengers.'
+        )
+    
+    sync_pnr_to_passengers.short_description = 'Sync PNR to all passengers of selected schedules'
 
 class BookingPassengerInline(admin.TabularInline):
     model = BookingPassenger
@@ -255,27 +317,12 @@ class BookingAdmin(admin.ModelAdmin):
         self.message_user(request, "Export functionality would be implemented here")
     export_bookings.short_description = "Export selected bookings"
 
-class PackageImageInline(admin.TabularInline):
-    model = PackageImage
-    extra = 1
-    readonly_fields = ('preview_image',)
-    
-    def preview_image(self, obj):
-        if obj.image:
-            return format_html(
-                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
-                obj.image.url
-            )
-        return "No image"
-    preview_image.short_description = 'Preview'
-
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
     list_display = ('title', 'destination', 'package_type', 'duration_display', 'base_price', 'discounted_price', 'is_featured', 'is_active')
     list_filter = ('package_type', 'is_featured', 'is_active')
     search_fields = ('title', 'destination', 'short_description')
     prepopulated_fields = {'slug': ('title', 'destination')}
-    inlines = [PackageImageInline]
     readonly_fields = ('created_at', 'updated_at', 'meta_preview')
     save_on_top = True
     
@@ -323,22 +370,6 @@ class PackageAdmin(admin.ModelAdmin):
         if not obj.meta_description:
             obj.meta_description = obj.short_description[:160]
         super().save_model(request, obj, form, change)
-
-@admin.register(PackageImage)
-class PackageImageAdmin(admin.ModelAdmin):
-    list_display = ('package', 'preview_image', 'is_primary', 'display_order')
-    list_editable = ('is_primary', 'display_order')
-    list_filter = ('is_primary', 'package__destination')
-    search_fields = ('package__title', 'package__destination')
-    
-    def preview_image(self, obj):
-        if obj.image:
-            return format_html(
-                '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
-                obj.image.url
-            )
-        return "No image"
-    preview_image.short_description = 'Preview'
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
@@ -486,29 +517,42 @@ class ODWalletTransactionAdmin(admin.ModelAdmin):
 class CashBalanceTransactionInline(admin.TabularInline):
     model = CashBalanceTransaction
     extra = 0
-    readonly_fields = ('transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at')
+    readonly_fields = ('transaction_type', 'amount_display', 'balance_after', 'description', 'reference_id', 'created_at')
+    fields = ('created_at', 'transaction_type', 'amount_display', 'balance_after', 'description', 'reference_id')
     can_delete = False
+    verbose_name = 'Balance History Detail'
+    verbose_name_plural = 'Complete Balance History Details'
+    
+    def amount_display(self, obj):
+        if obj.amount > 0:
+            return format_html('<span style="color: green; font-weight: bold;">+₹{}</span>', f'{float(obj.amount):.2f}')
+        else:
+            return format_html('<span style="color: red; font-weight: bold;">-₹{}</span>', f'{float(abs(obj.amount)):.2f}')
+    amount_display.short_description = 'Amount'
     
     def has_add_permission(self, request, obj):
         return False
 
 @admin.register(CashBalanceWallet)
 class CashBalanceWalletAdmin(admin.ModelAdmin):
-    list_display = ('user_email', 'balance', 'max_balance', 'created_at')
+    list_display = ('user_email', 'agency_id_display', 'balance_display', 'transaction_count', 'last_transaction', 'created_at')
     list_filter = ('created_at',)
-    search_fields = ('user__email', 'user__first_name', 'user__last_name')
-    readonly_fields = ('created_at', 'updated_at', 'user_email', 'transaction_count')
+    search_fields = ('user__email', 'user__client_id', 'user__first_name', 'user__last_name')
+    readonly_fields = ('created_at', 'updated_at', 'user_full_info', 'transaction_count', 'total_credits', 'total_debits', 'last_transaction_details')
     inlines = [CashBalanceTransactionInline]
     date_hierarchy = 'created_at'
     
     fieldsets = (
+        ('User Information', {
+            'fields': ('user_full_info',),
+            'description': 'Complete user details with balance information'
+        }),
         ('Cash Balance Wallet Information', {
-            'fields': ('user_email', 'balance', 'max_balance'),
+            'fields': ('balance', 'max_balance'),
             'description': 'Cash Balance Wallet - Users can recharge themselves. Direct access for everyone.'
         }),
-        ('Statistics', {
-            'fields': ('transaction_count',),
-            'classes': ('collapse',)
+        ('Transaction Statistics', {
+            'fields': ('transaction_count', 'total_credits', 'total_debits', 'last_transaction_details'),
         }),
         ('System Information', {
             'fields': ('created_at', 'updated_at'),
@@ -517,26 +561,207 @@ class CashBalanceWalletAdmin(admin.ModelAdmin):
     )
     
     def user_email(self, obj):
-        return obj.user.email if obj.user else 'N/A'
-    user_email.short_description = 'User'
+        if obj.user:
+            return format_html(
+                '<a href="/admin/travels/user/{}/change/">{}</a>',
+                obj.user.id, obj.user.email
+            )
+        return 'N/A'
+    user_email.short_description = 'User Email'
+    
+    def agency_id_display(self, obj):
+        return obj.user.client_id if obj.user else 'N/A'
+    agency_id_display.short_description = 'Agency ID'
+    
+    def balance_display(self, obj):
+        return format_html('<span style="font-weight: bold; color: #059669; font-size: 16px;">₹{}</span>', f'{float(obj.balance):.2f}')
+    balance_display.short_description = 'Current Balance'
+    
+    def user_full_info(self, obj):
+        if obj.user:
+            user = obj.user
+            profile = getattr(user, 'profile', None)
+            info = f"""
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <h3 style="margin-top: 0; color: #1e40af;">Complete User Information</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; width: 150px;">Email:</td>
+                        <td style="padding: 8px;">{user.email}</td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="padding: 8px; font-weight: bold;">Agency ID:</td>
+                        <td style="padding: 8px;">{user.client_id}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">Full Name:</td>
+                        <td style="padding: 8px;">{profile.full_name if profile else 'N/A'}</td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="padding: 8px; font-weight: bold;">Phone:</td>
+                        <td style="padding: 8px;">{user.phone if user.phone else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">Company:</td>
+                        <td style="padding: 8px;">{profile.company_name if profile and profile.company_name else 'N/A'}</td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="padding: 8px; font-weight: bold;">User Type:</td>
+                        <td style="padding: 8px;">{user.get_user_type_display()}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">Status:</td>
+                        <td style="padding: 8px;">
+                            <span style="background: {'#10b981' if user.is_approved else '#ef4444'}; color: white; padding: 3px 10px; border-radius: 4px;">
+                                {'Approved' if user.is_approved else 'Pending'}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="padding: 8px; font-weight: bold;">Current Balance:</td>
+                        <td style="padding: 8px;">
+                            <span style="font-size: 18px; font-weight: bold; color: #059669;">₹{obj.balance:.2f}</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            """
+            return format_html(info)
+        return 'N/A'
+    user_full_info.short_description = 'User Details'
     
     def transaction_count(self, obj):
-        return obj.transactions.count()
+        count = obj.transactions.count()
+        return format_html('<span style="font-weight: bold; color: #3b82f6;">{}</span>', count)
     transaction_count.short_description = 'Total Transactions'
+    
+    def total_credits(self, obj):
+        from django.db.models import Sum
+        total = obj.transactions.filter(amount__gt=0).aggregate(Sum('amount'))['amount__sum'] or 0
+        return format_html('<span style="color: green; font-weight: bold;">+₹{}</span>', f'{float(total):.2f}')
+    total_credits.short_description = 'Total Credits'
+    
+    def total_debits(self, obj):
+        from django.db.models import Sum
+        total = obj.transactions.filter(amount__lt=0).aggregate(Sum('amount'))['amount__sum'] or 0
+        return format_html('<span style="color: red; font-weight: bold;">-₹{}</span>', f'{float(abs(total)):.2f}')
+    total_debits.short_description = 'Total Debits'
+    
+    def last_transaction(self, obj):
+        last = obj.transactions.first()
+        if last:
+            return last.created_at.strftime('%Y-%m-%d %H:%M')
+        return 'No transactions'
+    last_transaction.short_description = 'Last Transaction'
+    
+    def last_transaction_details(self, obj):
+        last = obj.transactions.first()
+        if last:
+            amount_color = 'green' if last.amount > 0 else 'red'
+            amount_sign = '+' if last.amount > 0 else ''
+            details = f"""
+            <div style="background: #fef3c7; padding: 15px; border-radius: 5px; border-left: 4px solid #f59e0b;">
+                <h4 style="margin-top: 0;">Last Transaction</h4>
+                <p><strong>Type:</strong> {last.get_transaction_type_display()}</p>
+                <p><strong>Amount:</strong> <span style="color: {amount_color}; font-weight: bold; font-size: 16px;">{amount_sign}₹{abs(last.amount):.2f}</span></p>
+                <p><strong>Balance After:</strong> ₹{last.balance_after:.2f}</p>
+                <p><strong>Date:</strong> {last.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <p><strong>Description:</strong> {last.description if last.description else 'N/A'}</p>
+                <p><strong>Reference:</strong> {last.reference_id if last.reference_id else 'N/A'}</p>
+            </div>
+            """
+            return format_html(details)
+        return 'No transactions yet'
+    last_transaction_details.short_description = 'Last Transaction Details'
 
 @admin.register(CashBalanceTransaction)
 class CashBalanceTransactionAdmin(admin.ModelAdmin):
-    list_display = ('wallet_user', 'transaction_type', 'amount_display', 'balance_after', 'reference_id', 'created_at')
-    list_filter = ('transaction_type', 'created_at')
-    search_fields = ('cash_balance_wallet__user__email', 'description', 'reference_id')
-    readonly_fields = ('cash_balance_wallet', 'transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at', 'updated_at', 'is_credit_display')
+    list_display = ('wallet_user', 'agency_id_clickable', 'transaction_type', 'amount_display', 'balance_after', 'description_short', 'reference_id', 'created_at')
+    list_filter = (AgencyIDFilter, 'transaction_type', 'created_at')
+    search_fields = ('cash_balance_wallet__user__email', 'cash_balance_wallet__user__client_id', 'cash_balance_wallet__user__first_name', 'cash_balance_wallet__user__last_name', 'description', 'reference_id')
+    readonly_fields = ('cash_balance_wallet', 'transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at', 'updated_at', 'is_credit_display', 'user_full_details')
     date_hierarchy = 'created_at'
+    list_per_page = 50
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('agency-details/<str:agency_id>/', 
+                 self.admin_site.admin_view(self.agency_details_view),
+                 name='agency_balance_details'),
+        ]
+        return custom_urls + urls
+    
+    def agency_details_view(self, request, agency_id):
+        """Custom view to show complete agency balance details"""
+        try:
+            # Get user with this agency ID
+            user = User.objects.get(client_id=agency_id)
+            profile = getattr(user, 'profile', None)
+            
+            # Get cash balance wallet
+            try:
+                wallet = user.cash_balance_wallet
+            except:
+                wallet = None
+            
+            # Get all transactions for this agency
+            if wallet:
+                transactions = CashBalanceTransaction.objects.filter(
+                    cash_balance_wallet=wallet
+                ).order_by('-created_at')
+                
+                # Calculate statistics
+                total_credits = transactions.filter(amount__gt=0).aggregate(Sum('amount'))['amount__sum'] or 0
+                total_debits = abs(transactions.filter(amount__lt=0).aggregate(Sum('amount'))['amount__sum'] or 0)
+                total_transactions = transactions.count()
+                recharge_count = transactions.filter(transaction_type='recharge').count()
+                payment_count = transactions.filter(transaction_type='payment').count()
+                refund_count = transactions.filter(transaction_type='refund').count()
+            else:
+                transactions = []
+                total_credits = 0
+                total_debits = 0
+                total_transactions = 0
+                recharge_count = 0
+                payment_count = 0
+                refund_count = 0
+            
+            # Get bookings for this user
+            bookings = Booking.objects.filter(user=user).order_by('-created_at')[:10]
+            
+            context = {
+                'title': f'Agency Balance Details - {agency_id}',
+                'agency_id': agency_id,
+                'user': user,
+                'profile': profile,
+                'wallet': wallet,
+                'transactions': transactions,
+                'total_credits': total_credits,
+                'total_debits': total_debits,
+                'total_transactions': total_transactions,
+                'recharge_count': recharge_count,
+                'payment_count': payment_count,
+                'refund_count': refund_count,
+                'recent_bookings': bookings,
+                'opts': self.model._meta,
+                'has_view_permission': self.has_view_permission(request),
+            }
+            
+            return render(request, 'admin/agency_balance_details.html', context)
+            
+        except User.DoesNotExist:
+            messages.error(request, f'Agency with ID {agency_id} not found.')
+            return HttpResponseRedirect(reverse('admin:travels_cashbalancetransaction_changelist'))
     
     fieldsets = (
-        ('Transaction Information', {
-            'fields': ('cash_balance_wallet', 'transaction_type', 'amount', 'balance_after', 'is_credit_display')
+        ('User Information', {
+            'fields': ('user_full_details', 'cash_balance_wallet')
         }),
-        ('Details', {
+        ('Transaction Information', {
+            'fields': ('transaction_type', 'amount', 'balance_after', 'is_credit_display')
+        }),
+        ('Transaction Details', {
             'fields': ('description', 'reference_id')
         }),
         ('System Information', {
@@ -546,18 +771,66 @@ class CashBalanceTransactionAdmin(admin.ModelAdmin):
     )
     
     def wallet_user(self, obj):
-        return obj.cash_balance_wallet.user.email if obj.cash_balance_wallet and obj.cash_balance_wallet.user else 'N/A'
-    wallet_user.short_description = 'User'
+        if obj.cash_balance_wallet and obj.cash_balance_wallet.user:
+            user = obj.cash_balance_wallet.user
+            return format_html(
+                '<a href="/admin/travels/user/{}/change/">{}</a>',
+                user.id, user.email
+            )
+        return 'N/A'
+    wallet_user.short_description = 'User Email'
+    
+    def agency_id_clickable(self, obj):
+        if obj.cash_balance_wallet and obj.cash_balance_wallet.user:
+            agency_id = obj.cash_balance_wallet.user.client_id
+            if agency_id:
+                # Create a clickable link to agency details page
+                url = reverse('admin:agency_balance_details', args=[agency_id])
+                return format_html(
+                    '<a href="{}" style="font-weight: bold; color: #2563eb; text-decoration: none; padding: 4px 8px; background: #dbeafe; border-radius: 4px; display: inline-block;" target="_blank">📊 {}</a>',
+                    url, agency_id
+                )
+            return 'N/A'
+        return 'N/A'
+    agency_id_clickable.short_description = 'Agency ID'
+    
+    def user_full_details(self, obj):
+        if obj.cash_balance_wallet and obj.cash_balance_wallet.user:
+            user = obj.cash_balance_wallet.user
+            profile = getattr(user, 'profile', None)
+            details = f"""
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                <h3 style="margin-top: 0;">User Details</h3>
+                <p><strong>Email:</strong> {user.email}</p>
+                <p><strong>Agency ID:</strong> {user.client_id}</p>
+                <p><strong>Name:</strong> {profile.full_name if profile else 'N/A'}</p>
+                <p><strong>Phone:</strong> {user.phone if user.phone else 'N/A'}</p>
+                <p><strong>Current Balance:</strong> ₹{obj.cash_balance_wallet.balance}</p>
+                <p><strong>User Type:</strong> {user.get_user_type_display()}</p>
+                <p><strong>Approved:</strong> {'Yes' if user.is_approved else 'No'}</p>
+            </div>
+            """
+            return format_html(details)
+        return 'N/A'
+    user_full_details.short_description = 'Complete User Information'
+    
+    def description_short(self, obj):
+        if obj.description:
+            return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
+        return '-'
+    description_short.short_description = 'Description'
     
     def amount_display(self, obj):
         if obj.amount > 0:
-            return format_html('<span style="color: green;">+₹{}</span>', obj.amount)
+            return format_html('<span style="color: green; font-weight: bold; font-size: 14px;">+₹{}</span>', f'{float(obj.amount):.2f}')
         else:
-            return format_html('<span style="color: red;">-₹{}</span>', abs(obj.amount))
+            return format_html('<span style="color: red; font-weight: bold; font-size: 14px;">-₹{}</span>', f'{float(abs(obj.amount)):.2f}')
     amount_display.short_description = 'Amount'
     
     def is_credit_display(self, obj):
-        return "Credit" if obj.is_credit else "Debit"
+        if obj.is_credit:
+            return format_html('<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 3px;">Credit</span>')
+        return format_html('<span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 3px;">Debit</span>')
     is_credit_display.short_description = 'Type'
 
 @admin.register(GroupRequest)
@@ -654,20 +927,20 @@ class PackageApplicationAdmin(admin.ModelAdmin):
         self.message_user(request, f'{queryset.count()} application(s) marked as cancelled.')
     mark_as_cancelled.short_description = 'Mark selected as cancelled'
 
-@admin.register(Executive)
-class ExecutiveAdmin(admin.ModelAdmin):
-    """Admin interface for Executives"""
-    list_display = ('name', 'phone', 'city', 'is_active', 'display_order', 'created_at')
-    list_filter = ('is_active', 'city', 'created_at')
-    search_fields = ('name', 'phone', 'city')
+@admin.register(SalesRepresentative)
+class SalesRepresentativeAdmin(admin.ModelAdmin):
+    """Admin interface for Sales Representatives"""
+    list_display = ('name', 'phone', 'is_active', 'display_order', 'assigned_users_count', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'phone')
     list_editable = ('is_active', 'display_order', 'phone')
     fieldsets = (
-        ('Executive Information', {
-            'fields': ('name', 'phone', 'city')
+        ('Sales Representative Information', {
+            'fields': ('name', 'phone')
         }),
         ('Display Settings', {
             'fields': ('is_active', 'display_order'),
-            'description': 'Active executives will be shown in the header. Display order determines the sequence.'
+            'description': 'Active sales representatives will be shown to their assigned users. Display order determines the sequence.'
         }),
         ('System Information', {
             'fields': ('created_at', 'updated_at'),
@@ -677,17 +950,21 @@ class ExecutiveAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('display_order', 'name')
     
-    actions = ['activate_executives', 'deactivate_executives']
+    actions = ['activate_sales_reps', 'deactivate_sales_reps']
     
-    def activate_executives(self, request, queryset):
+    def assigned_users_count(self, obj):
+        return obj.assigned_users.count()
+    assigned_users_count.short_description = 'Assigned Users'
+    
+    def activate_sales_reps(self, request, queryset):
         queryset.update(is_active=True)
-        self.message_user(request, f'{queryset.count()} executive(s) activated.')
-    activate_executives.short_description = 'Activate selected executives'
+        self.message_user(request, f'{queryset.count()} sales representative(s) activated.')
+    activate_sales_reps.short_description = 'Activate selected sales representatives'
     
-    def deactivate_executives(self, request, queryset):
+    def deactivate_sales_reps(self, request, queryset):
         queryset.update(is_active=False)
-        self.message_user(request, f'{queryset.count()} executive(s) deactivated.')
-    deactivate_executives.short_description = 'Deactivate selected executives'
+        self.message_user(request, f'{queryset.count()} sales representative(s) deactivated.')
+    deactivate_sales_reps.short_description = 'Deactivate selected sales representatives'
 
 @admin.register(Umrah)
 class UmrahAdmin(admin.ModelAdmin):
@@ -736,51 +1013,6 @@ class UmrahAdmin(admin.ModelAdmin):
         queryset.update(status=Umrah.StatusChoices.CANCELLED)
         self.message_user(request, f'{queryset.count()} application(s) marked as cancelled.')
     mark_as_cancelled.short_description = 'Mark selected as cancelled'
-
-@admin.register(PNRStock)
-class PNRStockAdmin(admin.ModelAdmin):
-    """Admin interface for PNR Stock Management - Route-specific PNRs"""
-    list_display = ('pnr', 'route_info', 'is_assigned', 'assigned_to_passenger', 'assigned_at', 'created_at')
-    list_filter = ('is_assigned', 'route', 'created_at', 'assigned_at')
-    search_fields = ('pnr', 'route__from_location', 'route__to_location', 'route__carrier_number', 
-                     'assigned_to__first_name', 'assigned_to__last_name', 'assigned_to__booking__booking_reference')
-    readonly_fields = ('assigned_to', 'assigned_at', 'created_at', 'updated_at')
-    fieldsets = (
-        ('PNR Information', {
-            'fields': ('pnr', 'route', 'is_assigned'),
-            'description': 'PNR is route-specific. Each route has its own pool of PNRs.'
-        }),
-        ('Assignment Information', {
-            'fields': ('assigned_to', 'assigned_at'),
-            'description': 'Shows which passenger this PNR is assigned to (if assigned)'
-        }),
-        ('System Information', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    ordering = ('route', '-created_at')
-    date_hierarchy = 'created_at'
-    
-    def route_info(self, obj):
-        if obj.route:
-            return f"{obj.route.from_location} → {obj.route.to_location} ({obj.route.carrier_number})"
-        return "No Route"
-    route_info.short_description = 'Route'
-    
-    def assigned_to_passenger(self, obj):
-        if obj.assigned_to:
-            booking_ref = obj.assigned_to.booking.booking_reference if obj.assigned_to.booking else 'N/A'
-            return f"{obj.assigned_to.full_name} (Booking: {booking_ref})"
-        return "Not assigned"
-    assigned_to_passenger.short_description = 'Assigned To'
-    
-    actions = ['bulk_add_pnrs']
-    
-    def bulk_add_pnrs(self, request, queryset):
-        """Bulk add PNRs - This is a placeholder action"""
-        self.message_user(request, "To add PNRs in bulk, use the management command: python manage.py add_pnr_stock --route <route_id> --generate <count>")
-    bulk_add_pnrs.short_description = "Bulk add PNRs (use management command)"
 
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):

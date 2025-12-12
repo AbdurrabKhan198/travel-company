@@ -179,8 +179,8 @@
 
                 <!-- Right Side Menu - Goibibo Style -->
                 <div class="flex items-center space-x-4">
-                    <!-- Our Executive -->
-                    {% if executives %}
+                    <!-- Sales Representative -->
+                    {% if sales_representatives %}
                     <div class="relative group hidden md:block">
                         <button class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 flex items-center space-x-2">
                             <i class="fas fa-headset mr-2 text-sky-500"></i>
@@ -190,18 +190,15 @@
                         <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50">
                             <div class="py-3">
                                 <div class="px-4 py-2 border-b border-gray-200">
-                                    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Sales Representatives</h3>
+                                    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Your Sales Representative</h3>
                                 </div>
-                                {% for executive in executives %}
+                                {% for sales_rep in sales_representatives %}
                                 <div class="px-4 py-3 hover:bg-sky-50 transition-colors">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
-                                            <p class="font-semibold text-gray-900">{{ executive.name }}</p>
-                                            <p class="text-sm text-gray-600 mt-1">
-                                                <i class="fas fa-map-marker-alt mr-1 text-sky-500"></i>{{ executive.city }}
-                                            </p>
-                                            <a href="tel:{{ executive.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
-                                                <i class="fas fa-phone mr-2"></i>{{ executive.phone }}
+                                            <p class="font-semibold text-gray-900">{{ sales_rep.name }}</p>
+                                            <a href="tel:{{ sales_rep.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                                <i class="fas fa-phone mr-2"></i>{{ sales_rep.phone }}
                                             </a>
                                         </div>
                                     </div>
@@ -320,18 +317,15 @@
                     <i class="fas fa-kaaba text-lg"></i>
                     <span>Umrah</span>
                 </a>
-                {% if executives %}
+                {% if sales_representatives %}
                 <div class="border-t border-gray-200 pt-2 mt-2">
                     <div class="px-4 py-2">
-                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Our Executives</h3>
-                        {% for executive in executives %}
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Your Sales Representative</h3>
+                        {% for sales_rep in sales_representatives %}
                         <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
-                            <p class="font-semibold text-gray-900">{{ executive.name }}</p>
-                            <p class="text-sm text-gray-600 mt-1">
-                                <i class="fas fa-map-marker-alt mr-1 text-sky-500"></i>{{ executive.city }}
-                            </p>
-                            <a href="tel:{{ executive.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
-                                <i class="fas fa-phone mr-2"></i>{{ executive.phone }}
+                            <p class="font-semibold text-gray-900">{{ sales_rep.name }}</p>
+                            <a href="tel:{{ sales_rep.phone }}" class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                <i class="fas fa-phone mr-2"></i>{{ sales_rep.phone }}
                             </a>
                         </div>
                         {% endfor %}
