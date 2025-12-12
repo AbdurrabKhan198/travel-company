@@ -466,7 +466,6 @@ class Route(TimestampedModel):
         if not self.airline_name:
             return None
         
-        from django.conf import settings
         from django.templatetags.static import static
         
         # Airline logo mapping - using static files from static/images/flight-logo/
@@ -474,6 +473,7 @@ class Route(TimestampedModel):
         airline_logos = {
             'indigo': 'images/flight-logo/indigo.png',
             'indigo airlines': 'images/flight-logo/indigo.png',
+            'indigo airline': 'images/flight-logo/indigo.png',
             'air arabia': 'images/flight-logo/air-arabia.png',
             'airarabia': 'images/flight-logo/air-arabia.png',
             'air india': 'images/flight-logo/air india.png',
@@ -482,23 +482,33 @@ class Route(TimestampedModel):
             'flynas': 'images/flight-logo/flynas.png',
             'jazeera': 'images/flight-logo/jazeera.png',
             'jazeera airways': 'images/flight-logo/jazeera.png',
+            'jazeera airway': 'images/flight-logo/jazeera.png',
             'saudi airlines': 'images/flight-logo/saudi-airline.png',
             'saudi arabian airlines': 'images/flight-logo/saudi-airline.png',
             'saudi arabia': 'images/flight-logo/saudi-airline.png',
+            'saudi arabian': 'images/flight-logo/saudi-airline.png',
             'fly dubai': 'images/flight-logo/fly-dubai.png',
             'flydubai': 'images/flight-logo/fly-dubai.png',
             'fly dubai airlines': 'images/flight-logo/fly-dubai.png',
+            'emirates': 'images/flight-logo/fly-dubai.png',  # Using fly-dubai as placeholder
+            'emirates airlines': 'images/flight-logo/fly-dubai.png',
         }
         
-        # Normalize airline name (lowercase, strip spaces, replace special chars)
+        # Normalize airline name (lowercase, strip spaces)
         airline_key = self.airline_name.lower().strip()
         # Remove extra spaces
         airline_key = ' '.join(airline_key.split())
         
-        # Return static logo URL if found, otherwise None
+        # Try exact match first
         logo_path = airline_logos.get(airline_key)
         if logo_path:
             return static(logo_path)
+        
+        # Try partial match (contains check)
+        for key, path in airline_logos.items():
+            if key in airline_key or airline_key in key:
+                return static(path)
+        
         return None
     
     def calculate_arrival_date(self, departure_date):

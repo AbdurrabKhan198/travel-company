@@ -480,6 +480,115 @@
         </div>
     </div>
 
+    <!-- Mobile/Tablet Login Card (Hidden on Desktop) - Moved to Top -->
+    <div class="lg:hidden bg-white py-6 px-4">
+        <div class="max-w-md mx-auto">
+            <div class="login-card rounded-2xl p-6 shadow-lg">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 text-center">
+                    <i class="fas fa-sign-in-alt mr-2 text-blue-600"></i>Login to Your Account
+                </h3>
+                
+                <!-- Display Messages -->
+                {% if messages %}
+                    <div class="mb-4 space-y-2">
+                        {% for message in messages %}
+                            <div class="p-2 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %} text-xs">
+                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Display Form Errors -->
+                {% if form.errors %}
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <strong>Please correct the following errors:</strong>
+                        <ul class="mt-1 list-disc list-inside">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'login' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.GET.next }}">
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label for="id_username_mobile" class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-envelope mr-1 text-blue-600"></i>Email Address
+                        </label>
+                        <input type="email" 
+                               id="id_username_mobile" 
+                               name="username" 
+                               value="{{ form.username.value|default:'' }}"
+                               required
+                               autofocus
+                               placeholder="your@email.com"
+                               class="w-full px-3 py-2 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400 text-sm">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="id_password_mobile" class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-lock mr-1 text-blue-600"></i>Password
+                        </label>
+                        <div class="relative">
+                            <input type="password" 
+                                   id="id_password_mobile" 
+                                   name="password" 
+                                   required
+                                   placeholder="Enter your password"
+                                   class="w-full px-3 py-2 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400 text-sm">
+                            <button type="button" 
+                                    onclick="togglePassword('id_password_mobile', 'password-toggle-mobile')"
+                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye text-sm" id="password-toggle-mobile"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" 
+                                   id="id_remember_me_mobile"
+                                   name="remember_me"
+                                   value="1"
+                                   class="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-700 text-xs">Remember me</span>
+                        </label>
+                        <a href="{% url 'password_reset' %}" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors">
+                            Forgot Password?
+                        </a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            class="w-full py-2.5 rounded-lg btn-login text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                </form>
+
+                <!-- Sign Up Link -->
+                <div class="mt-4 text-center">
+                    <p class="text-gray-600 text-xs">
+                        Don't have an account? 
+                        <a href="{% url 'signup' %}" class="text-blue-600 hover:text-blue-800 font-semibold transition-colors">
+                            Register Now
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hero Banner Section -->
     <div class="hero-banner relative py-20 md:py-28 text-white">
         <div class="floating-shape w-64 h-64 top-10 left-10"></div>
@@ -544,113 +653,6 @@
 
     <!-- Main Content Area -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Mobile/Tablet Login Card (Hidden on Desktop) -->
-        <div class="lg:hidden mb-8 fade-in">
-            <div class="login-card rounded-2xl p-8 max-w-md mx-auto">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">
-                    <i class="fas fa-sign-in-alt mr-2 text-blue-600"></i>Login to Your Account
-                </h3>
-                
-                <!-- Display Messages -->
-                {% if messages %}
-                    <div class="mb-6 space-y-2">
-                        {% for message in messages %}
-                            <div class="p-3 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %} text-sm">
-                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                
-                <!-- Display Form Errors -->
-                {% if form.errors %}
-                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                        <i class="fas fa-exclamation-circle mr-2"></i>
-                        <strong>Please correct the following errors:</strong>
-                        <ul class="mt-2 list-disc list-inside">
-                            {% for field, errors in form.errors.items %}
-                                {% for error in errors %}
-                                    <li>{{ field|title }}: {{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-                
-                <form method="post" action="{% url 'login' %}" class="space-y-5">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.GET.next }}">
-                    
-                    <!-- Email Field -->
-                    <div>
-                        <label for="id_username_mobile" class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-envelope mr-2 text-blue-600"></i>Email Address
-                        </label>
-                        <input type="email" 
-                               id="id_username_mobile" 
-                               name="username" 
-                               value="{{ form.username.value|default:'' }}"
-                               required
-                               autofocus
-                               placeholder="your@email.com"
-                               class="w-full px-4 py-3 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400">
-                    </div>
-
-                    <!-- Password Field -->
-                    <div>
-                        <label for="id_password_mobile" class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-lock mr-2 text-blue-600"></i>Password
-                        </label>
-                        <div class="relative">
-                            <input type="password" 
-                                   id="id_password_mobile" 
-                                   name="password" 
-                                   required
-                                   placeholder="Enter your password"
-                                   class="w-full px-4 py-3 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400">
-                            <button type="button" 
-                                    onclick="togglePassword('id_password_mobile', 'password-toggle-mobile')"
-                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <i class="fas fa-eye" id="password-toggle-mobile"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Remember Me & Forgot Password -->
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" 
-                                   id="id_remember_me_mobile"
-                                   name="remember_me"
-                                   value="1"
-                                   class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500">
-                            <span class="text-gray-700 text-sm">Remember me</span>
-                        </label>
-                        <a href="{% url 'password_reset' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-                            Forgot Password?
-                        </a>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" 
-                            class="w-full py-3.5 rounded-lg btn-login text-white font-bold text-base shadow-lg hover:shadow-xl transition-all">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </button>
-                </form>
-
-                <!-- Sign Up Link -->
-                <div class="mt-6 text-center">
-                    <p class="text-gray-600 text-sm">
-                        Don't have an account?
-                        <a href="{% url 'signup' %}" class="text-blue-600 font-semibold hover:underline ml-1">
-                            Sign Up Now
-                        </a>
-                    </p>
-                </div>
-            </div>
-        </div>
-
         <!-- Support Banner -->
         <div class="support-banner rounded-2xl p-6 md:p-8 text-white shadow-xl mb-12 fade-in" style="animation-delay: 0.2s;">
             <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
@@ -683,67 +685,6 @@
                         <p class="text-yellow-100">Mon-Sat: 10:00 AM - 9:00 PM</p>
                         <p class="text-yellow-100 text-xs">Sunday: 24/7 Support</p>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Services Section -->
-        <div class="mb-12 fade-in" style="animation-delay: 0.3s;">
-            <div class="text-center mb-10">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Services</h2>
-                <p class="text-gray-600 text-lg max-w-2xl mx-auto">Comprehensive travel solutions for agents, suppliers, and travelers</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
-                        <i class="fas fa-train text-white text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">IRCTC Integration</h3>
-                    <p class="text-gray-600 text-sm text-center mb-4">Become an authorized travel agent and book train tickets seamlessly through our integrated IRCTC platform.</p>
-                    <ul class="text-xs text-gray-500 space-y-2">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Instant booking</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Real-time availability</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Easy cancellation</li>
-                    </ul>
-                </div>
-                
-                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
-                    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
-                        <i class="fas fa-users text-white text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Supplier Network</h3>
-                    <p class="text-gray-600 text-sm text-center mb-4">Sell your inventory through us and reach thousands of travel agents across India. Expand your business reach.</p>
-                    <ul class="text-xs text-gray-500 space-y-2">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Wide distribution</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Real-time updates</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Secure payments</li>
-                    </ul>
-                </div>
-                
-                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
-                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
-                        <i class="fas fa-box text-white text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Cargo Services</h3>
-                    <p class="text-gray-600 text-sm text-center mb-4">Logistics one-stop solution for all your cargo and shipping needs. Fast, reliable, and cost-effective.</p>
-                    <ul class="text-xs text-gray-500 space-y-2">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Door-to-door service</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Tracking system</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Insurance available</li>
-                    </ul>
-                </div>
-                
-                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
-                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
-                        <i class="fas fa-graduation-cap text-white text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Travel Academy</h3>
-                    <p class="text-gray-600 text-sm text-center mb-4">Learn anytime, anywhere with our comprehensive travel training programs. Enhance your skills and knowledge.</p>
-                    <ul class="text-xs text-gray-500 space-y-2">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Online courses</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Certification programs</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Expert trainers</li>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -864,80 +805,6 @@
             </div>
         </div>
 
-        <!-- Testimonials Section -->
-        <div class="mb-12 fade-in" style="animation-delay: 0.6s;">
-            <div class="text-center mb-10">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">What Our Partners Say</h2>
-                <p class="text-gray-600 text-lg">Trusted by thousands of travel professionals</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 mb-4 italic">"Safar Zone has transformed our travel business. The platform is intuitive, booking is seamless, and customer support is exceptional."</p>
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-user text-blue-600"></i>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">Rajesh Kumar</p>
-                            <p class="text-sm text-gray-500">Travel Agent, Delhi</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 mb-4 italic">"Best prices, fastest booking, and excellent commission structure. This platform has everything a travel agent needs to succeed."</p>
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-user text-green-600"></i>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">Priya Sharma</p>
-                            <p class="text-sm text-gray-500">Travel Agent, Mumbai</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 mb-4 italic">"The IRCTC integration is a game-changer. We can now book train tickets instantly for our customers. Highly recommended!"</p>
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-user text-purple-600"></i>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">Amit Patel</p>
-                            <p class="text-sm text-gray-500">Travel Agent, Ahmedabad</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Footer -->
@@ -946,7 +813,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <h3 class="text-xl font-bold mb-4">
-                        <span class="text-yellow-400">Safar Zone</span> Travels
+                        <span class="text-yellow-400">Safar Zone Travels</span>
                     </h3>
                     <p class="text-gray-400 text-sm mb-4">India's leading travel distribution platform connecting agents, suppliers, and travelers.</p>
                     <div class="flex space-x-4">
@@ -967,9 +834,10 @@
                 <div>
                     <h4 class="font-semibold mb-4">Quick Links</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Our Services</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="{% url 'about' %}" class="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="{% url 'contact' %}" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="{% url 'privacy_policy' %}" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="{% url 'terms_conditions' %}" class="hover:text-white transition-colors">Terms & Conditions</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">FAQs</a></li>
                     </ul>
                 </div>
@@ -978,7 +846,6 @@
                     <ul class="space-y-2 text-sm text-gray-400">
                         <li><a href="#" class="hover:text-white transition-colors">Flight Booking</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">Hotel Booking</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Train Tickets</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">Travel Packages</a></li>
                     </ul>
                 </div>

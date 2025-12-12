@@ -1,0 +1,42 @@
+#!/bin/bash
+# Script to upload flight logos to server
+
+echo "=========================================="
+echo "Uploading Flight Logos to Server"
+echo "=========================================="
+
+# Server details (update these)
+SERVER_USER="safar"
+SERVER_HOST="your-server-ip-or-domain"
+SERVER_PATH="/var/www/safarzonetravels/static/images"
+
+echo ""
+echo "Method 1: Using SCP (from local machine)"
+echo "----------------------------------------"
+echo "Run this command from your local machine:"
+echo ""
+echo "scp -r static/images/flight-logo $SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+echo ""
+echo "=========================================="
+echo ""
+echo "Method 2: Manual Upload (on server)"
+echo "----------------------------------------"
+echo "1. Create flight-logo directory on server:"
+echo "   mkdir -p /var/www/safarzonetravels/static/images/flight-logo"
+echo ""
+echo "2. Upload each logo file using SCP or SFTP:"
+echo "   scp static/images/flight-logo/indigo.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/air-arabia.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/air\\ india.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/fly-dubai.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/flynas.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/jazeera.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo "   scp static/images/flight-logo/saudi-airline.png $SERVER_USER@$SERVER_HOST:$SERVER_PATH/flight-logo/"
+echo ""
+echo "3. After uploading, run collectstatic:"
+echo "   cd /var/www/safarzonetravels"
+echo "   source venv/bin/activate"
+echo "   python manage.py collectstatic --noinput"
+echo ""
+echo "=========================================="
+
