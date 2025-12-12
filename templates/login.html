@@ -1,199 +1,1017 @@
-{% extends "base.html" %}
 {% load static %}
-{% block content %}
-
-<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 relative overflow-hidden">
-    <!-- Animated Background -->
-    <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float"></div>
-        <div class="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-float" style="animation-delay: 4s;"></div>
-    </div>
-
-    <div class="max-w-md w-full space-y-8 relative z-10 animate-fade-in-up">
-        <!-- Logo & Header -->
-        <div class="text-center">
-            <div class="mb-6 flex justify-center">
-                <div class="bg-white rounded-2xl p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
-                    <img src="{% static 'images/logo.png' %}" alt="Safar Zone Travels" class="h-20 md:h-24 w-auto object-contain max-w-[200px] md:max-w-[240px]">
-                </div>
-            </div>
-            <p class="text-white/90 text-lg mb-1">Login to continue your journey with</p>
-            <p class="text-white font-semibold text-xl mb-4">Safar Zone Travels</p>
-            <p class="text-white/80 text-sm max-w-xs mx-auto leading-relaxed">
-                Your trusted travel partner for unforgettable journeys. We make travel planning easy, enjoyable, and memorable.
-            </p>
-        </div>
-
-        <!-- Login Card -->
-        <div class="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-            <!-- Display Messages -->
-            {% if messages %}
-                <div class="mb-6 space-y-2">
-                    {% for message in messages %}
-                        <div class="p-3 rounded-xl {% if message.tags == 'error' %}bg-red-500/90{% elif message.tags == 'success' %}bg-green-500/90{% else %}bg-blue-500/90{% endif %} text-white text-sm">
-                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            
-            <!-- Display Form Errors -->
-            {% if form.errors %}
-                <div class="mb-6 p-4 bg-red-500/90 rounded-xl text-white text-sm">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <strong>Please correct the following errors:</strong>
-                    <ul class="mt-2 list-disc list-inside">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <li>{{ field|title }}: {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-            
-            <form method="post" action="{% url 'login' %}" class="space-y-6">
-                {% csrf_token %}
-                
-                <!-- Email Field -->
-                <div>
-                    <label for="id_username" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-envelope mr-2"></i>Email Address
-                    </label>
-                    <input type="email" 
-                           id="id_username" 
-                           name="username" 
-                           value="{{ form.username.value|default:'' }}"
-                           required
-                           autofocus
-                           class="w-full px-4 py-3 rounded-xl bg-white/90 backdrop-blur-md border-2 {% if form.username.errors %}border-red-500{% else %}border-white/30{% endif %} focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-gray-800 placeholder-gray-500"
-                           placeholder="your@email.com">
-                    {% if form.username.errors %}
-                        <div class="mt-1 text-red-300 text-xs">
-                            {% for error in form.username.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Password Field -->
-                <div>
-                    <label for="id_password" class="block text-sm font-semibold text-white mb-2">
-                        <i class="fas fa-lock mr-2"></i>Password
-                    </label>
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Safar Zone Travels</title>
+    
+    <!-- Tailwind CSS -->
+    <link href="{% static 'css/output.css' %}" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .hero-banner {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #2563eb 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            opacity: 0.5;
+        }
+        
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .login-card:hover {
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .input-field {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(251, 191, 36, 0.4);
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-register:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        .support-banner {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        }
+        
+        .service-card {
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+            transform: translateY(-4px);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.3);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .platinum-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .platinum-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        
+        .nav-input {
+            background: linear-gradient(to bottom, #ffffff, #fafbfc);
+            border: 1.5px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-input:hover {
+            border-color: #cbd5e1;
+            background: linear-gradient(to bottom, #ffffff, #f8fafc);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+        
+        .nav-input:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+            outline: none;
+            transform: translateY(-2px);
+        }
+        
+        .nav-input::placeholder {
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+        }
+        
+        .nav-input-group {
+            position: relative;
+        }
+        
+        .nav-input-icon {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+        
+        .nav-input-group:focus-within .nav-input-icon {
+            color: #3b82f6;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .nav-input-group::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .nav-input-group:focus-within::before {
+            transform: scaleX(1);
+        }
+        
+        .nav-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .nav-input-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 12px;
+            padding: 2px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .nav-input-group:focus-within .nav-input-wrapper::after {
+            opacity: 1;
+        }
+        
+        .nav-btn-login {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            box-shadow: 0 4px 14px rgba(251, 191, 36, 0.35);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-btn-login:hover::before {
+            left: 100%;
+        }
+        
+        .nav-btn-login:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.45);
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn-login:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+        }
+        
+        .nav-btn-register {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-btn-register::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-btn-register:hover::before {
+            left: 100%;
+        }
+        
+        .nav-btn-register:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn-register:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+        }
+        
+        .nav-form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 10px 12px;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-form-container:hover {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.06);
+            border-color: rgba(203, 213, 225, 0.8);
+        }
+        
+        .forgot-link {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .forgot-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.3s ease;
+        }
+        
+        .forgot-link:hover::after {
+            width: 100%;
+        }
+        
+        .logo-container {
+            transition: all 0.3s ease;
+        }
+        
+        .logo-container:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Top Navigation Bar with Login Form -->
+    <div class="navbar sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-24">
+                <!-- Logo -->
+                <div class="logo-container flex items-center space-x-4">
                     <div class="relative">
-                        <input type="password" 
-                               id="id_password" 
-                               name="password" 
-                               required
-                               class="w-full px-4 py-3 rounded-xl bg-white/90 backdrop-blur-md border-2 {% if form.password.errors %}border-red-500{% else %}border-white/30{% endif %} focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-gray-800 placeholder-gray-500"
-                               placeholder="Enter your password">
-                        <button type="button" 
-                                onclick="togglePassword()"
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-eye" id="password-toggle"></i>
-                        </button>
+                        <img src="{% static 'images/logo.png' %}" alt="Safar Zone Travels" class="h-14 md:h-16 w-auto object-contain">
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                     </div>
-                    {% if form.password.errors %}
-                        <div class="mt-1 text-red-300 text-xs">
-                            {% for error in form.password.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                   
                 </div>
-
-                <input type="hidden" name="next" value="{{ request.GET.next }}">
-
-                <!-- Remember Me & Forgot Password -->
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" 
-                               id="id_remember_me"
-                               name="remember_me"
-                               value="1"
-                               class="w-4 h-4 rounded border-white/30 bg-white/20 text-sky-600 focus:ring-2 focus:ring-white/30">
-                        <span class="text-white/90 text-sm">Remember me</span>
-                    </label>
-                    <a href="{% url 'password_reset' %}" class="text-white/90 hover:text-white text-sm font-medium transition-colors">
+                
+                <!-- Login Form - Horizontal Layout -->
+                <div class="hidden lg:flex items-center space-x-4">
+                    <div class="nav-form-container flex items-center space-x-3">
+                        <form method="post" action="{% url 'login' %}" class="flex items-center space-x-2.5">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+                            
+                            <!-- Username Field -->
+                            <div class="nav-input-group">
+                                <div class="nav-input-wrapper">
+                                    <div class="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none nav-input-icon">
+                                        <i class="fas fa-envelope text-gray-400 text-xs"></i>
+                                    </div>
+                                    <input type="email" 
+                                           id="id_username" 
+                                           name="username" 
+                                           value="{{ form.username.value|default:'' }}"
+                                           required
+                                           autofocus
+                                           placeholder="Enter email"
+                                           class="nav-input pl-11 pr-4 py-3 w-52 rounded-xl text-sm font-medium text-gray-700">
+                                </div>
+                            </div>
+                            
+                            <!-- Password Field -->
+                            <div class="nav-input-group">
+                                <div class="nav-input-wrapper">
+                                    <div class="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none nav-input-icon">
+                                        <i class="fas fa-lock text-gray-400 text-xs"></i>
+                                    </div>
+                                    <input type="password" 
+                                           id="id_password" 
+                                           name="password" 
+                                           required
+                                           placeholder="Enter password"
+                                           class="nav-input pl-11 pr-4 py-3 w-44 rounded-xl text-sm font-medium text-gray-700">
+                                </div>
+                            </div>
+                            
+                            <!-- Login Button -->
+                            <button type="submit" 
+                                    class="nav-btn-login px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center space-x-2 min-w-[110px] justify-center relative">
+                                <span>Login</span>
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                        </form>
+                        
+                        <!-- Divider -->
+                        <div class="h-10 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
+                        
+                        <!-- Register Button -->
+                        <a href="{% url 'signup' %}" 
+                           class="nav-btn-register px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center space-x-2 min-w-[140px] justify-center relative">
+                            <i class="fas fa-user-plus text-xs"></i>
+                            <span>Register</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Forgot Password Link -->
+                    <a href="{% url 'password_reset' %}" 
+                       class="forgot-link text-gray-600 hover:text-blue-600 text-xs font-semibold transition-all whitespace-nowrap px-2">
                         Forgot Password?
                     </a>
                 </div>
-
-                <!-- Submit Button -->
-                <button type="submit" 
-                        class="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Login</span>
-                </button>
-            </form>
-
-            <!-- Sign Up Link -->
-            <div class="mt-6 text-center">
-                <p class="text-white/80">
-                    Don't have an account?
-                    <a href="{% url 'signup' %}" class="text-white font-semibold hover:underline ml-1">
-                        Sign Up
-                    </a>
-                </p>
             </div>
         </div>
+    </div>
 
-        <!-- Contact Support Section -->
-        <div class="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20 animate-fade-in-up" style="animation-delay: 0.2s;">
-            <div class="text-center mb-4">
-                <h3 class="text-xl font-bold text-white mb-2">
-                    <i class="fas fa-headset mr-2"></i>Need Help?
-                </h3>
-                <p class="text-white/80 text-sm mb-4">Our support team is here to assist you 24/7</p>
-            </div>
-            <div class="space-y-3">
-                <a href="mailto:info@safarzone.com" class="flex items-center justify-center space-x-3 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 group">
-                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all">
-                        <i class="fas fa-envelope text-white text-lg"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <p class="text-white/70 text-xs">Email Support</p>
-                        <p class="text-white font-semibold text-sm">safarzonetravelsdel@gmail.com</p>
-                    </div>
-                    <i class="fas fa-chevron-right text-white/50 group-hover:text-white transition-all"></i>
-                </a>
-                <a href="tel:+919876543210" class="flex items-center justify-center space-x-3 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 group">
-                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all">
-                        <i class="fas fa-phone text-white text-lg"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <p class="text-white/70 text-xs">Call Us</p>
-                        <p class="text-white font-semibold text-sm">+91 9839049767</p>
-                    </div>
-                    <i class="fas fa-chevron-right text-white/50 group-hover:text-white transition-all"></i>
-                </a>
-            </div>
-            <div class="mt-4 pt-4 border-t border-white/20 text-center">
-                <p class="text-white/70 text-xs">
-                    <i class="fas fa-clock mr-1"></i>Available 24/7 for your convenience
-                </p>
-            </div>
-        </div>
-
-       
-<script>
-    function togglePassword() {
-        const passwordInput = document.getElementById('id_password');
-        const passwordToggle = document.getElementById('password-toggle');
+    <!-- Hero Banner Section -->
+    <div class="hero-banner relative py-20 md:py-28 text-white">
+        <div class="floating-shape w-64 h-64 top-10 left-10"></div>
+        <div class="floating-shape w-48 h-48 bottom-10 right-20" style="animation-delay: 2s;"></div>
+        <div class="floating-shape w-32 h-32 top-1/2 right-10" style="animation-delay: 4s;"></div>
+        <div class="floating-shape w-40 h-40 bottom-1/4 left-1/4" style="animation-delay: 6s;"></div>
         
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            passwordToggle.classList.remove('fa-eye');
-            passwordToggle.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            passwordToggle.classList.remove('fa-eye-slash');
-            passwordToggle.classList.add('fa-eye');
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-4xl fade-in">
+                <div class="mb-6">
+                    <span class="inline-block px-4 py-2 bg-yellow-400 text-blue-900 rounded-full text-sm font-bold mb-4">
+                        <i class="fas fa-award mr-2"></i>India's #1 Travel Platform
+                    </span>
+                </div>
+                <h2 class="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                    India's Leading <span class="text-yellow-400">Travel</span> Distribution Platform
+                </h2>
+                <p class="text-xl md:text-2xl text-blue-100 leading-relaxed max-w-3xl mb-8">
+                    Safar Zone Travels is India's leading travel distribution platform. Our cutting-edge technology enables travel buyers and suppliers to come together seamlessly, creating joyful and memorable experiences for travellers all over the world.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
+                        <i class="fas fa-check-circle text-yellow-400"></i>
+                        <span class="text-sm">Trusted by 50,000+ Travel Agents</span>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
+                        <i class="fas fa-check-circle text-yellow-400"></i>
+                        <span class="text-sm">24/7 Customer Support</span>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
+                        <i class="fas fa-check-circle text-yellow-400"></i>
+                        <span class="text-sm">Best Prices Guaranteed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="bg-white py-12 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all">
+                    <div class="text-4xl font-bold mb-2">50K+</div>
+                    <div class="text-blue-100 text-sm">Active Travel Agents</div>
+                </div>
+                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <div class="text-4xl font-bold mb-2">1M+</div>
+                    <div class="text-green-100 text-sm">Happy Customers</div>
+                </div>
+                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <div class="text-4xl font-bold mb-2">500+</div>
+                    <div class="text-yellow-100 text-sm">Travel Suppliers</div>
+                </div>
+                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                    <div class="text-4xl font-bold mb-2">100+</div>
+                    <div class="text-purple-100 text-sm">Destinations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Mobile/Tablet Login Card (Hidden on Desktop) -->
+        <div class="lg:hidden mb-8 fade-in">
+            <div class="login-card rounded-2xl p-8 max-w-md mx-auto">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+                    <i class="fas fa-sign-in-alt mr-2 text-blue-600"></i>Login to Your Account
+                </h3>
+                
+                <!-- Display Messages -->
+                {% if messages %}
+                    <div class="mb-6 space-y-2">
+                        {% for message in messages %}
+                            <div class="p-3 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %} text-sm">
+                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Display Form Errors -->
+                {% if form.errors %}
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <strong>Please correct the following errors:</strong>
+                        <ul class="mt-2 list-disc list-inside">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'login' %}" class="space-y-5">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.GET.next }}">
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label for="id_username_mobile" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-2 text-blue-600"></i>Email Address
+                        </label>
+                        <input type="email" 
+                               id="id_username_mobile" 
+                               name="username" 
+                               value="{{ form.username.value|default:'' }}"
+                               required
+                               autofocus
+                               placeholder="your@email.com"
+                               class="w-full px-4 py-3 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="id_password_mobile" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-blue-600"></i>Password
+                        </label>
+                        <div class="relative">
+                            <input type="password" 
+                                   id="id_password_mobile" 
+                                   name="password" 
+                                   required
+                                   placeholder="Enter your password"
+                                   class="w-full px-4 py-3 rounded-lg input-field focus:outline-none text-gray-800 placeholder-gray-400">
+                            <button type="button" 
+                                    onclick="togglePassword('id_password_mobile', 'password-toggle-mobile')"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye" id="password-toggle-mobile"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" 
+                                   id="id_remember_me_mobile"
+                                   name="remember_me"
+                                   value="1"
+                                   class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-700 text-sm">Remember me</span>
+                        </label>
+                        <a href="{% url 'password_reset' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
+                            Forgot Password?
+                        </a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            class="w-full py-3.5 rounded-lg btn-login text-white font-bold text-base shadow-lg hover:shadow-xl transition-all">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                </form>
+
+                <!-- Sign Up Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600 text-sm">
+                        Don't have an account?
+                        <a href="{% url 'signup' %}" class="text-blue-600 font-semibold hover:underline ml-1">
+                            Sign Up Now
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Banner -->
+        <div class="support-banner rounded-2xl p-6 md:p-8 text-white shadow-xl mb-12 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
+                        <i class="fas fa-headset text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-lg mb-1">24x7 Helpdesk</p>
+                        <p class="text-yellow-100">+91 9839049767</p>
+                        <p class="text-yellow-100 text-xs">Available round the clock</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
+                        <i class="fas fa-envelope text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-lg mb-1">Customer Service</p>
+                        <p class="text-yellow-100">safarzonetravelsdel@gmail.com</p>
+                        <p class="text-yellow-100 text-xs">Email us anytime</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
+                        <i class="fas fa-clock text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-lg mb-1">Business Hours</p>
+                        <p class="text-yellow-100">Mon-Sat: 10:00 AM - 9:00 PM</p>
+                        <p class="text-yellow-100 text-xs">Sunday: 24/7 Support</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Section -->
+        <div class="mb-12 fade-in" style="animation-delay: 0.3s;">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Services</h2>
+                <p class="text-gray-600 text-lg max-w-2xl mx-auto">Comprehensive travel solutions for agents, suppliers, and travelers</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-train text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">IRCTC Integration</h3>
+                    <p class="text-gray-600 text-sm text-center mb-4">Become an authorized travel agent and book train tickets seamlessly through our integrated IRCTC platform.</p>
+                    <ul class="text-xs text-gray-500 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Instant booking</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Real-time availability</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Easy cancellation</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-users text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Supplier Network</h3>
+                    <p class="text-gray-600 text-sm text-center mb-4">Sell your inventory through us and reach thousands of travel agents across India. Expand your business reach.</p>
+                    <ul class="text-xs text-gray-500 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Wide distribution</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Real-time updates</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Secure payments</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-box text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Cargo Services</h3>
+                    <p class="text-gray-600 text-sm text-center mb-4">Logistics one-stop solution for all your cargo and shipping needs. Fast, reliable, and cost-effective.</p>
+                    <ul class="text-xs text-gray-500 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Door-to-door service</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Tracking system</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Insurance available</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-graduation-cap text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 text-center mb-3">Travel Academy</h3>
+                    <p class="text-gray-600 text-sm text-center mb-4">Learn anytime, anywhere with our comprehensive travel training programs. Enhance your skills and knowledge.</p>
+                    <ul class="text-xs text-gray-500 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Online courses</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Certification programs</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Expert trainers</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="mb-12 fade-in" style="animation-delay: 0.4s;">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
+                <p class="text-gray-600 text-lg max-w-2xl mx-auto">Experience the best in travel technology and service</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-blue-100 rounded-lg p-3">
+                            <i class="fas fa-bolt text-blue-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">Lightning Fast Booking</h3>
+                            <p class="text-gray-600 text-sm">Book flights, hotels, and packages in seconds with our optimized platform. No waiting, no delays.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-green-100 rounded-lg p-3">
+                            <i class="fas fa-shield-alt text-green-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">Secure & Reliable</h3>
+                            <p class="text-gray-600 text-sm">Your data and transactions are protected with bank-level security. We take your privacy seriously.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-yellow-100 rounded-lg p-3">
+                            <i class="fas fa-rupee-sign text-yellow-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">Best Prices</h3>
+                            <p class="text-gray-600 text-sm">Get the best deals and competitive prices on all travel services. Price match guarantee available.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-purple-100 rounded-lg p-3">
+                            <i class="fas fa-mobile-alt text-purple-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">Mobile Friendly</h3>
+                            <p class="text-gray-600 text-sm">Access our platform from any device. Responsive design ensures seamless experience on mobile, tablet, and desktop.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-red-100 rounded-lg p-3">
+                            <i class="fas fa-headset text-red-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">24/7 Support</h3>
+                            <p class="text-gray-600 text-sm">Round-the-clock customer support via phone, email, and chat. We're always here to help you.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card rounded-xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-indigo-100 rounded-lg p-3">
+                            <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">Real-time Reports</h3>
+                            <p class="text-gray-600 text-sm">Track your bookings, sales, and commissions with detailed analytics and real-time reporting dashboard.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platinum Collection Section -->
+        <div class="platinum-card rounded-2xl p-8 md:p-12 text-white mb-12 fade-in relative overflow-hidden" style="animation-delay: 0.5s;">
+            <div class="relative z-10">
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">
+                        <i class="fas fa-crown mr-1"></i>PREMIUM
+                    </span>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">The Platinum Collection</h2>
+                <p class="text-gray-200 text-lg mb-6 max-w-2xl">
+                    Discover The Platinum Collection - exclusive, handpicked hotels offering world-class service, luxurious amenities, and unforgettable experiences. Perfect for discerning travelers who seek nothing but the best.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
+                        <i class="fas fa-star text-yellow-400 text-xl mb-2"></i>
+                        <p class="font-semibold mb-1">5-Star Properties</p>
+                        <p class="text-gray-300 text-sm">Luxury hotels worldwide</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
+                        <i class="fas fa-concierge-bell text-yellow-400 text-xl mb-2"></i>
+                        <p class="font-semibold mb-1">Premium Services</p>
+                        <p class="text-gray-300 text-sm">Concierge & butler service</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
+                        <i class="fas fa-gift text-yellow-400 text-xl mb-2"></i>
+                        <p class="font-semibold mb-1">Exclusive Benefits</p>
+                        <p class="text-gray-300 text-sm">Complimentary upgrades</p>
+                    </div>
+                </div>
+                <button class="px-8 py-3 bg-yellow-400 text-gray-900 rounded-lg font-bold hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-compass mr-2"></i>Explore Collection
+                </button>
+            </div>
+        </div>
+
+        <!-- Testimonials Section -->
+        <div class="mb-12 fade-in" style="animation-delay: 0.6s;">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">What Our Partners Say</h2>
+                <p class="text-gray-600 text-lg">Trusted by thousands of travel professionals</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4 italic">"Safar Zone has transformed our travel business. The platform is intuitive, booking is seamless, and customer support is exceptional."</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Rajesh Kumar</p>
+                            <p class="text-sm text-gray-500">Travel Agent, Delhi</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4 italic">"Best prices, fastest booking, and excellent commission structure. This platform has everything a travel agent needs to succeed."</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-green-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Priya Sharma</p>
+                            <p class="text-sm text-gray-500">Travel Agent, Mumbai</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4 italic">"The IRCTC integration is a game-changer. We can now book train tickets instantly for our customers. Highly recommended!"</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-purple-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Amit Patel</p>
+                            <p class="text-sm text-gray-500">Travel Agent, Ahmedabad</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">
+                        <span class="text-yellow-400">Safar Zone</span> Travels
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">India's leading travel distribution platform connecting agents, suppliers, and travelers.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-all">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-all">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-all">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-700 transition-all">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Our Services</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">FAQs</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Services</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Flight Booking</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Hotel Booking</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Train Tickets</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Travel Packages</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Contact Info</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="flex items-center"><i class="fas fa-phone mr-2 text-yellow-400"></i>+91 9839049767</li>
+                        <li class="flex items-center"><i class="fas fa-envelope mr-2 text-yellow-400"></i>safarzonetravelsdel@gmail.com</li>
+                        <li class="flex items-center"><i class="fas fa-clock mr-2 text-yellow-400"></i>24/7 Support Available</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2025 Safar Zone Travels. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(inputId, toggleId) {
+            const passwordInput = document.getElementById(inputId);
+            const passwordToggle = document.getElementById(toggleId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.classList.remove('fa-eye');
+                passwordToggle.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.classList.remove('fa-eye-slash');
+                passwordToggle.classList.add('fa-eye');
+            }
         }
-    }
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

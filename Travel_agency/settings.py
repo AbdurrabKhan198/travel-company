@@ -24,7 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-t%iz5uu+9-^(kl+^s4=35odc331$*hg5qsa1*plz!h@q4$be(=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# Set DEBUG = True for local development, False for production
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'  # Default to True for development
 
 # Production domain and IP
 DOMAIN_NAME = 'safarzonetravels.com'
@@ -172,10 +173,32 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'homepage'
 LOGOUT_REDIRECT_URL = 'homepage'
 
-# Razorpay Payment Gateway Settings
-# Get your keys from https://dashboard.razorpay.com/app/keys
-RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_Rn4XxCcI0QvBVb')
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'hB1bLQQGCa79z9bco7pMAADK')
+# Easebuzz Payment Gateway Settings
+# Get your keys from Easebuzz dashboard after approval
+# LIVE CREDENTIALS (Production)
+EASEBUZZ_MERCHANT_KEY = os.environ.get('EASEBUZZ_MERCHANT_KEY', 'VMZA9Y0A3K')
+EASEBUZZ_MERCHANT_SALT = os.environ.get('EASEBUZZ_MERCHANT_SALT', '12SZXDDTMA')
+EASEBUZZ_ENV = os.environ.get('EASEBUZZ_ENV', 'prod')  # 'prod' for production, 'test' for test
+# Easebuzz API URLs
+# IMPORTANT: Try these URLs one by one if getting 404 error:
+# Option 1: https://testpay.easebuzz.in/payment/initiate
+# Option 2: https://testpay.easebuzz.in/
+# Option 3: https://pay.easebuzz.in/payment/initiate (if merchant key is for production)
+# 
+# For test environment: https://testpay.easebuzz.in/payment/initiate
+# For production: https://pay.easebuzz.in/payment/initiate
+# 
+# IMPORTANT: Merchant key must match the environment (test/production)
+# If merchant key is for test, use test URL. If for production, use production URL.
+# 
+# If still getting 404, contact Easebuzz support to verify:
+# 1. Correct payment URL for your merchant account
+# 2. Whether merchant key is for test or production
+# 3. Dashboard configuration settings
+# Try base URL first - Easebuzz might not use /payment/initiate endpoint
+# If this doesn't work, try: https://testpay.easebuzz.in/payment/initiate
+EASEBUZZ_PAYMENT_URL = os.environ.get('EASEBUZZ_PAYMENT_URL', 'https://testpay.easebuzz.in/')
+EASEBUZZ_STATUS_URL = os.environ.get('EASEBUZZ_STATUS_URL', 'https://testpay.easebuzz.in/payment/status')
 
 # Email Configuration
 # Using Brevo HTTP API (not SMTP) - DigitalOcean blocks ALL SMTP ports

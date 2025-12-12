@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import datetime, date, timedelta
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, QueryDict
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -19,7 +19,50 @@ import random
 import string
 import json
 import os
-import razorpay
+import hashlib
+import urllib.parse
+import sys
+import os
+
+# Add user site-packages to path if easebuzz is installed there
+user_site_packages = os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming', 'Python', 'Python312', 'site-packages')
+if os.path.exists(user_site_packages):
+    if user_site_packages not in sys.path:
+        sys.path.insert(0, user_site_packages)
+    # Also try adding parent directory
+    parent_dir = os.path.dirname(user_site_packages)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+
+try:
+    # Try standard import first
+    from easebuzz import Easebuzz
+    EASEBUZZ_SDK_AVAILABLE = True
+    print("✅ Easebuzz SDK loaded successfully")
+except ImportError:
+    try:
+        # Try with capital E (package folder name)
+        from Easebuzz.easebuzz_payment_gateway import EasebuzzAPIs
+        # Create alias for compatibility
+        Easebuzz = EasebuzzAPIs
+        EASEBUZZ_SDK_AVAILABLE = True
+        print("✅ Easebuzz SDK loaded successfully (using EasebuzzAPIs)")
+    except ImportError as e:
+        EASEBUZZ_SDK_AVAILABLE = False
+        # Try to find where easebuzz might be installed
+        import site
+        user_site = site.getusersitepackages()
+        if user_site and user_site not in sys.path:
+            sys.path.insert(0, user_site)
+        try:
+            from Easebuzz.easebuzz_payment_gateway import EasebuzzAPIs
+            Easebuzz = EasebuzzAPIs
+            EASEBUZZ_SDK_AVAILABLE = True
+            print("✅ Easebuzz SDK loaded successfully (after adding user site)")
+        except ImportError:
+            print(f"⚠️  Easebuzz SDK not installed. Error: {e}")
+            print(f"⚠️  User site packages: {user_site_packages}")
+            print("⚠️  Run: pip install easebuzz")
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
@@ -27,6 +70,26 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+
+# Easebuzz Payment Gateway Helper Functions
+def generate_easebuzz_hash(data_dict, salt):
+    """Generate hash for Easebuzz payment gateway"""
+    # Exclude 'hash' key from hash generation
+    filtered_dict = {k: v for k, v in data_dict.items() if k != 'hash'}
+    # Sort all keys alphabetically
+    sorted_keys = sorted(filtered_dict.keys())
+    # Create hash string
+    hash_string = '|'.join([str(filtered_dict[key]) for key in sorted_keys])
+    hash_string += '|' + salt
+    # Generate SHA512 hash
+    hash_value = hashlib.sha512(hash_string.encode('utf-8')).hexdigest()
+    return hash_value.upper()  # Easebuzz expects uppercase hash
+
+def verify_easebuzz_hash(data_dict, salt, received_hash):
+    """Verify hash from Easebuzz payment response"""
+    generated_hash = generate_easebuzz_hash(data_dict, salt)
+    return generated_hash == received_hash.upper()
 
 
 # Comprehensive Airport Codes Dictionary
@@ -763,7 +826,7 @@ def booking_page(request, schedule_id):
             return_fare = (return_adult_price * adult_count) + (return_child_price * child_count) + (return_infant_price * infant_count)
         
         base_fare = outbound_fare + return_fare
-        tax_amount = base_fare * Decimal('0.18')  # 18% GST
+        tax_amount = Decimal('0.00')  # GST removed as per client request
         total_amount = base_fare + tax_amount
         
         # Store in session for review
@@ -883,6 +946,58 @@ def review_booking(request, schedule_id):
     }
     return render(request, 'review_booking.html', context)
 
+@login_required
+def apply_coupon(request, schedule_id):
+    """Apply coupon code to booking (AJAX endpoint)"""
+    from django.http import JsonResponse
+    from .models import Coupon
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    coupon_code = request.POST.get('coupon_code', '').strip().upper()
+    if not coupon_code:
+        return JsonResponse({'success': False, 'message': 'Please enter a coupon code'})
+    
+    # Get booking data from session
+    booking_data = request.session.get('booking_data')
+    if not booking_data or booking_data.get('schedule_id') != schedule_id:
+        return JsonResponse({'success': False, 'message': 'Session expired. Please refresh the page.'})
+    
+    base_fare = Decimal(booking_data.get('base_fare', '0'))
+    
+    try:
+        coupon = Coupon.objects.get(code=coupon_code)
+        is_valid, message = coupon.is_valid(booking_amount=base_fare)
+        
+        if not is_valid:
+            return JsonResponse({'success': False, 'message': message})
+        
+        # Calculate discount
+        discount = coupon.calculate_discount(base_fare)
+        new_total = base_fare - discount
+        
+        # Update session data
+        booking_data['coupon_id'] = coupon.id
+        booking_data['coupon_code'] = coupon.code
+        booking_data['discount_amount'] = str(discount)
+        booking_data['total_amount'] = str(new_total)
+        request.session['booking_data'] = booking_data
+        request.session.modified = True
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Coupon applied successfully! Discount: ₹{discount:.2f}',
+            'discount': float(discount),
+            'total': float(new_total),
+            'coupon_code': coupon.code
+        })
+        
+    except Coupon.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invalid coupon code'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error applying coupon: {str(e)}'})
+
 def handle_booking_confirmation(request, schedule_id):
     """Handle final booking confirmation after review"""
     schedule = get_object_or_404(Schedule, id=schedule_id)
@@ -915,6 +1030,19 @@ def handle_booking_confirmation(request, schedule_id):
             messages.error(request, 'Return flight not found.')
             return redirect('booking', schedule_id=schedule_id)
     
+    # Apply coupon if provided
+    coupon = None
+    discount_amount = Decimal(booking_data.get('discount_amount', '0'))
+    if booking_data.get('coupon_id'):
+        try:
+            from .models import Coupon
+            coupon = Coupon.objects.get(id=booking_data.get('coupon_id'))
+            # Increment usage count
+            coupon.used_count += 1
+            coupon.save()
+        except Coupon.DoesNotExist:
+            pass
+    
     # Create booking (PENDING status until payment)
     booking = Booking.objects.create(
         user=request.user,
@@ -925,7 +1053,9 @@ def handle_booking_confirmation(request, schedule_id):
         contact_phone=booking_data.get('contact_phone', ''),
         base_fare=Decimal(booking_data.get('base_fare', '0')),
         tax_amount=Decimal(booking_data.get('tax_amount', '0')),
+        discount_amount=discount_amount,
         total_amount=Decimal(booking_data.get('total_amount', '0')),
+        coupon=coupon,
         status=Booking.Status.PENDING,
         payment_status=Booking.PaymentStatus.PENDING,
         ip_address=get_client_ip(request),
@@ -1025,7 +1155,7 @@ def apply_visa(request):
     
     # Visa data mapping
     visa_data = {
-        'qatar': {'name': 'Qatar', 'flag': '🇶🇦', 'durations': [{'days': 30, 'price': 500, 'entry': 'Single Entry'}]},
+        'qatar': {'name': 'Qatar', 'flag': '🇶🇦', 'durations': [{'days': 30, 'price': 3000, 'entry': 'Single Entry'}]},
         'bahrain': {'name': 'Bahrain', 'flag': '🇧🇭', 'durations': [{'days': 30, 'price': 4900}, {'days': 14, 'price': 3000}, {'days': 90, 'price': 11300}]},
         'oman': {'name': 'Oman', 'flag': '🇴🇲', 'durations': [{'days': 30, 'price': 5100}, {'days': 10, 'price': 1700}, {'days': 90, 'price': 22000}], 'note': 'Female charges High'},
         'azerbaijan': {'name': 'Azerbaijan', 'flag': '🇦🇿', 'durations': [{'days': 30, 'price': 3000}]},
@@ -1046,12 +1176,40 @@ def apply_visa(request):
         selected_duration = request.POST.get('duration')
         selected_price = request.POST.get('price')
         travel_date = request.POST.get('travel_date')
-        passport_number = request.POST.get('passport_number')
-        passport_expiry = request.POST.get('passport_expiry')
         address = request.POST.get('address')
         notes = request.POST.get('notes', '')
         
+        # Handle file uploads
+        passport_front = request.FILES.get('passport_front')
+        passport_back = request.FILES.get('passport_back')
+        passport_size_photo = request.FILES.get('passport_size_photo')
+        
+        # Validate file uploads
+        if not passport_front or not passport_back or not passport_size_photo:
+            messages.error(request, 'Please upload all required documents (Front Passport, Back Passport, and Passport Size Photo).')
+            context = {
+                'country': country,
+                'duration': duration,
+                'price': price,
+                'visa': selected_visa,
+            }
+            return render(request, 'apply_visa.html', context)
+        
+        # Validate file size (5MB max)
+        max_size = 5 * 1024 * 1024  # 5MB
+        for file in [passport_front, passport_back, passport_size_photo]:
+            if file.size > max_size:
+                messages.error(request, f'{file.name} is too large. Maximum file size is 5MB.')
+                context = {
+                    'country': country,
+                    'duration': duration,
+                    'price': price,
+                    'visa': selected_visa,
+                }
+                return render(request, 'apply_visa.html', context)
+        
         # Here you would save to database or send email
+        # Files are available in passport_front, passport_back, passport_size_photo
         # For now, we'll just show a success message
         messages.success(request, f'Your visa application for {selected_visa.get("name", country)} has been submitted successfully! We will contact you soon.')
         return redirect('visit_visa')
@@ -1320,7 +1478,7 @@ def cancel_booking(request, booking_id):
 
 @login_required
 def payment_page(request, booking_id):
-    """Payment page with Razorpay integration and wallet payment option"""
+    """Payment page with Easebuzz integration and wallet payment option"""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
     # Check if booking is already paid
@@ -1329,49 +1487,55 @@ def payment_page(request, booking_id):
         return redirect('booking_confirmation', booking_id=booking.id)
     
     # Handle wallet payment if requested
-    if request.method == 'POST' and request.POST.get('payment_method') in ['od_wallet', 'cash_balance']:
+    if request.method == 'POST' and request.POST.get('payment_method') in ['od_wallet', 'cash_balance', 'easebuzz']:
         payment_method = request.POST.get('payment_method')
-        try:
-            if payment_method == 'od_wallet':
-                # OD Wallet payment (admin controlled)
-                wallet = ODWallet.objects.get(user=request.user, is_active=True)
-                wallet_type = 'OD Wallet'
-            else:
-                # Cash Balance Wallet payment (user self-recharge)
-                wallet = CashBalanceWallet.objects.get(user=request.user)
-                wallet_type = 'Cash Balance'
-            
-            if wallet.balance >= booking.total_amount:
-                # Deduct from wallet
-                wallet.deduct_balance(
-                    amount=booking.total_amount,
-                    transaction_type='payment',
-                    description=f'Payment for booking {booking.booking_reference}',
-                    reference_id=booking.booking_reference
-                )
+        
+        # If Easebuzz payment requested, process it
+        if payment_method == 'easebuzz':
+            # Will be processed below in the Easebuzz section
+            pass
+        else:
+            try:
+                if payment_method == 'od_wallet':
+                    # OD Wallet payment (admin controlled)
+                    wallet = ODWallet.objects.get(user=request.user, is_active=True)
+                    wallet_type = 'OD Wallet'
+                else:
+                    # Cash Balance Wallet payment (user self-recharge)
+                    wallet = CashBalanceWallet.objects.get(user=request.user)
+                    wallet_type = 'Cash Balance'
                 
-                # Confirm booking
-                booking.payment_status = Booking.PaymentStatus.PAID
-                booking.status = Booking.Status.CONFIRMED
-                
-                # Update schedule - reduce available seats
-                seats_booked = booking.passengers.count() or 1
-                if booking.schedule.available_seats >= seats_booked:
-                    booking.schedule.available_seats -= seats_booked
-                    booking.schedule.save()
-                
-                booking.save()
-                
-                messages.success(request, f'Payment successful using {wallet_type}! Booking confirmed: {booking.booking_reference}')
-                return redirect('booking_confirmation', booking_id=booking.id)
-            else:
-                messages.error(request, f'Insufficient {wallet_type} balance. Your balance: ₹{wallet.balance}, Required: ₹{booking.total_amount}')
-        except ODWallet.DoesNotExist:
-            messages.error(request, 'OD Wallet is not available or not activated.')
-        except CashBalanceWallet.DoesNotExist:
-            messages.error(request, 'Cash Balance Wallet is not available.')
-        except Exception as e:
-            messages.error(request, f'Wallet payment failed: {str(e)}')
+                if wallet.balance >= booking.total_amount:
+                    # Deduct from wallet
+                    wallet.deduct_balance(
+                        amount=booking.total_amount,
+                        transaction_type='payment',
+                        description=f'Payment for booking {booking.booking_reference}',
+                        reference_id=booking.booking_reference
+                    )
+                    
+                    # Confirm booking
+                    booking.payment_status = Booking.PaymentStatus.PAID
+                    booking.status = Booking.Status.CONFIRMED
+                    
+                    # Update schedule - reduce available seats
+                    seats_booked = booking.passengers.count() or 1
+                    if booking.schedule.available_seats >= seats_booked:
+                        booking.schedule.available_seats -= seats_booked
+                        booking.schedule.save()
+                    
+                    booking.save()
+                    
+                    messages.success(request, f'Payment successful using {wallet_type}! Booking confirmed: {booking.booking_reference}')
+                    return redirect('booking_confirmation', booking_id=booking.id)
+                else:
+                    messages.error(request, f'Insufficient {wallet_type} balance. Your balance: ₹{wallet.balance}, Required: ₹{booking.total_amount}')
+            except ODWallet.DoesNotExist:
+                messages.error(request, 'OD Wallet is not available or not activated.')
+            except CashBalanceWallet.DoesNotExist:
+                messages.error(request, 'Cash Balance Wallet is not available.')
+            except Exception as e:
+                messages.error(request, f'Wallet payment failed: {str(e)}')
     
     # Handle skip payment (for testing)
     if request.method == 'POST' and request.POST.get('payment_method') == 'skip':
@@ -1414,49 +1578,175 @@ def payment_page(request, booking_id):
         cash_balance_wallet = CashBalanceWallet.objects.create(user=request.user)
         cash_balance = Decimal('0')
     
-    # Check if Razorpay is configured
-    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    # Check if Easebuzz is configured
+    easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+    easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
+    easebuzz_env = getattr(settings, 'EASEBUZZ_ENV', 'prod')
     
-    # Initialize Razorpay client and create order
-    order_id = None
-    amount_in_paise = 0
+    # Prepare Easebuzz payment data
+    payment_redirect_url = None
+    amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
     
-    if razorpay_key_id and razorpay_key_secret:
-        try:
-            client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-            
-            # Create order
-            amount_in_paise = int(booking.total_amount * 100)  # Convert to paise
-            order_data = {
-                'amount': amount_in_paise,
-                'currency': 'INR',
-                'receipt': booking.booking_reference,
-                'notes': {
-                    'booking_id': str(booking.id),
-                    'booking_reference': booking.booking_reference,
+    # Process Easebuzz payment only if explicitly requested via POST
+    if request.method == 'POST' and request.POST.get('payment_method') == 'easebuzz':
+        if easebuzz_merchant_key and easebuzz_merchant_salt and EASEBUZZ_SDK_AVAILABLE:
+            try:
+                # Initialize Easebuzz SDK
+                easebuzz_obj = Easebuzz(
+                    key=easebuzz_merchant_key,
+                    salt=easebuzz_merchant_salt,
+                    env=easebuzz_env
+                )
+                
+                # Generate unique transaction ID
+                txnid = f"TXN_{booking.id}_{int(timezone.now().timestamp())}"
+                
+                # Prepare payment data for Easebuzz SDK
+                # Get phone number and ensure it's exactly 10 digits
+                raw_phone = booking.contact_phone or (getattr(request.user.profile, 'phone', '') if hasattr(request.user, 'profile') else '')
+                phone_digits = ''.join(filter(str.isdigit, str(raw_phone))) if raw_phone else ''
+                # Ensure exactly 10 digits, use default if invalid
+                if len(phone_digits) == 10:
+                    phone_number = phone_digits
+                else:
+                    phone_number = '9999999999'  # Default valid phone number
+                
+                payment_data_dict = {
+                    'txnid': txnid,
+                    'amount': f"{float(booking.total_amount):.2f}",  # Easebuzz requires decimal format: "500.00"
+                    'productinfo': f'Flight Booking - {booking.booking_reference}',
+                    'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
+                    'email': booking.contact_email or request.user.email,
+                    'phone': phone_number,  # Easebuzz requires exactly 10 digit phone number
+                    'surl': request.build_absolute_uri(reverse('payment_success')),
+                    'furl': request.build_absolute_uri(reverse('payment_failed')),
+                    # Optional fields
+                    'udf1': '',
+                    'udf2': '',
+                    'udf3': '',
+                    'udf4': '',
+                    'udf5': '',
                 }
-            }
+                
+                # Call Easebuzz API to get payment URL
+                print("=" * 50)
+                print("EASEBUZZ BOOKING PAYMENT INITIATION:")
+                print(f"Booking ID: {booking.id}")
+                print(f"Booking Reference: {booking.booking_reference}")
+                print(f"Merchant Key: {easebuzz_merchant_key}")
+                print(f"Environment: {easebuzz_env}")
+                print(f"Raw Phone: {booking.contact_phone}")
+                print(f"Cleaned Phone: {phone_number}")
+                print(f"Phone Length: {len(phone_number)}")
+                print("Payment Parameters:")
+                for key, value in payment_data_dict.items():
+                    print(f"  {key}: {value}")
+                print("=" * 50)
+                
+                # Convert dict to QueryDict (Easebuzz SDK expects Django QueryDict with _mutable attribute)
+                query_dict = QueryDict('', mutable=True)
+                query_dict.update(payment_data_dict)
+                
+                response = easebuzz_obj.initiate_payment_api(query_dict)
+                
+                print("=" * 50)
+                print("EASEBUZZ API RAW RESPONSE (Booking Payment):")
+                print(f"Response: {response}")
+                print(f"Response Type: {type(response)}")
+                print("=" * 50)
+                
+                # Handle different response formats
+                payment_redirect_url = None
+                response_dict = None
+                
+                if response:
+                    # SDK returns JSON string, so parse it
+                    if isinstance(response, str):
+                        try:
+                            response_dict = json.loads(response)
+                            print(f"✅ Parsed JSON response: {response_dict}")
+                        except json.JSONDecodeError as e:
+                            print(f"❌ JSON Parse Error: {e}")
+                            # Check if it's a direct URL
+                            if response.startswith('http'):
+                                payment_redirect_url = response
+                                print(f"✅ Direct URL found: {payment_redirect_url}")
+                            else:
+                                print(f"❌ Unknown response format: {response}")
+                    elif isinstance(response, dict):
+                        response_dict = response
+                    
+                    # Process parsed response
+                    if response_dict:
+                        print(f"Response Status: {response_dict.get('status')}")
+                        print(f"Response Keys: {list(response_dict.keys())}")
+                        
+                        # Check status (1 = success, 0 = error)
+                        if response_dict.get('status') == 1:
+                            # Try different possible keys for payment URL
+                            payment_redirect_url = (
+                                response_dict.get('data') or
+                                response_dict.get('url') or
+                                response_dict.get('payment_url') or
+                                response_dict.get('redirect_url') or
+                                response_dict.get('payment_link') or
+                                response_dict.get('link')
+                            )
+                            
+                            if payment_redirect_url:
+                                print(f"✅ Payment URL found: {payment_redirect_url}")
+                            else:
+                                print(f"❌ No payment URL in response. Available keys: {list(response_dict.keys())}")
+                                print(f"Full response: {response_dict}")
+                        else:
+                            error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'Unknown error'
+                            print(f"❌ Easebuzz API Error (status={response_dict.get('status')}): {error_msg}")
+                            print(f"Full error response: {response_dict}")
+                    
+                    # If we got a payment URL
+                    if payment_redirect_url:
+                        print(f"✅ Payment URL received: {payment_redirect_url}")
+                        
+                        # Store txnid in booking
+                        if not booking.notes:
+                            booking.notes = json.dumps({'easebuzz_txnid': txnid})
+                        else:
+                            try:
+                                notes = json.loads(booking.notes) if booking.notes else {}
+                            except:
+                                notes = {}
+                            notes['easebuzz_txnid'] = txnid
+                            booking.notes = json.dumps(notes)
+                        booking.save()
+                    else:
+                        print(f"❌ Easebuzz API Error - No payment URL in response")
+                        print(f"Raw response: {response}")
+                        if response_dict:
+                            print(f"Parsed response: {response_dict}")
+                        payment_redirect_url = None
+                else:
+                    print(f"❌ Easebuzz API Error - Empty response")
+                    payment_redirect_url = None
+                
+                print("=" * 50)
             
-            razorpay_order = client.order.create(data=order_data)
-            order_id = razorpay_order['id']
-            
-            # Store order_id in booking
-            if not booking.notes:
-                booking.notes = json.dumps({'razorpay_order_id': order_id})
-            else:
-                try:
-                    notes = json.loads(booking.notes) if booking.notes else {}
-                except:
-                    notes = {}
-                notes['razorpay_order_id'] = order_id
-                booking.notes = json.dumps(notes)
-            booking.save()
-            
-        except Exception as e:
-            # If Razorpay fails, log error but continue with wallet options
-            print(f"Razorpay error: {str(e)}")
-            order_id = None
+            except Exception as e:
+                # If Easebuzz fails, log error but continue with wallet options
+                import traceback
+                print(f"❌ Easebuzz error: {str(e)}")
+                print(traceback.format_exc())
+                payment_redirect_url = None
+        elif not EASEBUZZ_SDK_AVAILABLE:
+            print("⚠️  Easebuzz SDK not available. Install with: pip install easebuzz")
+            messages.error(request, 'Payment gateway not available. Please try again later.')
+            payment_redirect_url = None
+        else:
+            messages.error(request, 'Payment gateway not configured.')
+            payment_redirect_url = None
+        
+        # If payment URL is available, redirect immediately
+        if payment_redirect_url:
+            return redirect(payment_redirect_url)
     
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
@@ -1470,43 +1760,50 @@ def payment_page(request, booking_id):
         'cash_balance_wallet': cash_balance_wallet,
         'cash_balance': cash_balance,
         'can_use_cash_balance': can_use_cash_balance,
-        'razorpay_key_id': razorpay_key_id if order_id else None,
-        'order_id': order_id,
+        'easebuzz_available': payment_redirect_url is not None,
         'amount': amount_in_paise,
     }
     return render(request, 'payment.html', context)
 
 
 @login_required
-@require_POST
 def payment_success(request):
-    """Handle successful payment callback"""
-    payment_id = request.POST.get('razorpay_payment_id')
-    order_id = request.POST.get('razorpay_order_id')
-    signature = request.POST.get('razorpay_signature')
+    """Handle successful payment callback from Easebuzz"""
+    # Easebuzz sends payment response via POST or GET (redirect)
+    if request.method == 'POST':
+        data = request.POST
+    else:
+        data = request.GET
     
-    if not payment_id or not order_id or not signature:
+    txnid = data.get('txnid')
+    amount = data.get('amount')
+    productinfo = data.get('productinfo')
+    firstname = data.get('firstname')
+    email = data.get('email')
+    phone = data.get('phone')
+    hash_value = data.get('hash')
+    status = data.get('status')
+    
+    if not txnid or not hash_value:
         messages.error(request, 'Invalid payment data received.')
         return redirect('payment_failed')
     
-    # Verify payment signature
-    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-    razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+    # Verify payment
+    easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+    easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
     
-    if not razorpay_key_id or not razorpay_key_secret:
+    if not easebuzz_merchant_key or not easebuzz_merchant_salt:
         messages.error(request, 'Payment gateway not configured.')
         return redirect('payment_failed')
     
-    client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    
     try:
-        # Find booking by order_id
-        bookings = Booking.objects.filter(notes__icontains=order_id)
+        # Find booking by txnid
+        bookings = Booking.objects.filter(notes__icontains=txnid)
         booking = None
         for b in bookings:
             try:
                 notes = json.loads(b.notes) if b.notes else {}
-                if notes.get('razorpay_order_id') == order_id:
+                if notes.get('easebuzz_txnid') == txnid:
                     booking = b
                     break
             except:
@@ -1521,14 +1818,25 @@ def payment_success(request):
             messages.info(request, 'This booking is already paid.')
             return redirect('booking_confirmation', booking_id=booking.id)
         
-        # Verify signature
-        params_dict = {
-            'razorpay_order_id': order_id,
-            'razorpay_payment_id': payment_id,
-            'razorpay_signature': signature
-        }
+        # Verify hash - include all fields from response except 'hash' itself
+        verification_data = {}
+        for key, value in data.items():
+            if key != 'hash' and value:  # Exclude hash and empty values
+                verification_data[key] = value
         
-        client.utility.verify_payment_signature(params_dict)
+        if not verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value):
+            messages.error(request, 'Payment verification failed. Please contact support.')
+            return redirect('payment_failed')
+        
+        # Check payment status
+        if status != 'success':
+            messages.error(request, 'Payment was not successful.')
+            return redirect('payment_failed')
+        
+        # Verify amount matches
+        if Decimal(amount) != booking.total_amount:
+            messages.error(request, 'Payment amount mismatch.')
+            return redirect('payment_failed')
         
         # Update booking status
         booking.payment_status = Booking.PaymentStatus.PAID
@@ -1539,8 +1847,9 @@ def payment_success(request):
             notes = json.loads(booking.notes) if booking.notes else {}
         except:
             notes = {}
-        notes['razorpay_payment_id'] = payment_id
-        notes['razorpay_order_id'] = order_id
+        notes['easebuzz_txnid'] = txnid
+        notes['easebuzz_amount'] = amount
+        notes['easebuzz_status'] = status
         booking.notes = json.dumps(notes)
         
         # Update schedule - reduce available seats
@@ -1554,9 +1863,6 @@ def payment_success(request):
         messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
         return redirect('booking_confirmation', booking_id=booking.id)
         
-    except razorpay.errors.SignatureVerificationError:
-        messages.error(request, 'Payment verification failed. Please contact support.')
-        return redirect('payment_failed')
     except Exception as e:
         messages.error(request, f'Payment processing error: {str(e)}')
         return redirect('payment_failed')
@@ -1570,52 +1876,61 @@ def payment_failed(request):
 @login_required
 def wallet_recharge(request):
     """Cash Balance Wallet recharge page - User self-recharge (direct access for everyone)"""
+    """Cash Balance Wallet recharge page - User self-recharge (direct access for everyone)"""
     # Get or create cash balance wallet for user (auto-created for all users)
     wallet, created = CashBalanceWallet.objects.get_or_create(user=request.user)
     
-    # Handle successful payment callback
-    if request.method == 'POST' and request.POST.get('razorpay_payment_id'):
-        payment_id = request.POST.get('razorpay_payment_id')
-        order_id = request.POST.get('razorpay_order_id')
-        signature = request.POST.get('razorpay_signature')
-        amount = request.POST.get('amount')
+    # Handle successful payment callback from Easebuzz
+    # Easebuzz sends payment response via POST or GET (redirect)
+    payment_data = None
+    if request.method == 'POST':
+        payment_data = request.POST
+    elif request.method == 'GET' and request.GET.get('txnid'):
+        payment_data = request.GET
+    
+    if payment_data and payment_data.get('txnid') and payment_data.get('status'):
+        txnid = payment_data.get('txnid')
+        amount = payment_data.get('amount')
+        productinfo = payment_data.get('productinfo')
+        firstname = payment_data.get('firstname')
+        email = payment_data.get('email')
+        phone = payment_data.get('phone')
+        hash_value = payment_data.get('hash')
+        status = payment_data.get('status')
         
-        if not payment_id or not order_id or not signature:
+        if not txnid or not hash_value:
             messages.error(request, 'Invalid payment data received.')
             return redirect('wallet_recharge')
         
-        # Verify payment signature
-        razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-        razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+        # Verify payment
+        easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+        easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
         
-        if not razorpay_key_id or not razorpay_key_secret:
+        if not easebuzz_merchant_key or not easebuzz_merchant_salt:
             messages.error(request, 'Payment gateway not configured.')
             return redirect('wallet_recharge')
         
         try:
-            client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+            # Verify hash - include all fields from response except 'hash' itself
+            verification_data = {}
+            for key, value in payment_data.items():
+                if key != 'hash' and value:  # Exclude hash and empty values
+                    verification_data[key] = value
             
-            # Verify signature
-            params_dict = {
-                'razorpay_order_id': order_id,
-                'razorpay_payment_id': payment_id,
-                'razorpay_signature': signature
-            }
+            if not verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value):
+                messages.error(request, 'Payment verification failed. Please try again.')
+                return redirect('wallet_recharge')
             
-            client.utility.verify_payment_signature(params_dict)
+            # Check payment status
+            if status != 'success':
+                messages.error(request, 'Payment was not successful.')
+                return redirect('wallet_recharge')
             
-            # Get amount from session or order
-            recharge_amount = Decimal(request.session.get('wallet_recharge_amount', amount)) / 100 if amount else Decimal('0')
-            if not recharge_amount:
-                # Try to get from order
-                try:
-                    order = client.order.fetch(order_id)
-                    recharge_amount = Decimal(order['amount']) / 100
-                except:
-                    messages.error(request, 'Could not determine recharge amount.')
-                    return redirect('wallet_recharge')
+            # Get amount from response
+            recharge_amount = Decimal(amount)
             
-            description = request.session.get('wallet_recharge_description', 'Wallet Recharge via Razorpay')
+            # Get description from session
+            description = request.session.get('wallet_recharge_description', 'Wallet Recharge via Easebuzz')
             
             # Check if adding this amount would exceed max balance
             if (wallet.balance + recharge_amount) > wallet.max_balance:
@@ -1626,7 +1941,7 @@ def wallet_recharge(request):
                     amount=recharge_amount,
                     transaction_type='recharge',
                     description=description,
-                    reference_id=payment_id
+                    reference_id=txnid
                 )
                 messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
                 
@@ -1638,13 +1953,11 @@ def wallet_recharge(request):
                 
                 return redirect('wallet_history')
                 
-        except razorpay.errors.SignatureVerificationError:
-            messages.error(request, 'Payment verification failed. Please try again.')
         except Exception as e:
             messages.error(request, f'Recharge failed: {str(e)}')
             form = WalletRechargeForm()
     
-    # Handle form submission - create Razorpay order
+    # Handle form submission - create Easebuzz payment
     elif request.method == 'POST':
         form = WalletRechargeForm(request.POST)
         if form.is_valid():
@@ -1661,48 +1974,142 @@ def wallet_recharge(request):
                 request.session['wallet_recharge_description'] = description
                 request.session.modified = True  # Ensure session is saved
                 
-                # Initialize Razorpay client
-                razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-                razorpay_key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
+                # Initialize Easebuzz payment using SDK
+                easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+                easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
+                easebuzz_env = getattr(settings, 'EASEBUZZ_ENV', 'prod')
                 
-                if not razorpay_key_id or not razorpay_key_secret:
+                if not easebuzz_merchant_key or not easebuzz_merchant_salt:
                     messages.error(request, 'Payment gateway not configured. Please contact support.')
+                    form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                elif not EASEBUZZ_SDK_AVAILABLE:
+                    messages.error(request, 'Easebuzz SDK not installed. Please contact support.')
                     form = WalletRechargeForm(initial={'amount': amount, 'description': description})
                 else:
                     try:
-                        client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+                        # Initialize Easebuzz SDK
+                        easebuzz_obj = Easebuzz(
+                            key=easebuzz_merchant_key,
+                            salt=easebuzz_merchant_salt,
+                            env=easebuzz_env
+                        )
                         
-                        # Create order
-                        amount_in_paise = int(amount * 100)  # Convert to paise
-                        order_data = {
-                            'amount': amount_in_paise,
-                            'currency': 'INR',
-                            'receipt': f'WALLET_{request.user.id}_{int(timezone.now().timestamp())}',
-                            'notes': {
-                                'user_id': str(request.user.id),
-                                'type': 'wallet_recharge',
-                                'description': description,
-                            }
+                        # Generate unique transaction ID
+                        txnid = f"WALLET_{request.user.id}_{int(timezone.now().timestamp())}"
+                        
+                        # Prepare payment data for Easebuzz SDK
+                        payment_data_dict = {
+                            'txnid': txnid,
+                            'amount': f"{float(amount):.2f}",  # Easebuzz requires decimal format: "500.00"
+                            'productinfo': f'Wallet Recharge - {description}',
+                            'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
+                            'email': request.user.email,
+                            'phone': str(getattr(request.user.profile, 'phone', '9999999999') if hasattr(request.user, 'profile') else '9999999999')[:10],  # Easebuzz requires 10 digit phone number
+                            'surl': request.build_absolute_uri(reverse('wallet_recharge')),
+                            'furl': request.build_absolute_uri(reverse('wallet_recharge')),
+                            # Optional fields
+                            'udf1': '',
+                            'udf2': '',
+                            'udf3': '',
+                            'udf4': '',
+                            'udf5': '',
                         }
                         
-                        razorpay_order = client.order.create(data=order_data)
-                        order_id = razorpay_order['id']
+                        # Debug: Print payment data
+                        print("=" * 50)
+                        print("EASEBUZZ WALLET RECHARGE INITIATION:")
+                        print(f"Merchant Key: {easebuzz_merchant_key}")
+                        print(f"Environment: {easebuzz_env}")
+                        print("Payment Parameters:")
+                        for key, value in payment_data_dict.items():
+                            print(f"  {key}: {value}")
+                        print("=" * 50)
                         
-                        context = {
-                            'form': form,
-                            'wallet': wallet,
-                            'wallet_balance': wallet.balance,
-                            'max_balance': wallet.max_balance,
-                            'razorpay_key_id': razorpay_key_id,
-                            'order_id': order_id,
-                            'amount': amount_in_paise,
-                            'recharge_amount': amount,
-                        }
-                        return render(request, 'wallet_recharge.html', context)
+                        # Convert dict to QueryDict (Easebuzz SDK expects Django QueryDict with _mutable attribute)
+                        query_dict = QueryDict('', mutable=True)
+                        query_dict.update(payment_data_dict)
+                        
+                        # Call Easebuzz API to get payment URL
+                        response = easebuzz_obj.initiate_payment_api(query_dict)
+                        
+                        print("=" * 50)
+                        print("EASEBUZZ API RAW RESPONSE (Wallet):")
+                        print(f"Response: {response}")
+                        print(f"Response Type: {type(response)}")
+                        print("=" * 50)
+                        
+                        # Handle different response formats
+                        payment_redirect_url = None
+                        response_dict = None
+                        
+                        if response:
+                            # SDK returns JSON string, so parse it
+                            if isinstance(response, str):
+                                try:
+                                    response_dict = json.loads(response)
+                                    print(f"✅ Parsed JSON response: {response_dict}")
+                                except json.JSONDecodeError as e:
+                                    print(f"❌ JSON Parse Error: {e}")
+                                    # Check if it's a direct URL
+                                    if response.startswith('http'):
+                                        payment_redirect_url = response
+                                        print(f"✅ Direct URL found: {payment_redirect_url}")
+                                    else:
+                                        print(f"❌ Unknown response format: {response}")
+                            elif isinstance(response, dict):
+                                response_dict = response
+                            
+                            # Process parsed response
+                            if response_dict:
+                                print(f"Response Status: {response_dict.get('status')}")
+                                print(f"Response Keys: {list(response_dict.keys())}")
+                                
+                                # Check status (1 = success, 0 = error)
+                                if response_dict.get('status') == 1:
+                                    # Try different possible keys for payment URL
+                                    payment_redirect_url = (
+                                        response_dict.get('data') or
+                                        response_dict.get('url') or
+                                        response_dict.get('payment_url') or
+                                        response_dict.get('redirect_url') or
+                                        response_dict.get('payment_link') or
+                                        response_dict.get('link')
+                                    )
+                                    
+                                    if payment_redirect_url:
+                                        print(f"✅ Payment URL found: {payment_redirect_url}")
+                                    else:
+                                        print(f"❌ No payment URL in response. Available keys: {list(response_dict.keys())}")
+                                        print(f"Full response: {response_dict}")
+                                else:
+                                    error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'Unknown error'
+                                    print(f"❌ Easebuzz API Error (status={response_dict.get('status')}): {error_msg}")
+                                    print(f"Full error response: {response_dict}")
+                            
+                            # If we got a payment URL, redirect
+                            if payment_redirect_url:
+                                print(f"✅ Payment URL received: {payment_redirect_url}")
+                                return redirect(payment_redirect_url)
+                            else:
+                                error_msg = "No payment URL received"
+                                if response_dict:
+                                    error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'No payment URL received'
+                                    print(f"❌ Easebuzz API Error: {error_msg}")
+                                    print(f"Full response: {response_dict}")
+                                else:
+                                    print(f"❌ Easebuzz API Error - Could not parse response: {response}")
+                                messages.error(request, f'Payment gateway error: {error_msg}. Please try again.')
+                                form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                        else:
+                            print(f"❌ Easebuzz API Error - Empty response")
+                            messages.error(request, 'Payment gateway error: Empty response. Please try again.')
+                            form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                        
+                        print("=" * 50)
                         
                     except Exception as e:
                         import traceback
-                        print(f"Razorpay error: {str(e)}")
+                        print(f"Easebuzz error: {str(e)}")
                         print(traceback.format_exc())
                         messages.error(request, f'Payment gateway error: {str(e)}. Please try again.')
                         form = WalletRechargeForm(initial={'amount': amount, 'description': description})

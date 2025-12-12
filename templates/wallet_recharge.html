@@ -268,7 +268,7 @@
 
                     <!-- Submit Button -->
                     <div class="pt-2">
-                        {% if not order_id %}
+                        {% if not payment_data %}
                             <button type="submit" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
                                 <i class="fas fa-arrow-right text-xl" style="color: #ffffff !important;"></i>
                                 <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Continue to Payment</span>
@@ -277,7 +277,7 @@
                     </div>
 
                     <!-- Back Link -->
-                    {% if not order_id %}
+                    {% if not payment_data %}
                     <div class="text-center pt-4">
                         <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sky-600 hover:text-sky-700 font-semibold transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
@@ -286,15 +286,13 @@
                     {% endif %}
                 </form>
                 
-                {% if order_id %}
+                {% if payment_data %}
                 <!-- Payment Form (outside main form to avoid nesting) -->
                 <div class="mt-6 bg-white rounded-2xl shadow-xl p-6 md:p-8 animate-fade-in-up">
-                    <form id="payment-form" method="POST" action="{% url 'wallet_recharge' %}" class="space-y-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="razorpay_order_id" value="{{ order_id }}">
-                        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-                        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-                        <input type="hidden" name="amount" value="{{ amount }}">
+                    <form id="payment-form" method="POST" action="{{ easebuzz_payment_url }}" class="space-y-4">
+                        {% for key, value in payment_data.items %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endfor %}
                         
                         <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 mb-4 border-2 border-amber-200">
                             <div class="flex items-center justify-between mb-2">
@@ -305,7 +303,7 @@
                         
                         <button type="submit" id="pay-button" class="w-full py-4 md:py-5 rounded-xl shadow-2xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3" style="background: linear-gradient(135deg, #f59e0b, #ea580c, #dc2626) !important; color: #ffffff !important; border: none !important;">
                             <i class="fas fa-credit-card text-xl" style="color: #ffffff !important;"></i>
-                            <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Pay ₹{{ recharge_amount|floatformat:2 }} via UPI/Card</span>
+                            <span style="color: #ffffff !important; font-weight: 900; font-size: 1.125rem;">Pay ₹{{ recharge_amount|floatformat:2 }} via Easebuzz</span>
                         </button>
                         
                         <div class="pt-4 border-t border-gray-200">
@@ -449,75 +447,64 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-{% if order_id %}
-<!-- Razorpay Checkout Script -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% if payment_data %}
+<!-- Easebuzz Payment Form - Submit Handler -->
 <script>
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-        const paymentForm = document.getElementById('payment-form');
-        if (!paymentForm) {
-            console.error('Payment form not found');
-            return;
-        }
+    (function() {
+        'use strict';
         
-        paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const button = document.getElementById('pay-button');
-            if (!button) {
-                console.error('Pay button not found');
+        // Wait for DOM to be ready
+        function initPaymentForm() {
+            const paymentForm = document.getElementById('payment-form');
+            if (!paymentForm) {
                 return;
             }
             
-            const originalButtonHTML = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            const button = document.getElementById('pay-button');
             
-            const options = {
-                "key": "{{ razorpay_key_id }}",
-                "amount": {{ amount }},
-                "currency": "INR",
-                "name": "Safar Zone Travels",
-                "description": "Wallet Recharge - ₹{{ recharge_amount|floatformat:2 }}",
-                "order_id": "{{ order_id }}",
-                "handler": function(response) {
-                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
-                    document.getElementById('payment-form').submit();
-                },
-                "prefill": {
-                    "name": "{% if request.user.profile and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.email }}{% endif %}",
-                    "email": "{{ request.user.email }}",
-                    "contact": "{% if request.user.profile.phone %}{{ request.user.profile.phone }}{% else %}{{ request.user.phone|default:'9999999999' }}{% endif %}"
-                },
-                "theme": {
-                    "color": "#f59e0b"
-                },
-                "modal": {
-                    "ondismiss": function() {
-                        button.disabled = false;
-                        button.innerHTML = originalButtonHTML;
-                    }
-                }
-            };
-            
-            try {
-                const rzp = new Razorpay(options);
-                rzp.on('payment.failed', function(response) {
-                    alert('Payment failed. Please try again.');
-                    button.disabled = false;
-                    button.innerHTML = originalButtonHTML;
-                });
-                rzp.open();
-            } catch (error) {
-                console.error('Razorpay error:', error);
-                alert('Payment gateway error. Please try again.');
-                button.disabled = false;
-                button.innerHTML = originalButtonHTML;
+            // Remove CSRF token if present (not needed for external payment gateway)
+            const csrfInput = paymentForm.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                csrfInput.remove();
             }
-        });
-    });
+            
+            // Handle button click - directly submit form
+            if (button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Disable button and show loading
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Redirecting to Payment...';
+                    
+                    // Submit form immediately
+                    setTimeout(function() {
+                        paymentForm.submit();
+                    }, 100);
+                    
+                    return false;
+                });
+            }
+            
+            // Also handle form submit event as backup
+            paymentForm.addEventListener('submit', function(e) {
+                // Update button state
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Redirecting to Payment...';
+                }
+                // Don't prevent default - let form submit to Easebuzz
+            });
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPaymentForm);
+        } else {
+            initPaymentForm();
+        }
+    })();
 </script>
 {% endif %}
 {% endblock %}

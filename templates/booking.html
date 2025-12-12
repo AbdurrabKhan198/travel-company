@@ -222,8 +222,6 @@
                                 <span class="font-semibold" id="base-fare-total">₹0.00</span>
                                                 </div>
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Taxes (18%):</span>
-                                <span class="font-semibold" id="tax-amount">₹0.00</span>
                                                 </div>
                             <div class="border-t pt-3 mt-3">
                                 <div class="flex justify-between text-lg font-bold text-primary">
@@ -396,8 +394,8 @@
         // Total base fare
         const totalBaseFare = outboundBaseFare + returnBaseFare;
         
-        // Tax (18%)
-        const taxAmount = totalBaseFare * 0.18;
+        // Tax removed as per client request
+        const taxAmount = 0;
         
         // Total amount
         const totalAmount = totalBaseFare + taxAmount;

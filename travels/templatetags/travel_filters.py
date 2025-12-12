@@ -35,3 +35,11 @@ def duration_format(minutes):
             return f"{mins}m"
     except (ValueError, TypeError):
         return str(minutes)
+
+@register.filter
+def passenger_type_count(queryset, passenger_type):
+    """Count passengers of a specific type in a queryset"""
+    try:
+        return queryset.filter(passenger_type=passenger_type).count()
+    except (AttributeError, TypeError):
+        return 0

@@ -519,9 +519,20 @@
                             <div class="flight-route">
                                 <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
                                     <div class="flex items-center gap-2">
+                                        {% if booking.schedule.route.airline_name and booking.schedule.route.get_airline_logo_url %}
+                                        <img src="{{ booking.schedule.route.get_airline_logo_url }}" 
+                                             alt="{{ booking.schedule.route.airline_name }} Logo" 
+                                             class="h-4 w-auto object-contain"
+                                             style="max-height: 20px; max-width: 60px;">
+                                        {% else %}
                                         <i class="fas fa-plane text-sky-500 text-lg"></i>
-                                        <span class="font-bold text-gray-800">{{ booking.schedule.route.carrier_number
-                                            }}</span>
+                                        {% endif %}
+                                        {% if booking.schedule.route.airline_name %}
+                                        <span class="font-bold text-gray-800">{{ booking.schedule.route.airline_name }}</span>
+                                        <span class="text-sm text-gray-600">({{ booking.schedule.route.carrier_number }})</span>
+                                        {% else %}
+                                        <span class="font-bold text-gray-800">{{ booking.schedule.route.carrier_number }}</span>
+                                        {% endif %}
                                     </div>
                                     <div class="flex items-center gap-2 text-gray-700">
                                         <span class="font-semibold">
@@ -582,7 +593,7 @@
                                         <i class="fas fa-barcode text-sky-500"></i>
                                         <span class="text-xs font-semibold text-gray-500">PNR</span>
                                     </div>
-                                    <span class="text-sm font-bold text-gray-800">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="text-sm font-bold text-gray-800">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </div>
                                 <div class="reference-info">
                                     <div class="flex items-center gap-2 mb-1">
@@ -750,7 +761,7 @@
                                         <i class="fas fa-barcode" style="color: #10b981;"></i>
                                         <span class="text-xs font-semibold text-gray-500">PNR</span>
                                     </div>
-                                    <span class="text-sm font-bold text-gray-800">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="text-sm font-bold text-gray-800">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </div>
                                 <div class="reference-info" style="border-left-color: #10b981;">
                                     <div class="flex items-center gap-2 mb-1">
@@ -890,7 +901,7 @@
                                         <i class="fas fa-barcode" style="color: #ef4444;"></i>
                                         <span class="text-xs font-semibold text-gray-500">PNR</span>
                                     </div>
-                                    <span class="text-sm font-bold text-gray-800">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="text-sm font-bold text-gray-800">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </div>
                                 <div class="reference-info" style="border-left-color: #ef4444;">
                                     <div class="flex items-center gap-2 mb-1">
@@ -994,7 +1005,7 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->
@@ -1099,7 +1110,7 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->
@@ -1230,7 +1241,7 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->

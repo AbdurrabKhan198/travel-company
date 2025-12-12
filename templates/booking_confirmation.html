@@ -101,7 +101,20 @@
                                     </div>
                                 </div>
                                 <div class="text-center mt-4">
+                                    {% if booking.schedule.route.airline_name %}
+                                    {% if booking.schedule.route.get_airline_logo_url %}
+                                    <div class="flex justify-center mb-2">
+                                        <img src="{{ booking.schedule.route.get_airline_logo_url }}" 
+                                             alt="{{ booking.schedule.route.airline_name }} Logo" 
+                                             class="h-5 w-auto object-contain"
+                                             style="max-height: 24px; max-width: 80px;">
+                                    </div>
+                                    {% endif %}
+                                    <div class="text-lg font-bold text-gray-900">{{ booking.schedule.route.airline_name }}</div>
+                                    <div class="text-sm text-gray-600">Flight: {{ booking.schedule.route.carrier_number }}</div>
+                                    {% else %}
                                     <div class="text-sm font-semibold text-gray-700">{{ booking.schedule.route.carrier_number }}</div>
+                                    {% endif %}
                                     <div class="text-xs text-gray-500">{{ booking.schedule.route.formatted_duration }}</div>
                                 </div>
                             </div>
@@ -223,10 +236,6 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                             <span class="text-gray-700">Passengers</span>
                             <span class="font-bold text-gray-900">{{ booking.passengers.count }}</span>
-                        </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <span class="text-gray-700">Taxes (18% GST)</span>
-                            <span class="font-bold text-gray-900">₹{{ booking.tax_amount|floatformat:2 }}</span>
                         </div>
                         {% if booking.discount_amount > 0 %}
                         <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg border-2 border-green-200">

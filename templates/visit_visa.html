@@ -293,31 +293,40 @@
         
         <!-- Visa Cards Grid -->
         <div class="row g-4">
-            <!-- Qatar Visa -->
+            <!-- Dubai Visa - HIGHLIGHTED TOP -->
             <div class="col-12 col-md-6 col-lg-4">
-                <a href="{% url 'apply_visa' %}?country=qatar&duration=30&price=500" class="text-decoration-none">
-                    <div class="card visa-card h-100 animate-fade-in-up">
-                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&q=80');">
+                <a href="{% url 'apply_visa' %}?country=dubai" class="text-decoration-none">
+                    <div class="card visa-card h-100 animate-fade-in-up" style="border: 4px solid #fbbf24 !important; box-shadow: 0 15px 50px rgba(251, 191, 36, 0.5) !important;">
+                        <div class="position-absolute top-0 start-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-bottom-end" style="z-index: 20; font-weight: 700; font-size: 0.85rem;">
+                            <i class="fas fa-star me-1"></i>POPULAR
+                        </div>
+                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80');">
                             <div class="position-absolute top-50 start-50 translate-middle w-100 text-center text-white p-4" style="z-index: 10;">
-                                <div class="flag-emoji mb-3">🇶🇦</div>
-                                <h3 class="country-name mb-3">Qatar</h3>
-                                <span class="visa-badge">E-Visa Available</span>
+                                <div class="flag-emoji mb-3">🇦🇪</div>
+                                <h3 class="country-name mb-3">Dubai</h3>
+                                <span class="visa-badge">Visa Available</span>
                             </div>
                         </div>
                         <div class="card-body p-4 bg-white">
-                            <div class="duration-card bg-light p-4 mb-3" style="border-left-color: #9333ea;">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <small class="text-muted fw-semibold d-block mb-1">Duration</small>
-                                        <h5 class="fw-bold mb-0 text-dark">30 Days</h5>
-                                        <small class="text-muted">Single Entry</small>
+                            <div class="mb-3">
+                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #eab308;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">30 Days</span>
+                                        <div class="price-badge px-3 py-2">
+                                            <p class="fs-5 mb-0">₹10,700</p>
+                                        </div>
                                     </div>
-                                    <div class="price-badge">
-                                        <p class="fs-3 mb-0">₹500</p>
+                                </div>
+                                <div class="duration-card bg-light p-3" style="border-left-color: #f97316;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">60 Days</span>
+                                        <div class="price-badge px-3 py-2">
+                                            <p class="fs-5 mb-0">₹14,500</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); border-color: #9333ea;">
+                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #eab308 0%, #f97316 100%); border-color: #eab308;">
                                 <i class="fas fa-paper-plane me-2"></i>Apply Now
                             </button>
                         </div>
@@ -325,10 +334,68 @@
                 </a>
             </div>
 
-            <!-- Bahrain Visa -->
+            <!-- Oman Visa - HIGHLIGHTED TOP -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <a href="{% url 'apply_visa' %}?country=oman" class="text-decoration-none">
+                    <div class="card visa-card h-100 animate-fade-in-up" style="border: 4px solid #10b981 !important; box-shadow: 0 15px 50px rgba(16, 185, 129, 0.5) !important;">
+                        <div class="position-absolute top-0 start-0 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-bottom-end" style="z-index: 20; font-weight: 700; font-size: 0.85rem;">
+                            <i class="fas fa-star me-1"></i>POPULAR
+                        </div>
+                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80');">
+                            <div class="position-absolute top-50 start-50 translate-middle w-100 text-center text-white p-4" style="z-index: 10;">
+                                <div class="flag-emoji mb-3">🇴🇲</div>
+                                <h3 class="country-name mb-3">Oman</h3>
+                                <span class="visa-badge">E-Visa Available</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-4 bg-white">
+                            <div class="mb-3">
+                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #16a34a;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">30 Days</span>
+                                        <div class="price-badge px-3 py-2">
+                                            <p class="fs-5 mb-0">₹5,100</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #2563eb;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">10 Days</span>
+                                        <div class="price-badge px-3 py-2">
+                                            <p class="fs-5 mb-0">₹1,700</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #9333ea;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">90 Days</span>
+                                        <div class="price-badge px-3 py-2">
+                                            <p class="fs-5 mb-0">₹22,000</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="note-warning p-3">
+                                    <p class="mb-0 small fw-bold text-dark">
+                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        Female charges High
+                                    </p>
+                                </div>
+                            </div>
+                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%); border-color: #16a34a;">
+                                <i class="fas fa-paper-plane me-2"></i>Apply Now
+                            </button>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Bahrain Visa - HIGHLIGHTED TOP -->
             <div class="col-12 col-md-6 col-lg-4">
                 <a href="{% url 'apply_visa' %}?country=bahrain" class="text-decoration-none">
-                    <div class="card visa-card h-100 animate-fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="card visa-card h-100 animate-fade-in-up" style="border: 4px solid #dc2626 !important; box-shadow: 0 15px 50px rgba(220, 38, 38, 0.5) !important;">
+                        <div class="position-absolute top-0 start-0 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-bottom-end" style="z-index: 20; font-weight: 700; font-size: 0.85rem;">
+                            <i class="fas fa-star me-1"></i>POPULAR
+                        </div>
                         <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1539650116574-75c0c6d73a6e?w=800&q=80');">
                             <div class="position-absolute top-50 start-50 translate-middle w-100 text-center text-white p-4" style="z-index: 10;">
                                 <div class="flag-emoji mb-3">🇧🇭</div>
@@ -371,51 +438,31 @@
                 </a>
             </div>
 
-            <!-- Oman Visa -->
+            <!-- Qatar Visa -->
             <div class="col-12 col-md-6 col-lg-4">
-                <a href="{% url 'apply_visa' %}?country=oman" class="text-decoration-none">
-                    <div class="card visa-card h-100 animate-fade-in-up" style="animation-delay: 0.2s;">
-                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80');">
+                <a href="{% url 'apply_visa' %}?country=qatar&duration=30&price=3000" class="text-decoration-none">
+                    <div class="card visa-card h-100 animate-fade-in-up" style="animation-delay: 0.3s;">
+                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&q=80');">
                             <div class="position-absolute top-50 start-50 translate-middle w-100 text-center text-white p-4" style="z-index: 10;">
-                                <div class="flag-emoji mb-3">🇴🇲</div>
-                                <h3 class="country-name mb-3">Oman</h3>
+                                <div class="flag-emoji mb-3">🇶🇦</div>
+                                <h3 class="country-name mb-3">Qatar</h3>
                                 <span class="visa-badge">E-Visa Available</span>
                             </div>
                         </div>
                         <div class="card-body p-4 bg-white">
-                            <div class="mb-3">
-                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #16a34a;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-dark">30 Days</span>
-                                        <div class="price-badge px-3 py-2">
-                                            <p class="fs-5 mb-0">₹5,100</p>
-                                        </div>
+                            <div class="duration-card bg-light p-4 mb-3" style="border-left-color: #9333ea;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted fw-semibold d-block mb-1">Duration</small>
+                                        <h5 class="fw-bold mb-0 text-dark">30 Days</h5>
+                                        <small class="text-muted">Single Entry</small>
                                     </div>
-                                </div>
-                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #2563eb;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-dark">10 Days</span>
-                                        <div class="price-badge px-3 py-2">
-                                            <p class="fs-5 mb-0">₹1,700</p>
-                                        </div>
+                                    <div class="price-badge">
+                                        <p class="fs-3 mb-0">₹3,000</p>
                                     </div>
-                                </div>
-                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #9333ea;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-dark">90 Days</span>
-                                        <div class="price-badge px-3 py-2">
-                                            <p class="fs-5 mb-0">₹22,000</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="note-warning p-3">
-                                    <p class="mb-0 small fw-bold text-dark">
-                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                                        Female charges High
-                                    </p>
                                 </div>
                             </div>
-                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%); border-color: #16a34a;">
+                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); border-color: #9333ea;">
                                 <i class="fas fa-paper-plane me-2"></i>Apply Now
                             </button>
                         </div>
@@ -579,43 +626,6 @@
                 </a>
             </div>
 
-            <!-- Dubai Visa -->
-            <div class="col-12 col-md-6 col-lg-4">
-                <a href="{% url 'apply_visa' %}?country=dubai" class="text-decoration-none">
-                    <div class="card visa-card h-100 animate-fade-in-up" style="animation-delay: 0.8s;">
-                        <div class="visa-card-image" style="background-image: url('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80');">
-                            <div class="position-absolute top-50 start-50 translate-middle w-100 text-center text-white p-4" style="z-index: 10;">
-                                <div class="flag-emoji mb-3">🇦🇪</div>
-                                <h3 class="country-name mb-3">Dubai</h3>
-                                <span class="visa-badge">Visa Available</span>
-                            </div>
-                        </div>
-                        <div class="card-body p-4 bg-white">
-                            <div class="mb-3">
-                                <div class="duration-card bg-light p-3 mb-2" style="border-left-color: #eab308;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-dark">30 Days</span>
-                                        <div class="price-badge px-3 py-2">
-                                            <p class="fs-5 mb-0">₹10,700</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="duration-card bg-light p-3" style="border-left-color: #f97316;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-dark">60 Days</span>
-                                        <div class="price-badge px-3 py-2">
-                                            <p class="fs-5 mb-0">₹14,500</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn btn-apply w-100 text-white" style="background: linear-gradient(135deg, #eab308 0%, #f97316 100%); border-color: #eab308;">
-                                <i class="fas fa-paper-plane me-2"></i>Apply Now
-                            </button>
-                        </div>
-                    </div>
-                </a>
-            </div>
         </div>
 
         <!-- CTA Section -->

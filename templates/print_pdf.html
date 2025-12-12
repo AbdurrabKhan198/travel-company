@@ -356,7 +356,13 @@
                     <th width="20%">Duration</th>
                 </tr>
                 <tr>
-                    <td>{{ booking.schedule.route.name|default:"IndiGo" }}</td>
+                    <td>
+                        {% if booking.schedule.route.airline_name %}
+                            {{ booking.schedule.route.airline_name }}
+                        {% else %}
+                            {{ booking.schedule.route.name|default:"IndiGo" }}
+                        {% endif %}
+                    </td>
                     <td>{% if booking.schedule.route.arrival_terminal %}{{ booking.schedule.route.arrival_terminal }}{% else %}-{% endif %}</td>
                     <td>{{ booking.schedule.departure_date|date:"d/m/Y" }} {{ booking.schedule.route.departure_time|time:"H:i" }}</td>
                     <td>
@@ -393,8 +399,13 @@
             </tr>
                 <tr>
                     <td>
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IndiGo_Airlines_logo.svg/2560px-IndiGo_Airlines_logo.svg.png"
-                            alt="Airline" style="height: 20px;">
+                        {% if booking.return_schedule and booking.return_schedule.route.get_airline_logo_url %}
+                        <img src="{{ booking.return_schedule.route.get_airline_logo_url }}"
+                            alt="{{ booking.return_schedule.route.airline_name|default:'Airline' }}" style="height: 18px; max-width: 70px; object-fit: contain;">
+                        {% elif booking.schedule.route.get_airline_logo_url %}
+                        <img src="{{ booking.schedule.route.get_airline_logo_url }}"
+                            alt="{{ booking.schedule.route.airline_name|default:'Airline' }}" style="height: 18px; max-width: 70px; object-fit: contain;">
+                        {% endif %}
                     </td>
                     <td>{% if booking.return_schedule.route.arrival_terminal %}{{
                         booking.return_schedule.route.arrival_terminal }}{% else %}-{% endif %}</td>

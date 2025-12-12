@@ -170,9 +170,28 @@
                         <div class="md:col-span-8">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
+                                    {% if flight.route.airline_name %}
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        {% if flight.route.get_airline_logo_url %}
+                                        <img src="{{ flight.route.get_airline_logo_url }}" 
+                                             alt="{{ flight.route.airline_name }} Logo" 
+                                             class="h-5 w-auto object-contain"
+                                             style="max-height: 24px; max-width: 80px;">
+                                        {% endif %}
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-900">
+                                                {{ flight.route.airline_name }}
+                                            </h3>
+                                            <span class="text-sm text-gray-500 font-semibold">
+                                                ({{ flight.route.carrier_number }})
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% else %}
                                     <h3 class="text-xl font-bold text-gray-900 mb-1">
                                         {{ flight.route.carrier_number }}
                                     </h3>
+                                    {% endif %}
                                     <div class="flex items-center space-x-2 flex-wrap">
                                         <span class="px-3 py-1 {% if flight.route.route_type == 'domestic' %}bg-sky-100 text-sky-700{% else %}bg-green-100 text-green-700{% endif %} rounded-full text-xs font-semibold">
                                             {{ flight.route.route_type|title }}
@@ -296,10 +315,21 @@
                                     Flight Information
                         </h4>
                                 <div class="grid grid-cols-2 gap-4">
+                                    {% if flight.route.airline_name %}
+                                    <div>
+                                        <p class="text-xs text-gray-600 mb-1">Airline</p>
+                                        <p class="font-semibold text-gray-900">{{ flight.route.airline_name }}</p>
+                                    </div>
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Flight Number</p>
                                         <p class="font-semibold text-gray-900">{{ flight.route.carrier_number }}</p>
-            </div>
+                                    </div>
+                                    {% else %}
+                                    <div>
+                                        <p class="text-xs text-gray-600 mb-1">Flight Number</p>
+                                        <p class="font-semibold text-gray-900">{{ flight.route.carrier_number }}</p>
+                                    </div>
+                                    {% endif %}
                                     <div>
                                         <p class="text-xs text-gray-600 mb-1">Duration</p>
                                         <p class="font-semibold text-gray-900">{{ flight.route.formatted_duration }}</p>
@@ -369,9 +399,28 @@
                             <div class="md:col-span-8">
                     <div class="flex items-center justify-between mb-4">
                             <div>
+                                        {% if return_flight.route.airline_name %}
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            {% if return_flight.route.get_airline_logo_url %}
+                                            <img src="{{ return_flight.route.get_airline_logo_url }}" 
+                                                 alt="{{ return_flight.route.airline_name }} Logo" 
+                                                 class="h-8 w-auto object-contain"
+                                                 style="max-height: 40px; max-width: 120px;">
+                                            {% endif %}
+                                            <div>
+                                                <h3 class="text-xl font-bold text-gray-900">
+                                                    {{ return_flight.route.airline_name }}
+                                                </h3>
+                                                <span class="text-sm text-gray-500 font-semibold">
+                                                    ({{ return_flight.route.carrier_number }})
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {% else %}
                                         <h3 class="text-xl font-bold text-gray-900 mb-1">
                                             {{ return_flight.route.carrier_number }}
                                         </h3>
+                                        {% endif %}
                                         <div class="flex items-center space-x-2 flex-wrap">
                                             <span class="px-3 py-1 {% if return_flight.route.route_type == 'domestic' %}bg-green-100 text-green-700{% else %}bg-purple-100 text-purple-700{% endif %} rounded-full text-xs font-semibold">
                                                 {{ return_flight.route.route_type|title }}

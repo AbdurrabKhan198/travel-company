@@ -886,6 +886,17 @@ class UmrahForm(forms.Form):
         })
     )
     
+    passport_size_photo = forms.ImageField(
+        label=_('Passport Size Photo'),
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*',
+            'required': 'required',
+        }),
+        help_text=_('Upload your passport size photo (Required)')
+    )
+    
     duration = forms.ChoiceField(
         label=_('Package Duration'),
         choices=[

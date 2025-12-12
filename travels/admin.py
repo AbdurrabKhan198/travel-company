@@ -10,7 +10,7 @@ from django.contrib import messages
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
     Package, PackageImage, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah, PNRStock
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, Executive, Umrah, PNRStock, Coupon
 )
 
 class UserProfileInline(admin.StackedInline):
@@ -133,15 +133,15 @@ class ScheduleInline(admin.TabularInline):
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'base_price', 'is_non_refundable', 'is_active')
-    list_filter = ('transport_type', 'route_type', 'is_active', 'is_non_refundable')
-    search_fields = ('name', 'from_location', 'to_location', 'carrier_number')
+    list_display = ('name', 'airline_name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'base_price', 'is_non_refundable', 'is_active')
+    list_filter = ('transport_type', 'route_type', 'is_active', 'is_non_refundable', 'airline_name')
+    search_fields = ('name', 'from_location', 'to_location', 'carrier_number', 'airline_name')
     inlines = [ScheduleInline]
     readonly_fields = ('created_at', 'updated_at', 'duration_formatted')
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'from_location', 'to_location', 'transport_type', 'carrier_number', 'route_type')
+            'fields': ('name', 'from_location', 'to_location', 'transport_type', 'airline_name', 'carrier_number', 'route_type')
         }),
         ('Schedule', {
             'fields': ('departure_time', 'arrival_time', 'duration')
@@ -701,7 +701,7 @@ class UmrahAdmin(admin.ModelAdmin):
             'fields': ('reference_id',)
         }),
         ('Personal Information', {
-            'fields': ('full_name', 'email', 'phone')
+            'fields': ('full_name', 'email', 'phone', 'passport_size_photo')
         }),
         ('Umrah Details', {
             'fields': ('duration', 'preferred_date', 'number_of_passengers')
@@ -781,4 +781,74 @@ class PNRStockAdmin(admin.ModelAdmin):
         """Bulk add PNRs - This is a placeholder action"""
         self.message_user(request, "To add PNRs in bulk, use the management command: python manage.py add_pnr_stock --route <route_id> --generate <count>")
     bulk_add_pnrs.short_description = "Bulk add PNRs (use management command)"
+
+@admin.register(Coupon)
+class CouponAdmin(admin.ModelAdmin):
+    """Admin interface for Coupon Management"""
+    list_display = ('code', 'discount_type', 'discount_value_display', 'min_purchase', 'max_discount', 'valid_from', 'valid_to', 'is_active', 'usage_limit', 'used_count', 'usage_percentage')
+    list_filter = ('discount_type', 'is_active', 'valid_from', 'valid_to')
+    search_fields = ('code', 'description')
+    readonly_fields = ('used_count', 'created_at', 'updated_at', 'usage_percentage_display')
+    date_hierarchy = 'valid_from'
+    
+    fieldsets = (
+        ('Coupon Information', {
+            'fields': ('code', 'description', 'is_active')
+        }),
+        ('Discount Settings', {
+            'fields': ('discount_type', 'discount_value', 'min_purchase', 'max_discount'),
+            'description': 'Percentage: Enter 0-100. Fixed: Enter amount in INR. Max discount applies only to percentage coupons.'
+        }),
+        ('Validity', {
+            'fields': ('valid_from', 'valid_to')
+        }),
+        ('Usage Limits', {
+            'fields': ('usage_limit', 'used_count', 'usage_percentage_display'),
+            'description': 'Leave usage limit blank for unlimited uses'
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def discount_value_display(self, obj):
+        if obj.discount_type == 'percentage':
+            return f"{obj.discount_value}%"
+        return f"₹{obj.discount_value}"
+    discount_value_display.short_description = 'Discount'
+    
+    def usage_percentage(self, obj):
+        if obj.usage_limit:
+            return f"{(obj.used_count / obj.usage_limit * 100):.1f}%"
+        return "Unlimited"
+    usage_percentage.short_description = 'Usage'
+    
+    def usage_percentage_display(self, obj):
+        if obj.usage_limit:
+            percentage = (obj.used_count / obj.usage_limit * 100)
+            color = 'green' if percentage < 80 else 'orange' if percentage < 95 else 'red'
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{:.1f}% ({}/{} uses)</span>',
+                color, percentage, obj.used_count, obj.usage_limit
+            )
+        return format_html('<span style="color: green;">Unlimited ({})</span>', obj.used_count)
+    usage_percentage_display.short_description = 'Usage Status'
+    
+    actions = ['activate_coupons', 'deactivate_coupons', 'reset_usage_count']
+    
+    def activate_coupons(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"{updated} coupon(s) activated.")
+    activate_coupons.short_description = "Activate selected coupons"
+    
+    def deactivate_coupons(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"{updated} coupon(s) deactivated.")
+    deactivate_coupons.short_description = "Deactivate selected coupons"
+    
+    def reset_usage_count(self, request, queryset):
+        updated = queryset.update(used_count=0)
+        self.message_user(request, f"Usage count reset for {updated} coupon(s).")
+    reset_usage_count.short_description = "Reset usage count for selected coupons"
 

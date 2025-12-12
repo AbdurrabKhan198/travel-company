@@ -410,6 +410,8 @@ class Route(TimestampedModel):
     from_location = models.CharField(_('from'), max_length=100)
     to_location = models.CharField(_('to'), max_length=100)
     transport_type = models.CharField(_('transport type'), max_length=20, choices=TRANSPORT_TYPE_CHOICES, default='flight')
+    airline_name = models.CharField(_('airline/flight company name'), max_length=100, blank=True, 
+                                     help_text=_('E.g., Indigo, Air India, SpiceJet, Vistara, etc.'))
     carrier_number = models.CharField(_('flight/bus/train number'), max_length=20, unique=True)
     departure_time = models.TimeField(_('departure time'))
     arrival_time = models.TimeField(_('arrival time'))
@@ -449,6 +451,46 @@ class Route(TimestampedModel):
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         return f"{hours}h {minutes}m" if hours else f"{minutes}m"
+    
+    def get_airline_logo_url(self):
+        """Get airline logo URL based on airline name from static files"""
+        if not self.airline_name:
+            return None
+        
+        from django.conf import settings
+        from django.templatetags.static import static
+        
+        # Airline logo mapping - using static files from static/images/flight-logo/
+        # Map airline names to their corresponding logo file names
+        airline_logos = {
+            'indigo': 'images/flight-logo/indigo.png',
+            'indigo airlines': 'images/flight-logo/indigo.png',
+            'air arabia': 'images/flight-logo/air-arabia.png',
+            'airarabia': 'images/flight-logo/air-arabia.png',
+            'air india': 'images/flight-logo/air india.png',
+            'airindia': 'images/flight-logo/air india.png',
+            'air india express': 'images/flight-logo/air india.png',
+            'flynas': 'images/flight-logo/flynas.png',
+            'jazeera': 'images/flight-logo/jazeera.png',
+            'jazeera airways': 'images/flight-logo/jazeera.png',
+            'saudi airlines': 'images/flight-logo/saudi-airline.png',
+            'saudi arabian airlines': 'images/flight-logo/saudi-airline.png',
+            'saudi arabia': 'images/flight-logo/saudi-airline.png',
+            'fly dubai': 'images/flight-logo/fly-dubai.png',
+            'flydubai': 'images/flight-logo/fly-dubai.png',
+            'fly dubai airlines': 'images/flight-logo/fly-dubai.png',
+        }
+        
+        # Normalize airline name (lowercase, strip spaces, replace special chars)
+        airline_key = self.airline_name.lower().strip()
+        # Remove extra spaces
+        airline_key = ' '.join(airline_key.split())
+        
+        # Return static logo URL if found, otherwise None
+        logo_path = airline_logos.get(airline_key)
+        if logo_path:
+            return static(logo_path)
+        return None
     
     def calculate_arrival_date(self, departure_date):
         """Calculate arrival date based on departure date and duration"""
@@ -702,6 +744,17 @@ class Booking(TimestampedModel):
     total_amount = models.DecimalField(_('total amount'), max_digits=10, decimal_places=2)
     currency = models.CharField(_('currency'), max_length=3, default='INR')
     
+    # Coupon information
+    coupon = models.ForeignKey(
+        'Coupon',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='bookings',
+        verbose_name=_('coupon'),
+        help_text=_('Applied coupon code')
+    )
+    
     # Additional information
     special_requests = models.TextField(_('special requests'), blank=True)
     notes = models.TextField(_('internal notes'), blank=True, help_text=_('Internal notes not visible to the customer'))
@@ -754,9 +807,8 @@ class Booking(TimestampedModel):
         fare_per_passenger = self.schedule.price
         self.base_fare = fare_per_passenger * Decimal(str(num_passengers))
         
-        # Calculate tax (typically 5-18% of base fare)
-        tax_rate = Decimal('0.12')  # 12% GST
-        self.tax_amount = (self.base_fare * tax_rate).quantize(Decimal('0.01'))
+        # Tax removed as per client request
+        self.tax_amount = Decimal('0.00')
         
         # Apply discount if any (can be customized)
         self.discount_amount = Decimal('0.00')
@@ -833,6 +885,147 @@ class Booking(TimestampedModel):
         if not self.travel_date:
             return False
         return self.travel_date >= date.today() and self.status == self.Status.CONFIRMED
+
+class Coupon(TimestampedModel):
+    """Coupon codes for discounts on bookings"""
+    class DiscountType(models.TextChoices):
+        PERCENTAGE = 'percentage', _('Percentage')
+        FIXED = 'fixed', _('Fixed Amount')
+    
+    code = models.CharField(
+        _('coupon code'),
+        max_length=50,
+        unique=True,
+        help_text=_('Unique coupon code (e.g., SAVE20, FLAT500)')
+    )
+    discount_type = models.CharField(
+        _('discount type'),
+        max_length=20,
+        choices=DiscountType.choices,
+        default=DiscountType.PERCENTAGE
+    )
+    discount_value = models.DecimalField(
+        _('discount value'),
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text=_('Percentage (0-100) or fixed amount in INR')
+    )
+    min_purchase = models.DecimalField(
+        _('minimum purchase'),
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text=_('Minimum booking amount required to use this coupon')
+    )
+    max_discount = models.DecimalField(
+        _('maximum discount'),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text=_('Maximum discount amount (for percentage coupons). Leave blank for no limit.')
+    )
+    valid_from = models.DateTimeField(
+        _('valid from'),
+        help_text=_('Coupon valid from this date/time')
+    )
+    valid_to = models.DateTimeField(
+        _('valid to'),
+        help_text=_('Coupon valid until this date/time')
+    )
+    is_active = models.BooleanField(
+        _('active'),
+        default=True,
+        help_text=_('Whether this coupon is currently active')
+    )
+    usage_limit = models.PositiveIntegerField(
+        _('usage limit'),
+        null=True,
+        blank=True,
+        help_text=_('Maximum number of times this coupon can be used. Leave blank for unlimited.')
+    )
+    used_count = models.PositiveIntegerField(
+        _('used count'),
+        default=0,
+        help_text=_('Number of times this coupon has been used')
+    )
+    description = models.TextField(
+        _('description'),
+        blank=True,
+        help_text=_('Description of the coupon (visible to users)')
+    )
+    
+    class Meta:
+        verbose_name = _('coupon')
+        verbose_name_plural = _('coupons')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['code'], name='coupon_code_idx'),
+            models.Index(fields=['is_active'], name='coupon_active_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.code} - {self.get_discount_type_display()}"
+    
+    def is_valid(self, user=None, booking_amount=None):
+        """Check if coupon is valid for use"""
+        now = timezone.now()
+        
+        # Check if active
+        if not self.is_active:
+            return False, "Coupon is not active"
+        
+        # Check date validity
+        if now < self.valid_from:
+            return False, f"Coupon is not yet valid. Valid from {self.valid_from.strftime('%d %b %Y')}"
+        
+        if now > self.valid_to:
+            return False, f"Coupon has expired. Valid until {self.valid_to.strftime('%d %b %Y')}"
+        
+        # Check usage limit
+        if self.usage_limit and self.used_count >= self.usage_limit:
+            return False, "Coupon usage limit reached"
+        
+        # Check minimum purchase
+        if booking_amount and booking_amount < self.min_purchase:
+            return False, f"Minimum purchase amount of ₹{self.min_purchase} required"
+        
+        return True, "Valid"
+    
+    def calculate_discount(self, booking_amount):
+        """Calculate discount amount for given booking amount"""
+        if self.discount_type == self.DiscountType.PERCENTAGE:
+            discount = (booking_amount * self.discount_value) / Decimal('100')
+            if self.max_discount:
+                discount = min(discount, self.max_discount)
+        else:  # FIXED
+            discount = self.discount_value
+        
+        return discount.quantize(Decimal('0.01'))
+    
+    def apply_to_booking(self, booking):
+        """Apply coupon to a booking and increment usage count"""
+        if booking.coupon:
+            return False, "Booking already has a coupon applied"
+        
+        is_valid, message = self.is_valid(booking_amount=booking.base_fare)
+        if not is_valid:
+            return False, message
+        
+        discount = self.calculate_discount(booking.base_fare)
+        booking.coupon = self
+        booking.discount_amount = discount
+        booking.calculate_total()
+        booking.save()
+        
+        # Increment usage count
+        self.used_count += 1
+        self.save()
+        
+        return True, f"Coupon applied successfully! Discount: ₹{discount}"
 
 class Package(TimestampedModel):
     """Travel packages featured on the platform"""
@@ -1433,6 +1626,13 @@ class Umrah(TimestampedModel):
     full_name = models.CharField(_('Full Name'), max_length=200)
     email = models.EmailField(_('Email Address'))
     phone = models.CharField(_('Phone Number'), max_length=20)
+    passport_size_photo = models.ImageField(
+        _('Passport Size Photo'),
+        upload_to='umrah/passport_photos/',
+        blank=True,
+        null=True,
+        help_text=_('Upload passport size photo (Required)')
+    )
     
     # Umrah Details
     duration = models.CharField(

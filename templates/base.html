@@ -507,19 +507,27 @@
             menu.classList.toggle('hidden');
         });
 
-        // Auto-hide messages (but exclude passenger sections)
+        // Auto-hide messages (but exclude passenger sections, forms, and file upload sections)
         setTimeout(function() {
             document.querySelectorAll('[class*="bg-red-50"], [class*="bg-green-50"], [class*="bg-yellow-50"], [class*="bg-blue-50"]').forEach(function(el) {
-                // Skip passenger sections and booking forms
+                // Skip passenger sections, booking forms, file uploads, and any element marked with data-no-auto-hide
                 if (el.id === 'adults-section' || 
                     el.id === 'children-section' || 
                     el.id === 'infants-section' ||
+                    el.id === 'passport-upload-section' ||
                     el.closest('#adults-section') ||
                     el.closest('#children-section') ||
                     el.closest('#infants-section') ||
+                    el.closest('#passport-upload-section') ||
                     el.closest('.passenger-form') ||
                     el.closest('#bookingForm') ||
-                    el.classList.contains('passenger-form')) {
+                    el.closest('form') ||
+                    el.closest('input[type="file"]') ||
+                    el.closest('[data-no-auto-hide="true"]') ||
+                    el.hasAttribute('data-no-auto-hide') ||
+                    el.classList.contains('passenger-form') ||
+                    el.querySelector('input[type="file"]') ||
+                    el.querySelector('form')) {
                     return; // Skip this element
                 }
                 // Only hide if it's a message/alert (check for message indicators)

@@ -63,8 +63,22 @@
                                     </p>
                                 </div>
                                 <div class="text-right">
+                                    {% if schedule.route.airline_name %}
+                                    <div class="flex items-center justify-end space-x-2 mb-1">
+                                        {% if schedule.route.get_airline_logo_url %}
+                                        <img src="{{ schedule.route.get_airline_logo_url }}" 
+                                             alt="{{ schedule.route.airline_name }} Logo" 
+                                             class="h-4 w-auto object-contain"
+                                             style="max-height: 20px; max-width: 60px;">
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-sm text-gray-600">Airline</p>
+                                    <p class="text-lg font-bold text-sky-600">{{ schedule.route.airline_name }}</p>
+                                    <p class="text-xs text-gray-500">Flight: {{ schedule.route.carrier_number }}</p>
+                                    {% else %}
                                     <p class="text-sm text-gray-600">Flight Number</p>
                                     <p class="text-lg font-bold text-sky-600">{{ schedule.route.carrier_number }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -115,8 +129,22 @@
                                     </p>
                                 </div>
                                 <div class="text-right">
+                                    {% if return_schedule.route.airline_name %}
+                                    <div class="flex items-center justify-end space-x-2 mb-1">
+                                        {% if return_schedule.route.get_airline_logo_url %}
+                                        <img src="{{ return_schedule.route.get_airline_logo_url }}" 
+                                             alt="{{ return_schedule.route.airline_name }} Logo" 
+                                             class="h-6 w-auto object-contain"
+                                             style="max-height: 30px; max-width: 100px;">
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-sm text-gray-600">Airline</p>
+                                    <p class="text-lg font-bold text-green-600">{{ return_schedule.route.airline_name }}</p>
+                                    <p class="text-xs text-gray-500">Flight: {{ return_schedule.route.carrier_number }}</p>
+                                    {% else %}
                                     <p class="text-sm text-gray-600">Flight Number</p>
                                     <p class="text-lg font-bold text-green-600">{{ return_schedule.route.carrier_number }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -260,18 +288,45 @@
                                 </span>
                             </div>
                             {% endif %}
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl base-fare-row">
                                 <span class="text-gray-700">Base Fare</span>
                                 <span class="font-bold text-gray-900">₹{{ booking_data.base_fare|floatformat:2 }}</span>
                             </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span class="text-gray-700">Taxes & Fees (18% GST)</span>
-                                <span class="font-bold text-gray-900">₹{{ booking_data.tax_amount|floatformat:2 }}</span>
+                            
+                            <!-- Coupon Code Section -->
+                            <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fas fa-tag mr-2 text-purple-600"></i>Have a Coupon Code?
+                                </label>
+                                <div class="flex gap-2">
+                                    <input type="text" 
+                                           id="coupon-code" 
+                                           name="coupon_code" 
+                                           placeholder="Enter coupon code"
+                                           class="flex-1 px-4 py-2 border-2 border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <button type="button" 
+                                            id="apply-coupon-btn"
+                                            class="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl">
+                                        Apply
+                                    </button>
+                                </div>
+                                <div id="coupon-message" class="mt-2 text-sm"></div>
+                                <input type="hidden" id="applied-coupon-id" name="applied_coupon_id" value="">
                             </div>
+                            
+                            {% if booking_data.discount_amount and booking_data.discount_amount > 0 %}
+                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl border-2 border-green-200">
+                                <span class="text-green-700 font-medium">
+                                    <i class="fas fa-tag mr-2"></i>Discount
+                                </span>
+                                <span class="font-bold text-green-700">-₹{{ booking_data.discount_amount|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
+                            
                             <div class="border-t-2 border-gray-200 pt-4">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xl font-bold text-gray-900">Total Amount</span>
-                                    <span class="text-3xl font-bold text-sky-600">₹{{ booking_data.total_amount|floatformat:2 }}</span>
+                                    <span class="text-3xl font-bold text-sky-600" id="total-amount-display">₹{{ booking_data.total_amount|floatformat:2 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -304,5 +359,99 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const couponCodeInput = document.getElementById('coupon-code');
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    const couponMessage = document.getElementById('coupon-message');
+    const appliedCouponId = document.getElementById('applied-coupon-id');
+    const totalAmountDisplay = document.getElementById('total-amount-display');
+    const baseFare = parseFloat('{{ booking_data.base_fare }}');
+    
+    if (applyCouponBtn) {
+        applyCouponBtn.addEventListener('click', function() {
+            const couponCode = couponCodeInput.value.trim().toUpperCase();
+            if (!couponCode) {
+                couponMessage.innerHTML = '<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>Please enter a coupon code</span>';
+                return;
+            }
+            
+            // Disable button during request
+            applyCouponBtn.disabled = true;
+            applyCouponBtn.textContent = 'Applying...';
+            couponMessage.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner fa-spin mr-1"></i>Applying coupon...</span>';
+            
+            // Make AJAX request
+            fetch(`{% url 'apply_coupon' schedule.id %}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `coupon_code=${encodeURIComponent(couponCode)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    couponMessage.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>${data.message}</span>`;
+                    appliedCouponId.value = data.coupon_code;
+                    totalAmountDisplay.textContent = '₹' + data.total.toFixed(2);
+                    
+                    // Add discount row if not exists
+                    let discountRow = document.querySelector('.discount-row');
+                    if (!discountRow) {
+                        const baseFareRow = document.querySelector('.base-fare-row');
+                        if (baseFareRow) {
+                            discountRow = document.createElement('div');
+                            discountRow.className = 'flex justify-between items-center p-3 bg-green-50 rounded-xl border-2 border-green-200 discount-row';
+                            discountRow.innerHTML = `
+                                <span class="text-green-700 font-medium">
+                                    <i class="fas fa-tag mr-2"></i>Discount (${data.coupon_code})
+                                </span>
+                                <span class="font-bold text-green-700">-₹${data.discount.toFixed(2)}</span>
+                            `;
+                            baseFareRow.parentNode.insertBefore(discountRow, baseFareRow.nextSibling);
+                        }
+                    } else {
+                        discountRow.innerHTML = `
+                            <span class="text-green-700 font-medium">
+                                <i class="fas fa-tag mr-2"></i>Discount (${data.coupon_code})
+                            </span>
+                            <span class="font-bold text-green-700">-₹${data.discount.toFixed(2)}</span>
+                        `;
+                    }
+                    
+                    couponCodeInput.disabled = true;
+                    applyCouponBtn.textContent = 'Applied';
+                    applyCouponBtn.classList.remove('from-purple-500', 'to-pink-500');
+                    applyCouponBtn.classList.add('from-green-500', 'to-green-600');
+                } else {
+                    couponMessage.innerHTML = `<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>${data.message}</span>`;
+                }
+            })
+            .catch(error => {
+                couponMessage.innerHTML = '<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>Error applying coupon. Please try again.</span>';
+            })
+            .finally(() => {
+                applyCouponBtn.disabled = false;
+                if (applyCouponBtn.textContent === 'Applying...') {
+                    applyCouponBtn.textContent = 'Apply';
+                }
+            });
+        });
+        
+        // Allow Enter key to apply coupon
+        if (couponCodeInput) {
+            couponCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyCouponBtn.click();
+                }
+            });
+        }
+    }
+});
+</script>
 {% endblock %}
 
