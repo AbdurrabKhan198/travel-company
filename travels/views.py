@@ -1766,7 +1766,7 @@ def payment_page(request, booking_id):
     return render(request, 'payment.html', context)
 
 
-@login_required
+@csrf_exempt
 def payment_success(request):
     """Handle successful payment callback from Easebuzz"""
     # Easebuzz sends payment response via POST or GET (redirect)
