@@ -268,7 +268,7 @@
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                                 <span class="text-gray-700">Adults ({{ booking_data.adult_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{ booking_data.adult_fare_per_passenger|default:schedule.price|floatformat:2 }} × {{ booking_data.adult_count }}
+                                    ₹{{ booking_data.adult_fare_per_passenger|default:schedule.adult_fare|floatformat:2 }} × {{ booking_data.adult_count }}
                                 </span>
                             </div>
                             {% endif %}
@@ -276,7 +276,7 @@
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                                 <span class="text-gray-700">Children ({{ booking_data.child_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{ booking_data.child_fare_per_passenger|default:schedule.price|floatformat:2 }} × {{ booking_data.child_count }}
+                                    ₹{{ booking_data.child_fare_per_passenger|default:schedule.child_fare|floatformat:2 }} × {{ booking_data.child_count }}
                                 </span>
                             </div>
                             {% endif %}
@@ -284,7 +284,7 @@
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                                 <span class="text-gray-700">Infants ({{ booking_data.infant_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{ booking_data.infant_fare_per_passenger|default:schedule.price|floatformat:2 }} × {{ booking_data.infant_count }}
+                                    ₹{{ booking_data.infant_fare_per_passenger|default:schedule.infant_fare|floatformat:2 }} × {{ booking_data.infant_count }}
                                 </span>
                             </div>
                             {% endif %}

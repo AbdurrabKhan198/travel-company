@@ -416,12 +416,27 @@
               <div class="invalid-feedback">Please enter your full name.</div>
             </div>
             <div class="col-md-6">
-              <label for="id_phone" class="form-label">Phone</label>
+              <label for="id_phone" class="form-label">
+                Phone
+                <span class="text-muted" style="font-size: 0.85em;">(10 digits only)</span>
+              </label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                <input type="tel" name="phone" value="{{ user.phone }}" class="form-control" id="id_phone">
+                <input type="tel" 
+                       name="phone" 
+                       value="{{ user.phone }}" 
+                       class="form-control" 
+                       id="id_phone"
+                       pattern="[0-9]{10}"
+                       maxlength="10"
+                       minlength="10"
+                       inputmode="numeric"
+                       placeholder="9876543210"
+                       title="Please enter exactly 10 digits"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
               </div>
-              <div class="invalid-feedback">Please enter a valid phone number.</div>
+              <div class="invalid-feedback">Phone number must be exactly 10 digits.</div>
+              <small class="text-muted">Enter 10-digit mobile number</small>
             </div>
             <div class="col-md-6">
               <label for="id_date_of_birth" class="form-label">Date of Birth</label>

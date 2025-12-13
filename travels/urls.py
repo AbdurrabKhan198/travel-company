@@ -40,6 +40,7 @@ urlpatterns = [
     path('ticket/<int:booking_id>/print/', views.print_ticket_pdf, name='print_ticket_pdf'),
     path('ticket/<int:booking_id>/email/', views.email_ticket, name='email_ticket'),
     path('ticket/<int:booking_id>/edit-fare/', views.edit_booking_fare, name='edit_booking_fare'),
+    path('ticket/<int:booking_id>/download-without-fare/', views.download_ticket_without_fare, name='download_ticket_without_fare'),
     
     # User pages
     path('dashboard/', views.dashboard, name='dashboard'),

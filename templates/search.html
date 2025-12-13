@@ -127,6 +127,56 @@
         </div>
     </div>
 
+    <!-- Date Navigation Bar -->
+        {% if travel_date %}
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-sky-500">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+                <!-- Previous Date Button -->
+                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ previous_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}" 
+                   class="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-bold hover:from-gray-600 hover:to-gray-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-chevron-left text-xl"></i>
+                    <div class="text-left">
+                        <div class="text-xs opacity-80">Previous Date</div>
+                        <div class="text-sm font-bold">{{ previous_date|date:"d M, Y" }}</div>
+                    </div>
+                </a>
+                
+                <!-- Current Date Display -->
+                <div class="text-center flex-1">
+                    <div class="inline-flex items-center space-x-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-8 py-4 rounded-xl shadow-lg">
+                        <i class="fas fa-calendar-day text-2xl"></i>
+                        <div>
+                            <div class="text-sm opacity-90">Selected Date</div>
+                            <div class="text-2xl font-bold">{{ travel_date|date:"d M, Y" }}</div>
+                            <div class="text-xs opacity-80">{{ travel_date|date:"l" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Next Date Button -->
+                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ next_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}" 
+                   class="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl font-bold hover:from-sky-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <div class="text-right">
+                        <div class="text-xs opacity-80">Next Date</div>
+                        <div class="text-sm font-bold">{{ next_date|date:"d M, Y" }}</div>
+                    </div>
+                    <i class="fas fa-chevron-right text-xl"></i>
+                </a>
+            </div>
+            
+            <!-- Quick Date Selection -->
+            <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                <span class="text-sm text-gray-600 mr-2">Quick Select:</span>
+                {% for date in date_range %}
+                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}" 
+                   class="px-4 py-2 {% if date == travel_date|date:'Y-m-d' %}bg-sky-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %} rounded-lg text-sm font-semibold transition-all duration-200">
+                    {{ date|date:"d M" }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
     <!-- Results Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
@@ -275,7 +325,7 @@
                         <div class="md:col-span-4 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6">
                             <div class="text-center md:text-right mb-4">
                                 <div class="text-4xl font-bold text-sky-600 mb-1">
-                                    ₹{{ flight.price|floatformat:0 }}
+                                    ₹{{ flight.adult_fare|floatformat:0 }}
                                     </div>
                                 <div class="text-sm text-gray-600">per person</div>
                             </div>
@@ -504,7 +554,7 @@
                             <div class="md:col-span-4 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6">
                                 <div class="text-center md:text-right mb-4">
                                     <div class="text-4xl font-bold text-green-600 mb-1">
-                                        ₹{{ return_flight.price|floatformat:0 }}
+                                        ₹{{ return_flight.adult_fare|floatformat:0 }}
                         </div>
                                     <div class="text-sm text-gray-600">per person</div>
                 </div>

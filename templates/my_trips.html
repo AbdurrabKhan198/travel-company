@@ -595,25 +595,14 @@
                             </div>
 
                             <!-- Action Links -->
+                            {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                             <div class="action-links mb-4 flex flex-wrap gap-4 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-file-contract mr-1"></i>Fare Rule
-                                </a>
-                                {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                                 <a href="{% url 'view_ticket' booking.id %}" target="_blank"
                                     class="text-blue-600 hover:text-blue-800 font-medium">
                                     <i class="fas fa-eye mr-1"></i>View Ticket
                                 </a>
-                                {% endif %}
-                                {% if booking.status == 'confirmed' %}
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-exchange-alt mr-1"></i>Change Request
-                                </a>
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-redo mr-1"></i>Auto Reissuance
-                                </a>
-                                {% endif %}
                             </div>
+                            {% endif %}
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-3 mt-4">
@@ -763,17 +752,14 @@
                             </div>
 
                             <!-- Action Links -->
+                            {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                             <div class="action-links mb-4 flex flex-wrap gap-4 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-file-contract mr-1"></i>Fare Rule
-                                </a>
-                                {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                                 <a href="{% url 'view_ticket' booking.id %}" target="_blank"
                                     class="text-blue-600 hover:text-blue-800 font-medium">
                                     <i class="fas fa-eye mr-1"></i>View Ticket
                                 </a>
-                                {% endif %}
                             </div>
+                            {% endif %}
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-3 mt-4">
@@ -902,12 +888,6 @@
                                 </div>
                             </div>
 
-                            <!-- Action Links -->
-                            <div class="action-links mb-4 flex flex-wrap gap-4 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-file-contract mr-1"></i>Fare Rule
-                                </a>
-                            </div>
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-3 mt-4">
@@ -1011,10 +991,6 @@
                                 </p>
                             </div>
 
-                            <!-- Action Links -->
-                            <div class="mb-4 flex flex-wrap gap-3 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Fare Rule</a>
-                            </div>
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-2 mt-2">
@@ -1117,17 +1093,12 @@
                             </div>
 
                             <!-- Action Links -->
+                            {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                             <div class="mb-4 flex flex-wrap gap-3 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Fare Rule</a>
-                                {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                                 <a href="{% url 'view_ticket' booking.id %}" target="_blank"
                                     class="text-blue-600 hover:text-blue-800 underline">View Ticket</a>
-                                {% endif %}
-                                {% if booking.status == 'confirmed' %}
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Change Request</a>
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Auto Reissuance</a>
-                                {% endif %}
                             </div>
+                            {% endif %}
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-2 mt-2">
@@ -1251,17 +1222,12 @@
                             </div>
 
                             <!-- Action Links -->
+                            {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                             <div class="mb-4 flex flex-wrap gap-3 text-sm">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Fare Rule</a>
-                                {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
                                 <a href="{% url 'view_ticket' booking.id %}" target="_blank"
                                     class="text-blue-600 hover:text-blue-800 underline">View Ticket</a>
-                                {% endif %}
-                                {% if booking.status == 'confirmed' %}
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Change Request</a>
-                                <a href="#" class="text-blue-600 hover:text-blue-800 underline">Auto Reissuance</a>
-                                {% endif %}
                             </div>
+                            {% endif %}
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-2 mt-2">

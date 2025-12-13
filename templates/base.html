@@ -215,7 +215,7 @@
                     <!-- User menu - Show login/signup for unauthenticated, user menu for authenticated -->
                     {% if user.is_authenticated and user.is_approved %}
                         <a href="{% url 'dashboard' %}" class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
-                            <i class="fas fa-user-circle mr-2"></i> User Profile
+                            <i class="fas fa-user-circle mr-2"></i> View Profile
                         </a>
                         <a href="{% url 'my_trips' %}" class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
                             <i class="fas fa-calendar-check mr-2 text-sky-500"></i>
@@ -234,18 +234,31 @@
                             <div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50">
                                 <div class="py-2">
                                     <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                                        <i class="fas fa-user-circle mr-2"></i> User Profile
+                                        <i class="fas fa-user-circle mr-2"></i> View Profile
                                     </a>
                                     <a href="{% url 'my_trips' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                         <i class="fas fa-calendar-check mr-2 text-sky-500"></i> My Trips
                                     </a>
                                     <hr class="my-1">
-                                    {% if has_od_wallet_access %}
-                                    <div class="px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400">
+                                    {% if has_od_wallet or od_wallet_balance < 0 %}
+                                    <div class="px-4 py-2 {% if od_wallet_balance < 0 or od_wallet_is_expired %}bg-gray-100{% else %}bg-gradient-to-r from-amber-50 to-orange-50{% endif %} border-l-4 {% if od_wallet_balance < 0 or od_wallet_is_expired %}border-gray-400{% else %}border-amber-400{% endif %}">
                                         <div class="flex items-center justify-between mb-1">
                                             <span class="text-xs font-semibold text-gray-600">OD Wallet</span>
-                                            <span class="text-xs font-bold text-amber-600">₹{{ od_wallet_balance|floatformat:0 }}</span>
+                                            <span class="text-xs font-bold {% if od_wallet_balance < 0 %}text-red-600{% else %}text-amber-600{% endif %}">
+                                                {% if od_wallet_balance < 0 %}-₹{{ od_wallet_balance|floatformat:0|slice:"1:" }}{% else %}₹{{ od_wallet_balance|floatformat:0 }}{% endif %}
+                                            </span>
                                         </div>
+                                        {% if od_wallet_days_remaining is not None and not od_wallet_is_expired %}
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            {% if od_wallet_days_remaining == 0 %}
+                                            Expires Today
+                                            {% elif od_wallet_days_remaining == 1 %}
+                                            1 Day Left
+                                            {% else %}
+                                            {{ od_wallet_days_remaining }} Days Left
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
                                     </div>
                                     <a href="{% url 'wallet_history' %}?type=od" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                         <i class="fas fa-history mr-2 text-amber-500"></i> OD Wallet History
@@ -337,7 +350,7 @@
                     <div class="border-t border-gray-200 pt-2 mt-2">
                         <a href="{% url 'dashboard' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                             <i class="fas fa-user-circle text-lg"></i>
-                            <span>User Profile</span>
+                            <span>View Profile</span>
                         </a>
                         <a href="{% url 'my_trips' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                             <i class="fas fa-calendar-check text-lg"></i>

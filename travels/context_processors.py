@@ -48,7 +48,9 @@ def wallet_context(request):
             od_wallet = ODWallet.objects.get(user=request.user)
             context['od_wallet_balance'] = od_wallet.balance
             context['has_od_wallet'] = True
-            context['has_od_wallet_access'] = od_wallet.is_active
+            context['has_od_wallet_access'] = od_wallet.is_active and not od_wallet.is_expired()
+            context['od_wallet_days_remaining'] = od_wallet.days_remaining()
+            context['od_wallet_is_expired'] = od_wallet.is_expired()
         except ODWallet.DoesNotExist:
             pass
     

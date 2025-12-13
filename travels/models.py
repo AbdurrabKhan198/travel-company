@@ -410,9 +410,6 @@ class Route(TimestampedModel):
     
     TRANSPORT_TYPE_CHOICES = [
         ('flight', _('Flight')),
-        ('bus', _('Bus')),
-        ('train', _('Train')),
-        ('cruise', _('Cruise')),
     ]
     
     name = models.CharField(_('route name'), max_length=200, help_text=_('E.g., Mumbai to Delhi Express'))
@@ -421,12 +418,11 @@ class Route(TimestampedModel):
     transport_type = models.CharField(_('transport type'), max_length=20, choices=TRANSPORT_TYPE_CHOICES, default='flight')
     airline_name = models.CharField(_('airline/flight company name'), max_length=100, blank=True, 
                                      help_text=_('E.g., Indigo, Air India, SpiceJet, Vistara, etc.'))
-    carrier_number = models.CharField(_('flight/bus/train number'), max_length=20, unique=True)
+    carrier_number = models.CharField(_('flight number'), max_length=20, unique=True)
     departure_time = models.TimeField(_('departure time'))
     arrival_time = models.TimeField(_('arrival time'))
     duration = models.DurationField(_('duration'), help_text=_('Format: HH:MM:SS'))
     route_type = models.CharField(_('route type'), max_length=20, choices=ROUTE_TYPE_CHOICES, default='domestic')
-    base_price = models.DecimalField(_('base price'), max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     is_active = models.BooleanField(_('active'), default=True)
     description = models.TextField(_('description'), blank=True)
     amenities = models.JSONField(_('amenities'), default=dict, blank=True,
@@ -553,8 +549,6 @@ class Schedule(TimestampedModel):
     arrival_date = models.DateField(_('arrival date'))
     total_seats = models.PositiveIntegerField(_('total seats'), default=50)
     available_seats = models.PositiveIntegerField(_('available seats'), default=50)
-    price = models.DecimalField(_('price'), max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], 
-                               help_text=_('Base price (used as default adult fare if adult_fare is not set)'))
     
     # Passenger-specific fares
     adult_fare = models.DecimalField(
@@ -562,9 +556,7 @@ class Schedule(TimestampedModel):
         max_digits=10, 
         decimal_places=2, 
         validators=[MinValueValidator(0)],
-        null=True,
-        blank=True,
-        help_text=_('Fare for adults (12+ years). If not set, uses base price.')
+        help_text=_('Fare for adults (12+ years)')
     )
     child_fare = models.DecimalField(
         _('child fare (2-11 years)'), 
@@ -670,24 +662,24 @@ class Schedule(TimestampedModel):
         return delta.days
     
     def get_price_for_passengers(self, num_passengers=1):
-        """Calculate total price for multiple passengers"""
-        return self.price * Decimal(str(num_passengers))
+        """Calculate total price for multiple passengers (using adult fare)"""
+        return self.adult_fare * Decimal(str(num_passengers))
     
     def get_fare_for_passenger_type(self, passenger_type):
         """
         Get fare for a specific passenger type.
         passenger_type: 'adult', 'child', or 'infant'
-        Returns the appropriate fare or falls back to base price.
+        Returns the appropriate fare.
         """
         if passenger_type == 'adult':
-            return self.adult_fare if self.adult_fare is not None else self.price
+            return self.adult_fare
         elif passenger_type == 'child':
-            return self.child_fare if self.child_fare is not None else self.price * Decimal('0.75')
+            return self.child_fare if self.child_fare is not None else self.adult_fare * Decimal('0.75')
         elif passenger_type == 'infant':
-            return self.infant_fare if self.infant_fare is not None else self.price * Decimal('0.10')
+            return self.infant_fare if self.infant_fare is not None else self.adult_fare * Decimal('0.10')
         else:
             # Default to adult fare for unknown types
-            return self.adult_fare if self.adult_fare is not None else self.price
+            return self.adult_fare
     
     def can_book(self, num_seats=1):
         """Check if specified number of seats can be booked"""
@@ -831,8 +823,8 @@ class Booking(TimestampedModel):
         if not self.schedule:
             return
         
-        # Base fare per passenger
-        fare_per_passenger = self.schedule.price
+        # Base fare per passenger (using adult fare)
+        fare_per_passenger = self.schedule.adult_fare
         self.base_fare = fare_per_passenger * Decimal(str(num_passengers))
         
         # Tax removed as per client request
@@ -1274,9 +1266,12 @@ class Contact(TimestampedModel):
 class ODWallet(TimestampedModel):
     """OD (Organizational Discount) Wallet - Admin controlled access and recharge only"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='od_wallet')
-    balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, help_text=_('Current balance (can be negative after expiry)'))
     is_active = models.BooleanField(_('active'), default=False, help_text=_('Only admin can enable/disable OD wallet access'))
     max_balance = models.DecimalField(_('maximum balance'), max_digits=10, decimal_places=2, default=100000, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit'))
+    expiry_days = models.IntegerField(_('expiry days'), default=0, help_text=_('Number of days after which wallet expires (0 = no expiry)'))
+    expires_at = models.DateTimeField(_('expires at'), null=True, blank=True, help_text=_('Auto-calculated expiry date'))
+    initial_balance = models.DecimalField(_('initial balance'), max_digits=10, decimal_places=2, default=0, help_text=_('Initial balance when wallet was created/activated'))
     
     class Meta:
         verbose_name = _('OD Wallet')
@@ -1286,8 +1281,73 @@ class ODWallet(TimestampedModel):
     def __str__(self):
         return f"OD Wallet - {self.user.email} (₹{self.balance})"
     
+    def save(self, *args, **kwargs):
+        """Auto-calculate expires_at when expiry_days is set"""
+        if self.expiry_days > 0 and not self.expires_at:
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timedelta(days=self.expiry_days)
+        elif self.expiry_days == 0:
+            self.expires_at = None
+        super().save(*args, **kwargs)
+    
+    def is_expired(self):
+        """Check if wallet has expired"""
+        if not self.expires_at:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+    
+    def days_remaining(self):
+        """Calculate days remaining until expiry (returns negative if expired)"""
+        if not self.expires_at:
+            return None
+        from django.utils import timezone
+        now = timezone.now()
+        delta = self.expires_at - now
+        return delta.days  # Can be negative if expired
+    
+    def process_expiry(self):
+        """Process expired wallet: deduct remaining balance and deactivate"""
+        if not self.is_expired() or not self.is_active:
+            return False
+        
+        # Calculate used amount (initial - current balance before expiry)
+        # If balance is already negative, it means it was processed before
+        if self.balance < 0:
+            return False  # Already processed
+        
+        # Calculate how much was used
+        used_amount = self.initial_balance - self.balance
+        
+        # Deduct remaining balance (make it negative to show used amount)
+        remaining_balance = self.balance
+        if remaining_balance > 0:
+            # Set balance to negative of used amount
+            self.balance = -used_amount
+            self.is_active = False
+            self.save()
+            
+            # Create transaction record for expiry deduction
+            ODWalletTransaction.objects.create(
+                od_wallet=self,
+                transaction_type='adjustment',
+                amount=-remaining_balance,
+                balance_after=self.balance,
+                description=f'Wallet expired. Remaining balance ₹{remaining_balance} deducted. Used: ₹{used_amount}',
+                reference_id='EXPIRY_AUTO'
+            )
+            return True
+        elif remaining_balance == 0:
+            # Balance is zero, just deactivate
+            self.is_active = False
+            self.save()
+            return True
+        return False
+    
     def can_use(self):
-        """Check if OD wallet can be used (active and has balance)"""
+        """Check if OD wallet can be used (active and has balance and not expired)"""
+        if self.is_expired():
+            return False
         return self.is_active and self.balance > 0
     
     def add_balance(self, amount, transaction_type='recharge', description='', reference_id=None):
@@ -1297,6 +1357,10 @@ class ODWallet(TimestampedModel):
         
         if (self.balance + amount) > self.max_balance:
             raise ValidationError(_(f'Balance cannot exceed maximum limit of ₹{self.max_balance}'))
+        
+        # Track initial balance if this is first recharge or wallet is being activated
+        if self.initial_balance == 0 or (not self.is_active and transaction_type == 'recharge'):
+            self.initial_balance = self.balance + amount
         
         self.balance += amount
         self.save()
@@ -1363,16 +1427,22 @@ class ODWalletTransaction(TimestampedModel):
         ]
     
     def __str__(self):
-        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.od_wallet.user.email}"
+        if self.amount is None:
+            return f"{self.get_transaction_type_display()} - N/A"
+        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.od_wallet.user.email if self.od_wallet else 'N/A'}"
     
     @property
     def is_credit(self):
         """Check if transaction is a credit (positive amount)"""
+        if self.amount is None:
+            return False
         return self.amount > 0
     
     @property
     def is_debit(self):
         """Check if transaction is a debit (negative amount)"""
+        if self.amount is None:
+            return False
         return self.amount < 0
 
 class CashBalanceWallet(TimestampedModel):
@@ -1463,16 +1533,22 @@ class CashBalanceTransaction(TimestampedModel):
         ]
     
     def __str__(self):
-        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.cash_balance_wallet.user.email}"
+        if self.amount is None:
+            return f"{self.get_transaction_type_display()} - N/A"
+        return f"{self.get_transaction_type_display()} - ₹{abs(self.amount)} - {self.cash_balance_wallet.user.email if self.cash_balance_wallet else 'N/A'}"
     
     @property
     def is_credit(self):
         """Check if transaction is a credit (positive amount)"""
+        if self.amount is None:
+            return False
         return self.amount > 0
     
     @property
     def is_debit(self):
         """Check if transaction is a debit (negative amount)"""
+        if self.amount is None:
+            return False
         return self.amount < 0
 
 class SalesRepresentative(TimestampedModel):

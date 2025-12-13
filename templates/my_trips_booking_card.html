@@ -1,0 +1,100 @@
+{% load travel_filters %}
+<div class="bg-white rounded-lg border border-gray-200 p-4 mb-4 shadow-sm">
+    <!-- Passenger Name Header -->
+    <div class="mb-4">
+        <h3 class="text-lg font-bold mb-3" style="color: #111827 !important;">
+            {% for passenger in booking.passengers.all %}
+                {% if forloop.first %}
+                    {{ passenger.first_name|upper }} {{ passenger.last_name|upper }}
+                {% endif %}
+            {% endfor %}
+        </h3>
+        
+        <!-- Tickets Section -->
+        <div class="mb-3">
+            <p class="text-sm font-semibold mb-2" style="color: #4b5563 !important;">Tickets:</p>
+            <ul class="list-decimal list-inside space-y-1">
+                {% for passenger in booking.passengers.all %}
+                <li class="text-sm" style="color: #4b5563 !important;">
+                    {{ passenger.first_name|upper }} {{ passenger.last_name|upper }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Flight Information -->
+        <div class="mb-3">
+            <p class="text-sm mb-2" style="color: #4b5563 !important;">
+                <span class="font-semibold">{{ booking.schedule.route.carrier_number }}</span> | 
+                {% if booking.schedule.route.from_location in airport_codes %}
+                    {{ airport_codes|get_item:booking.schedule.route.from_location }}
+                {% else %}
+                    {{ booking.schedule.route.from_location }}
+                {% endif %}
+                - 
+                {% if booking.schedule.route.to_location in airport_codes %}
+                    {{ airport_codes|get_item:booking.schedule.route.to_location }}
+                {% else %}
+                    {{ booking.schedule.route.to_location }}
+                {% endif %}
+                | 
+                {{ booking.schedule.departure_date|date:"d M Y" }}
+            </p>
+            
+            <!-- Passenger Type -->
+            <p class="text-sm mb-2" style="color: #4b5563 !important;">
+                {% regroup booking.passengers.all by passenger_type as type_groups %}
+                {% for group in type_groups %}
+                    {% if group.grouper == 'adult' %}
+                        {{ group.list|length }} ADT
+                    {% endif %}
+                {% endfor %}
+                {% for group in type_groups %}
+                    {% if group.grouper == 'child' %}
+                        {% for g in type_groups %}
+                            {% if g.grouper == 'adult' and g.list|length > 0 %}, {% endif %}
+                        {% endfor %}{{ group.list|length }} CHD
+                    {% endif %}
+                {% endfor %}
+                {% for group in type_groups %}
+                    {% if group.grouper == 'infant' %}
+                        {% for g in type_groups %}
+                            {% if g.grouper == 'adult' and g.list|length > 0 or g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                        {% endfor %}{{ group.list|length }} INF
+                    {% endif %}
+                {% endfor %}
+            </p>
+            
+            <!-- PNR -->
+            <p class="text-sm mb-2" style="color: #4b5563 !important;">
+                <span class="font-semibold">PNR:</span> 
+                <span class="font-mono">{{ booking.schedule.route.carrier_number }} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+            </p>
+            
+            <!-- Reference Number -->
+            <p class="text-sm mb-2" style="color: #4b5563 !important;">
+                <span class="font-semibold">Ref No.:</span> 
+                <span class="font-mono">{{ booking.booking_reference }}</span>
+            </p>
+            
+            <!-- Status -->
+            <p class="text-sm mb-3" style="color: #4b5563 !important;">
+                <span class="font-semibold">Status:</span> 
+                <span class="{% if booking.status == 'confirmed' %}text-green-600 font-semibold{% elif booking.status == 'cancelled' %}text-red-600{% else %}text-yellow-600{% endif %}">
+                    {% if booking.status == 'confirmed' %}Ticketed{% else %}{{ booking.get_status_display }}{% endif %}
+                </span>
+            </p>
+        </div>
+        
+        <!-- Action Links -->
+        <div class="mb-4 flex flex-wrap gap-3 text-sm">
+            {% if booking.payment_status == 'paid' and booking.status == 'confirmed' %}
+            <a href="{% url 'download_ticket_pdf' booking.id %}" target="_blank" 
+               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200">
+                <i class="fas fa-ticket-alt mr-2"></i>
+                View Ticket
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -157,11 +157,11 @@ class ScheduleInline(admin.TabularInline):
     model = Schedule
     extra = 1
     readonly_fields = ('created_at', 'updated_at')
-    fields = ('departure_date', 'arrival_date', 'pnr', 'total_seats', 'available_seats', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'is_active', 'notes')
+    fields = ('departure_date', 'arrival_date', 'pnr', 'total_seats', 'available_seats', 'adult_fare', 'child_fare', 'infant_fare', 'is_active', 'notes')
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'airline_name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'base_price', 'is_non_refundable', 'is_active')
+    list_display = ('name', 'airline_name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'is_non_refundable', 'is_active')
     list_filter = ('transport_type', 'route_type', 'is_active', 'is_non_refundable', 'airline_name')
     search_fields = ('name', 'from_location', 'to_location', 'carrier_number', 'airline_name')
     inlines = [ScheduleInline]
@@ -177,8 +177,8 @@ class RouteAdmin(admin.ModelAdmin):
         ('Terminal Information', {
             'fields': ('departure_terminal', 'arrival_terminal')
         }),
-        ('Pricing & Status', {
-            'fields': ('base_price', 'is_non_refundable', 'is_active')
+        ('Status', {
+            'fields': ('is_non_refundable', 'is_active')
         }),
         ('Additional Information', {
             'fields': ('description', 'amenities'),
@@ -194,68 +194,11 @@ class RouteAdmin(admin.ModelAdmin):
         return obj.formatted_duration
     duration_formatted.short_description = 'Duration'
 
-@admin.register(Schedule)
-class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('route', 'departure_date', 'arrival_date', 'pnr', 'price', 'adult_fare', 'child_fare', 'infant_fare', 'available_seats', 'total_seats', 'is_active')
-    list_filter = ('is_active', 'departure_date', 'route__transport_type')
-    search_fields = ('route__name', 'route__from_location', 'route__to_location', 'route__carrier_number', 'pnr')
-    readonly_fields = ('created_at', 'updated_at')
-    date_hierarchy = 'departure_date'
-    actions = ['sync_pnr_to_passengers']
-    
-    fieldsets = (
-        ('Schedule Information', {
-            'fields': ('route', 'departure_date', 'arrival_date', 'pnr', 'is_active')
-        }),
-        ('Seating', {
-            'fields': ('total_seats', 'available_seats')
-        }),
-        ('Pricing', {
-            'fields': ('price', 'adult_fare', 'child_fare', 'infant_fare'),
-            'description': 'Base price is used as default adult fare if adult_fare is not set. Child and infant fares are typically around ₹4000.'
-        }),
-        ('Additional Information', {
-            'fields': ('notes',),
-            'classes': ('collapse',)
-        }),
-        ('System Information', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def sync_pnr_to_passengers(self, request, queryset):
-        """Sync PNR from selected schedules to all their passengers"""
-        total_updated = 0
-        schedules_processed = 0
-        
-        for schedule in queryset:
-            if not schedule.pnr:
-                continue
-            
-            # Get all bookings for this schedule
-            bookings = Booking.objects.filter(schedule=schedule)
-            
-            for booking in bookings:
-                # Update PNR for all adult and child passengers
-                passengers = booking.passengers.filter(
-                    passenger_type__in=['adult', 'child']
-                )
-                
-                for passenger in passengers:
-                    if passenger.pnr != schedule.pnr:
-                        passenger.pnr = schedule.pnr
-                        passenger.save()
-                        total_updated += 1
-            
-            schedules_processed += 1
-        
-        self.message_user(
-            request,
-            f'Successfully synced PNR for {schedules_processed} schedules. Updated {total_updated} passengers.'
-        )
-    
-    sync_pnr_to_passengers.short_description = 'Sync PNR to all passengers of selected schedules'
+# ScheduleAdmin removed - Schedules are now managed only through Route inline
+# This prevents confusion - all schedule management happens within Route edit page
+# @admin.register(Schedule)
+# class ScheduleAdmin(admin.ModelAdmin):
+#     ... (commented out to avoid confusion)
 
 class BookingPassengerInline(admin.TabularInline):
     model = BookingPassenger
@@ -432,7 +375,7 @@ class ODWalletTransactionInline(admin.TabularInline):
 
 @admin.register(ODWallet)
 class ODWalletAdmin(admin.ModelAdmin):
-    list_display = ('user_email', 'balance', 'is_active', 'max_balance', 'created_at')
+    list_display = ('user_email', 'balance_display', 'is_active', 'expiry_info', 'max_balance', 'created_at')
     list_filter = ('is_active', 'created_at')
     search_fields = ('user__email', 'user__first_name', 'user__last_name')
     readonly_fields = ('created_at', 'updated_at', 'user_email', 'transaction_count')
@@ -440,10 +383,35 @@ class ODWalletAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     actions = ['activate_wallets', 'deactivate_wallets', 'recharge_wallets']
     
+    def balance_display(self, obj):
+        if obj.balance < 0:
+            return f"-₹{abs(obj.balance):.2f}"
+        return f"₹{obj.balance:.2f}"
+    balance_display.short_description = 'Balance'
+    
+    def expiry_info(self, obj):
+        if obj.expires_at:
+            if obj.is_expired():
+                return f"Expired ({obj.days_remaining()} days ago)"
+            days = obj.days_remaining()
+            if days == 0:
+                return "Expires Today"
+            elif days == 1:
+                return "1 Day Left"
+            else:
+                return f"{days} Days Left"
+        return "No Expiry"
+    expiry_info.short_description = 'Expiry Status'
+    
     fieldsets = (
         ('OD Wallet Information', {
-            'fields': ('user_email', 'balance', 'max_balance', 'is_active'),
+            'fields': ('user', 'balance', 'max_balance', 'is_active'),
             'description': 'OD Wallet can only be recharged by admin. Users can only use it when active.'
+        }),
+        ('Expiry Settings', {
+            'fields': ('expiry_days', 'expires_at', 'initial_balance'),
+            'description': 'Set expiry_days (e.g., 3 for 3 days). After expiry, remaining balance will be deducted and wallet deactivated. Initial balance is auto-tracked.',
+            'classes': ('collapse',)
         }),
         ('Statistics', {
             'fields': ('transaction_count',),
@@ -458,6 +426,13 @@ class ODWalletAdmin(admin.ModelAdmin):
     def user_email(self, obj):
         return obj.user.email if obj.user else 'N/A'
     user_email.short_description = 'User'
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Make user_email readonly when editing, but allow user selection when creating"""
+        readonly = list(self.readonly_fields)
+        if obj:  # Editing existing object
+            readonly.append('user')  # Make user readonly when editing
+        return readonly
     
     def transaction_count(self, obj):
         return obj.transactions.count()
@@ -504,6 +479,8 @@ class ODWalletTransactionAdmin(admin.ModelAdmin):
     wallet_user.short_description = 'User'
     
     def amount_display(self, obj):
+        if obj is None or obj.amount is None:
+            return "N/A"
         if obj.amount > 0:
             return format_html('<span style="color: green;">+₹{}</span>', obj.amount)
         else:
@@ -511,6 +488,8 @@ class ODWalletTransactionAdmin(admin.ModelAdmin):
     amount_display.short_description = 'Amount'
     
     def is_credit_display(self, obj):
+        if obj is None or obj.amount is None:
+            return "N/A"
         return "Credit" if obj.is_credit else "Debit"
     is_credit_display.short_description = 'Type'
 

@@ -372,8 +372,9 @@ def get_client_ip(request):
 
 # Landing page removed - root URL now goes directly to login
 
+@login_required
 def homepage(request):
-    """Homepage with search and featured packages - visible to everyone, but booking requires login"""
+    """Homepage with search and featured packages - login required"""
     # Homepage is now visible to everyone (no authentication required)
     # Booking functionality is protected with @login_required decorator
     
@@ -456,6 +457,7 @@ def homepage(request):
     return render(request, 'index.html', context)
 
 
+@login_required
 def search_flights(request):
     """Search for available flights with enhanced functionality"""
     from_location = request.GET.get('from_location', '').strip()
@@ -547,8 +549,8 @@ def search_flights(request):
     # Filter flights with enough available seats
     flights = flights.filter(available_seats__gte=passengers)
     
-    # Order by price and departure date
-    flights = flights.order_by('price', 'departure_date')
+    # Order by adult fare (or use route base_price) and departure date
+    flights = flights.order_by('adult_fare', 'departure_date')
     
     # Search for return flights if trip_type is 'return'
     return_flights = None
@@ -587,7 +589,7 @@ def search_flights(request):
             return_flights = return_flights.filter(available_seats__gte=passengers)
             
             # Order by price and departure date
-            return_flights = return_flights.order_by('price', 'departure_date')
+            return_flights = return_flights.order_by('adult_fare', 'departure_date')
             
         except ValueError:
             messages.error(request, 'Invalid return date format.')
@@ -604,6 +606,32 @@ def search_flights(request):
     
     # Get travel class if provided
     travel_class = request.GET.get('travel_class', 'economy').strip()
+    
+    # Calculate previous and next dates for date navigation
+    previous_date = None
+    next_date = None
+    date_range = []
+    
+    if travel_date:
+        try:
+            travel_date_obj = datetime.strptime(travel_date, '%Y-%m-%d').date()
+            # Previous date (at least today)
+            prev_date = travel_date_obj - timedelta(days=1)
+            if prev_date >= timezone.now().date():
+                previous_date = prev_date.strftime('%Y-%m-%d')
+            else:
+                previous_date = timezone.now().date().strftime('%Y-%m-%d')
+            
+            # Next date
+            next_date = (travel_date_obj + timedelta(days=1)).strftime('%Y-%m-%d')
+            
+            # Generate 7-day range centered around travel_date (3 before, current, 3 after)
+            start_date = max(travel_date_obj - timedelta(days=3), timezone.now().date())
+            for i in range(7):
+                check_date = start_date + timedelta(days=i)
+                date_range.append(check_date.strftime('%Y-%m-%d'))
+        except ValueError:
+            pass
     
     context = {
         'flights': flights,
@@ -625,6 +653,9 @@ def search_flights(request):
         'route_info': route_info,
         'total_flights': flights.count(),
         'total_return_flights': return_flights.count() if return_flights else 0,
+        'previous_date': previous_date,
+        'next_date': next_date,
+        'date_range': date_range,
     }
     return render(request, 'search.html', context)
 
@@ -1093,6 +1124,7 @@ def handle_booking_confirmation(request, schedule_id):
     # Redirect to payment page
     return redirect('payment', booking_id=booking.id)
 
+@login_required
 def contact(request):
     """Handle contact form submission"""
     if request.method == 'POST':
@@ -1130,10 +1162,12 @@ def contact_thanks(request, contact_id):
     
     return render(request, 'thanks.html', {'contact': contact})
 
+@login_required
 def visit_visa(request):
     """Visit Visa services page"""
     return render(request, 'visit_visa.html')
 
+@login_required
 def apply_visa(request):
     """Visa application form"""
     country = request.GET.get('country', '')
@@ -1170,6 +1204,28 @@ def apply_visa(request):
         passport_front = request.FILES.get('passport_front')
         passport_back = request.FILES.get('passport_back')
         passport_size_photo = request.FILES.get('passport_size_photo')
+        
+        # Validate phone number - exactly 10 digits
+        phone_digits = ''.join(filter(str.isdigit, phone))
+        if len(phone_digits) != 10:
+            messages.error(request, 'Phone number must be exactly 10 digits.')
+            context = {
+                'country': country,
+                'duration': duration,
+                'price': price,
+                'visa': selected_visa,
+            }
+            return render(request, 'apply_visa.html', context)
+        if phone_digits[0] not in '6789':
+            messages.error(request, 'Phone number must start with 6, 7, 8, or 9.')
+            context = {
+                'country': country,
+                'duration': duration,
+                'price': price,
+                'visa': selected_visa,
+            }
+            return render(request, 'apply_visa.html', context)
+        phone = phone_digits
         
         # Validate file uploads
         if not passport_front or not passport_back or not passport_size_photo:
@@ -1209,9 +1265,11 @@ def apply_visa(request):
     }
     return render(request, 'apply_visa.html', context)
 
+@login_required
 def about(request):
     return render(request, 'about.html')
 
+@login_required
 def umrah(request):
     """Umrah package inquiry form"""
     from .forms import UmrahForm
@@ -1250,14 +1308,17 @@ def umrah_thanks(request, umrah_id):
     umrah = get_object_or_404(Umrah, id=umrah_id)
     return render(request, 'umrah_thanks.html', {'umrah': umrah})
 
+@login_required
 def privacy_policy(request):
     """Privacy Policy page"""
     return render(request, 'privacy_policy.html')
 
+@login_required
 def terms_conditions(request):
     """Terms and Conditions page"""
     return render(request, 'terms_conditions.html')
 
+@login_required
 def faq(request):
     """FAQ page"""
     return render(request, 'faq.html')
@@ -1313,10 +1374,21 @@ def dashboard(request):
     od_wallet = None
     od_wallet_balance = Decimal('0')
     has_od_wallet_access = False
+    od_wallet_days_remaining = None
+    od_wallet_is_expired = False
     try:
         od_wallet = ODWallet.objects.get(user=request.user)
         od_wallet_balance = od_wallet.balance
-        has_od_wallet_access = od_wallet.is_active
+        has_od_wallet_access = od_wallet.is_active and not od_wallet.is_expired()
+        od_wallet_days_remaining = od_wallet.days_remaining()
+        od_wallet_is_expired = od_wallet.is_expired()
+        
+        # Auto-process expired wallet if needed
+        if od_wallet_is_expired and od_wallet.is_active:
+            od_wallet.process_expiry()
+            od_wallet.refresh_from_db()
+            od_wallet_balance = od_wallet.balance
+            has_od_wallet_access = False
     except ODWallet.DoesNotExist:
         pass
     
@@ -1348,6 +1420,8 @@ def dashboard(request):
         'od_wallet': od_wallet,
         'od_wallet_balance': od_wallet_balance,
         'has_od_wallet_access': has_od_wallet_access,
+        'od_wallet_days_remaining': od_wallet_days_remaining,
+        'od_wallet_is_expired': od_wallet_is_expired,
         'cash_balance_wallet': cash_balance_wallet,
         'cash_balance': cash_balance,
     }
@@ -1486,6 +1560,9 @@ def payment_page(request, booking_id):
                 if payment_method == 'od_wallet':
                     # OD Wallet payment (admin controlled)
                     wallet = ODWallet.objects.get(user=request.user, is_active=True)
+                    if wallet.is_expired():
+                        messages.error(request, 'OD Wallet has expired and cannot be used.')
+                        return redirect('payment', booking_id=booking.id)
                     wallet_type = 'OD Wallet'
                 else:
                     # Cash Balance Wallet payment (user self-recharge)
@@ -1545,10 +1622,17 @@ def payment_page(request, booking_id):
     od_wallet = None
     od_wallet_balance = Decimal('0')
     can_use_od_wallet = False
+    od_wallet_days_remaining = None
+    od_wallet_is_expired = False
     try:
         od_wallet = ODWallet.objects.get(user=request.user, is_active=True)
+        od_wallet_is_expired = od_wallet.is_expired()
+        if od_wallet_is_expired:
+            od_wallet.process_expiry()
+            od_wallet.refresh_from_db()
         od_wallet_balance = od_wallet.balance
-        can_use_od_wallet = od_wallet.balance >= booking.total_amount
+        can_use_od_wallet = not od_wallet_is_expired and od_wallet.balance >= booking.total_amount and od_wallet.is_active
+        od_wallet_days_remaining = od_wallet.days_remaining()
     except ODWallet.DoesNotExist:
         pass
     
@@ -1744,6 +1828,8 @@ def payment_page(request, booking_id):
         'od_wallet': od_wallet,
         'od_wallet_balance': od_wallet_balance,
         'can_use_od_wallet': can_use_od_wallet,
+        'od_wallet_days_remaining': od_wallet_days_remaining,
+        'od_wallet_is_expired': od_wallet_is_expired,
         'cash_balance_wallet': cash_balance_wallet,
         'cash_balance': cash_balance,
         'can_use_cash_balance': can_use_cash_balance,
@@ -2203,6 +2289,16 @@ def group_request(request):
                 messages.error(request, 'Please fill in all required contact fields.')
                 return redirect('group_request')
             
+            # Validate phone number - exactly 10 digits
+            contact_phone_digits = ''.join(filter(str.isdigit, contact_phone))
+            if len(contact_phone_digits) != 10:
+                messages.error(request, 'Phone number must be exactly 10 digits.')
+                return redirect('group_request')
+            if contact_phone_digits[0] not in '6789':
+                messages.error(request, 'Phone number must start with 6, 7, 8, or 9.')
+                return redirect('group_request')
+            contact_phone = contact_phone_digits
+            
             if not origin or not destination:
                 messages.error(request, 'Please specify origin and destination.')
                 return redirect('group_request')
@@ -2442,7 +2538,7 @@ def link_callback(uri, rel):
         
     return path
 
-def _generate_ticket_pdf(booking, hide_fare=False):
+def _generate_ticket_pdf(booking, hide_fare=False, convenience_fee=0):
     """Helper function to generate ticket PDF from HTML template"""
     from io import BytesIO
     from django.template.loader import render_to_string
@@ -2463,14 +2559,20 @@ def _generate_ticket_pdf(booking, hide_fare=False):
         
         # Get user details
         user = booking.user
+        
+        # Calculate total with convenience fee
+        total_with_fee = float(booking.total_amount) + float(convenience_fee)
 
-        # Render HTML template
+        # Render HTML template (is_web_view=False for PDF generation)
         html_string = render_to_string('print_pdf.html', {
             'booking': booking,
             'airport_codes': airport_codes,
             'user_profile': user_profile,
             'user': user,
             'hide_fare': hide_fare,
+            'convenience_fee': convenience_fee,
+            'total_with_fee': total_with_fee,
+            'is_web_view': False,  # Not a web view, this is PDF generation
         })
         
         # Create PDF buffer
@@ -2486,17 +2588,17 @@ def _generate_ticket_pdf(booking, hide_fare=False):
         
         if pisa_status.err:
             # Fallback to old method if xhtml2pdf fails
-            return _generate_ticket_pdf_old(booking, hide_fare)
+            return _generate_ticket_pdf_old(booking, hide_fare, convenience_fee)
         
         buffer.seek(0)
         return buffer
         
     except ImportError:
         # If xhtml2pdf is not installed, use old method
-        return _generate_ticket_pdf_old(booking, hide_fare)
+        return _generate_ticket_pdf_old(booking, hide_fare, convenience_fee)
 
 
-def _generate_ticket_pdf_old(booking, hide_fare=False):
+def _generate_ticket_pdf_old(booking, hide_fare=False, convenience_fee=0):
     """Old helper function to generate ticket PDF using ReportLab (fallback)"""
     from io import BytesIO
     
@@ -2670,32 +2772,34 @@ def _generate_ticket_pdf_old(booking, hide_fare=False):
 @login_required
 @xframe_options_sameorigin
 def download_ticket_pdf(request, booking_id):
-    """Generate and download PDF ticket"""
+    """View ticket HTML page (same as view_ticket)"""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
-    # Only allow download for confirmed and paid bookings
+    # Only allow view for confirmed and paid bookings
     if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
-        messages.error(request, 'Ticket can only be downloaded for confirmed and paid bookings.')
+        messages.error(request, 'Ticket can only be viewed for confirmed and paid bookings.')
         return redirect('dashboard')
     
-    # Check if hiding fare
-    hide_fare = request.GET.get('hide_fare', 'false').lower() == 'true'
+    # Get comprehensive airport codes
+    airport_codes = get_airport_codes()
     
-    # Generate PDF
-    buffer = _generate_ticket_pdf(booking, hide_fare=hide_fare)
+    # Get user profile for branding (if available)
+    try:
+        user_profile = booking.user.profile
+    except:
+        user_profile = None
     
-    # Create PDF response
-    response = HttpResponse(buffer.read(), content_type='application/pdf')
-    # Check if viewing inline (for iframe) or downloading
-    view_mode = request.GET.get('view', 'false').lower() == 'true'
-    if view_mode:
-        response['Content-Disposition'] = f'inline; filename="ticket_{booking.booking_reference}.pdf"'
-        # Allow iframe embedding for viewing
-        response['X-Frame-Options'] = 'SAMEORIGIN'
-    else:
-        response['Content-Disposition'] = f'attachment; filename="ticket_{booking.booking_reference}.pdf"'
+    # Get user details
+    user = booking.user
     
-    return response
+    context = {
+        'booking': booking,
+        'airport_codes': airport_codes,
+        'user_profile': user_profile,
+        'user': user,
+        'is_web_view': True,
+    }
+    return render(request, 'print_pdf.html', context)
 
 
 @login_required
@@ -2712,6 +2816,26 @@ def print_ticket_pdf(request, booking_id):
     
     response = HttpResponse(buffer.read(), content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="ticket_{booking.booking_reference}_nofare.pdf"'
+    return response
+
+
+@login_required
+def download_ticket_without_fare(request, booking_id):
+    """Download ticket PDF without fare details"""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Only allow download for confirmed and paid bookings
+    if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
+        messages.error(request, 'Ticket can only be downloaded for confirmed and paid bookings.')
+        return redirect('dashboard')
+    
+    # Generate PDF without fare (hide_fare=True)
+    buffer = _generate_ticket_pdf(booking, hide_fare=True)
+    
+    # Create PDF download response
+    response = HttpResponse(buffer.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="ticket_{booking.booking_reference}_without_fare.pdf"'
+    
     return response
 
 
@@ -2805,33 +2929,45 @@ Thank you for choosing Safar Zone Travels!
 
 @login_required
 @require_POST
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def edit_booking_fare(request, booking_id):
-    """Edit booking fare"""
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    """Edit booking fare - Staff/Admin only"""
+    booking = get_object_or_404(Booking, id=booking_id)
     
-    if booking.status != Booking.Status.CONFIRMED:
-        return JsonResponse({'success': False, 'message': 'Can only edit fare for confirmed bookings.'})
+    # Check if user is staff or admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'You do not have permission to edit fares.')
+        return redirect('dashboard')
     
-    try:
-        new_base_fare = Decimal(request.POST.get('base_fare', booking.base_fare))
-        new_tax_amount = Decimal(request.POST.get('tax_amount', booking.tax_amount))
-        new_total = new_base_fare + new_tax_amount
-        
-        if new_base_fare < 0 or new_tax_amount < 0:
-            return JsonResponse({'success': False, 'message': 'Fare amounts cannot be negative.'})
-        
-        booking.base_fare = new_base_fare
-        booking.tax_amount = new_tax_amount
-        booking.total_amount = new_total
-        booking.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Fare updated successfully!',
-            'new_total': str(new_total)
-        })
-    except (ValueError, TypeError) as e:
-        return JsonResponse({'success': False, 'message': f'Invalid fare amount: {str(e)}'})
+    if request.method == 'POST':
+        try:
+            new_base_fare = Decimal(request.POST.get('base_fare', booking.base_fare))
+            new_tax_amount = Decimal(request.POST.get('tax_amount', booking.tax_amount))
+            new_discount = Decimal(request.POST.get('discount_amount', booking.discount_amount))
+            
+            if new_base_fare < 0 or new_tax_amount < 0 or new_discount < 0:
+                messages.error(request, 'Fare amounts cannot be negative.')
+                return redirect('edit_booking_fare', booking_id=booking_id)
+            
+            booking.base_fare = new_base_fare
+            booking.tax_amount = new_tax_amount
+            booking.discount_amount = new_discount
+            booking.calculate_total()
+            booking.save()
+            
+            messages.success(request, 'Fare updated successfully!')
+            return redirect('download_ticket_pdf', booking_id=booking_id)
+            
+        except (ValueError, TypeError) as e:
+            messages.error(request, f'Invalid fare amount: {str(e)}')
+            return redirect('edit_booking_fare', booking_id=booking_id)
+    
+    # GET request - show form
+    context = {
+        'booking': booking,
+    }
+    return render(request, 'edit_booking_fare.html', context)
 
 
 @require_http_methods(['GET', 'POST'])
@@ -3413,6 +3549,7 @@ def add_package(request):
     return redirect('admin_packages')
 
 
+@login_required
 def apply_package(request, package_name=None):
     """Package application form - for applying to travel packages"""
     if request.method == 'POST':
@@ -3431,6 +3568,16 @@ def apply_package(request, package_name=None):
             if not all([package_name, full_name, email, phone]):
                 messages.error(request, 'Please fill in all required fields.')
                 return redirect('apply_package', package_name=package_name or '')
+            
+            # Validate phone number - exactly 10 digits
+            phone_digits = ''.join(filter(str.isdigit, phone))
+            if len(phone_digits) != 10:
+                messages.error(request, 'Phone number must be exactly 10 digits.')
+                return redirect('apply_package', package_name=package_name or '')
+            if phone_digits[0] not in '6789':
+                messages.error(request, 'Phone number must start with 6, 7, 8, or 9.')
+                return redirect('apply_package', package_name=package_name or '')
+            phone = phone_digits
             
             # Parse travel date if provided
             travel_date = None

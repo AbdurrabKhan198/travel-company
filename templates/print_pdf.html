@@ -407,6 +407,43 @@
 
     </div>
 
+    <!-- 5.5. Fare Breakdown (if not hiding fare) -->
+    {% if not hide_fare %}
+    <div class="section-box">
+        <div class="section-title">Fare Breakdown</div>
+        <table style="width: 100%; font-size: 9pt;">
+            <tr>
+                <td width="200">Base Fare:</td>
+                <td style="text-align: right; font-weight: bold;">₹{{ booking.base_fare|floatformat:2 }}</td>
+            </tr>
+            {% if booking.tax_amount > 0 %}
+            <tr>
+                <td>Taxes & Fees:</td>
+                <td style="text-align: right; font-weight: bold;">₹{{ booking.tax_amount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            {% if booking.discount_amount > 0 %}
+            <tr>
+                <td>Discount:</td>
+                <td style="text-align: right; font-weight: bold; color: #10b981;">-₹{{ booking.discount_amount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            {% if convenience_fee and convenience_fee > 0 %}
+            <tr>
+                <td>Convenience Fee:</td>
+                <td style="text-align: right; font-weight: bold; color: #f59e0b;">+₹{{ convenience_fee|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            <tr style="border-top: 2px solid #2c3e50; margin-top: 5px;">
+                <td style="font-weight: bold; font-size: 11pt; padding-top: 10px;">Total Amount:</td>
+                <td style="text-align: right; font-weight: bold; font-size: 11pt; padding-top: 10px;">
+                    ₹{% if convenience_fee and convenience_fee > 0 %}{{ total_with_fee|floatformat:2 }}{% else %}{{ booking.total_amount|floatformat:2 }}{% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
     <!-- 6. In-Flight Services -->
     <div style="border: 1px solid #2c3e50; border-top: none;">
         <div class="section-title" style="padding: 10px 10px 0 10px;">In-Flight Services</div>
@@ -449,6 +486,95 @@
         - Details should also be confirmed from the website of the concerned State Government.<br>
         - Caution: Customers are advised to check the latest travel guidelines and requirements before travel.
 </div>
+
+    <!-- Action Buttons Section (Only shown in web view, not in PDF) -->
+    {% if is_web_view %}
+    <div class="action-buttons-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center;">
+        <h3 style="color: white; font-size: 14pt; margin-bottom: 20px; font-weight: bold;">
+            <i class="fas fa-tools"></i> Ticket Actions
+        </h3>
+        
+        <!-- Fare Input Section -->
+        <div id="fareInputSection" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <label style="display: block; color: #333; font-weight: bold; margin-bottom: 10px; font-size: 12pt;">
+                <i class="fas fa-rupee-sign"></i> Increase Fare (Convenience Fee)
+            </label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="convenienceFee" min="0" step="0.01" value="0" 
+                       placeholder="Enter amount" 
+                       style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 6px; font-size: 14pt; font-weight: bold; text-align: center;">
+                <span style="color: #333; font-weight: bold; font-size: 14pt;">₹</span>
+            </div>
+            <p id="totalWithFee" style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 13pt;">
+                Total: ₹{{ booking.total_amount|floatformat:2 }}
+            </p>
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <!-- Print with Fare Button -->
+            <button onclick="printWithFare()" 
+                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 11pt; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.05)'"
+                    onmouseout="this.style.transform='scale(1)'">
+                <i class="fas fa-print" style="font-size: 14pt;"></i>
+                <span>Print with Fare</span>
+            </button>
+            
+            <!-- Print without Fare Button -->
+            <button onclick="printWithoutFare()" 
+                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 11pt; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.05)'"
+                    onmouseout="this.style.transform='scale(1)'">
+                <i class="fas fa-file-pdf" style="font-size: 14pt;"></i>
+                <span>Print without Fare</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <style>
+        /* Hide action buttons when printing */
+        @media print {
+            .action-buttons-section {
+                display: none !important;
+            }
+        }
+    </style>
+    
+    <!-- Font Awesome for Icons -->
+    {% if is_web_view %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        const bookingId = {{ booking.id }};
+        const baseTotal = {{ booking.total_amount }};
+        
+        // Update total when fare changes
+        document.getElementById('convenienceFee').addEventListener('input', function() {
+            const fee = parseFloat(this.value) || 0;
+            const newTotal = baseTotal + fee;
+            document.getElementById('totalWithFee').textContent = `Total: ₹${newTotal.toFixed(2)}`;
+        });
+        
+        function printWithFare() {
+            const fee = parseFloat(document.getElementById('convenienceFee').value) || 0;
+            if (fee < 0) {
+                alert('Fare amount cannot be negative!');
+                return;
+            }
+            
+            // Open PDF with convenience fee parameter
+            const url = `/ticket/${bookingId}/pdf/?convenience_fee=${fee}&view=true`;
+            window.open(url, '_blank');
+        }
+        
+        function printWithoutFare() {
+            // Open PDF without fare
+            const url = `/ticket/${bookingId}/pdf/?hide_fare=true&view=true`;
+            window.open(url, '_blank');
+        }
+    </script>
+    {% endif %}
 
 </body>
 

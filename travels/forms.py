@@ -70,23 +70,28 @@ class UserRegisterForm(UserCreationForm):
     )
     
     phone_regex = RegexValidator(
-        regex=r'^\d{10,15}$',
-        message=_("Phone number must contain only digits (10-15 digits allowed).")
+        regex=r'^\d{10}$',
+        message=_("Phone number must be exactly 10 digits.")
     )
     
     phone = forms.CharField(
         label=_('Phone Number'),
         validators=[phone_regex],
-        max_length=15,
+        max_length=10,
         min_length=10,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': _('e.g. 9876543210'),
             'autocomplete': 'tel',
-            'pattern': r'\d{10,15}',
+            'pattern': '[0-9]{10}',
+            'maxlength': '10',
+            'minlength': '10',
+            'inputmode': 'numeric',
+            'title': 'Please enter exactly 10 digits',
+            'oninput': 'this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10)',
         }),
         required=True,
-        help_text=_('Enter your phone number (10-15 digits only, no spaces or special characters)')
+        help_text=_('Enter your 10-digit phone number (e.g., 9876543210)')
     )
     
     password1 = forms.CharField(
@@ -262,14 +267,24 @@ class UserRegisterForm(UserCreationForm):
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '').strip()
         # Remove any non-digit characters
-        phone = ''.join(filter(str.isdigit, phone))
-        if not phone:
+        phone_digits = ''.join(filter(str.isdigit, phone))
+        
+        if not phone_digits:
             raise ValidationError(_('Phone number is required'))
-        if len(phone) < 10 or len(phone) > 15:
-            raise ValidationError(_('Phone number must be between 10 and 15 digits'))
-        if User.objects.filter(phone=phone).exists():
+        
+        # Validate exactly 10 digits
+        if len(phone_digits) != 10:
+            raise ValidationError(_('Phone number must be exactly 10 digits.'))
+        
+        # Validate starts with valid Indian mobile prefix (6-9)
+        if phone_digits[0] not in '6789':
+            raise ValidationError(_('Phone number must start with 6, 7, 8, or 9.'))
+        
+        # Check if phone already registered
+        if User.objects.filter(phone=phone_digits).exists():
             raise ValidationError(_('This phone number is already registered. Please use a different number or try logging in.'))
-        return phone
+        
+        return phone_digits
     
     def clean_password1(self):
         password1 = self.cleaned_data.get('password1')
@@ -660,7 +675,12 @@ class BookingForm(forms.ModelForm):
             'contact_phone': forms.TextInput(attrs={
                 'class': 'form-control',
                 'required': True,
-                'placeholder': 'Your phone number'
+                'placeholder': '10-digit phone number (e.g., 9876543210)',
+                'pattern': '[0-9]{10}',
+                'maxlength': '10',
+                'minlength': '10',
+                'title': 'Please enter exactly 10 digits',
+                'inputmode': 'numeric',
             }),
             'special_requests': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -677,7 +697,29 @@ class BookingForm(forms.ModelForm):
         if self.user and self.user.is_authenticated:
             self.fields['contact_email'].initial = self.user.email
             if hasattr(self.user, 'profile') and self.user.profile.phone:
-                self.fields['contact_phone'].initial = self.user.profile.phone
+                phone = self.user.profile.phone
+                # Extract only digits
+                phone_digits = ''.join(filter(str.isdigit, phone))
+                # Take last 10 digits if longer
+                if len(phone_digits) >= 10:
+                    self.fields['contact_phone'].initial = phone_digits[-10:]
+                else:
+                    self.fields['contact_phone'].initial = phone_digits
+    
+    def clean_contact_phone(self):
+        phone = self.cleaned_data.get('contact_phone', '').strip()
+        # Remove all non-digit characters
+        phone_digits = ''.join(filter(str.isdigit, phone))
+        
+        # Validate exactly 10 digits
+        if len(phone_digits) != 10:
+            raise ValidationError(_('Phone number must be exactly 10 digits.'))
+        
+        # Validate starts with valid Indian mobile prefix (6-9)
+        if not phone_digits[0] in '6789':
+            raise ValidationError(_('Phone number must start with 6, 7, 8, or 9.'))
+        
+        return phone_digits
     
     def clean_schedule(self):
         schedule = self.cleaned_data.get('schedule')
@@ -777,12 +819,25 @@ class ContactForm(forms.Form):
         })
     )
     
+    phone_regex = RegexValidator(
+        regex=r'^\d{10}$',
+        message=_("Phone number must be exactly 10 digits.")
+    )
+    
     phone = forms.CharField(
-        max_length=20,
+        max_length=10,
+        min_length=10,
         required=True,
+        validators=[phone_regex],
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Your Phone (Optional)'),
+            'placeholder': _('10-digit phone number (e.g., 9876543210)'),
+            'pattern': '[0-9]{10}',
+            'maxlength': '10',
+            'minlength': '10',
+            'inputmode': 'numeric',
+            'title': 'Please enter exactly 10 digits',
+            'oninput': 'this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10)',
         })
     )
     
@@ -949,11 +1004,18 @@ class UmrahForm(forms.Form):
         phone = self.cleaned_data.get('phone', '').strip()
         if not phone:
             raise ValidationError(_('Phone number is required'))
-        # Remove any non-digit characters except +
-        phone = ''.join(c for c in phone if c.isdigit() or c == '+')
-        if len(phone) < 10:
-            raise ValidationError(_('Please enter a valid phone number'))
-        return phone
+        # Remove all non-digit characters
+        phone_digits = ''.join(filter(str.isdigit, phone))
+        
+        # Validate exactly 10 digits
+        if len(phone_digits) != 10:
+            raise ValidationError(_('Phone number must be exactly 10 digits.'))
+        
+        # Validate starts with valid Indian mobile prefix (6-9)
+        if phone_digits[0] not in '6789':
+            raise ValidationError(_('Phone number must start with 6, 7, 8, or 9.'))
+        
+        return phone_digits
     
     def clean_preferred_date(self):
         preferred_date = self.cleaned_data.get('preferred_date')
