@@ -1449,8 +1449,13 @@ def my_trips(request):
         except:
             pass
     
-    # Get all bookings for user - NO STATUS FILTER for 'all'
-    all_bookings = Booking.objects.filter(user=request.user).select_related('schedule__route')
+    # Get all bookings for user - EXCLUDE PENDING bookings (only show ticketed/confirmed)
+    # Only show bookings that are CONFIRMED and PAID (ticketed)
+    all_bookings = Booking.objects.filter(
+        user=request.user,
+        status=Booking.Status.CONFIRMED,
+        payment_status=Booking.PaymentStatus.PAID
+    ).select_related('schedule__route')
     
     # Apply date filters if provided
     if from_date:
@@ -1464,7 +1469,7 @@ def my_trips(request):
         status=Booking.Status.CONFIRMED
     )
     
-    # Past bookings - ALL past bookings regardless of status
+    # Past bookings - Only confirmed and paid past bookings
     past_bookings = all_bookings.filter(
         schedule__departure_date__lt=today
     )
@@ -1482,7 +1487,7 @@ def my_trips(request):
     elif trip_type == 'cancelled':
         display_bookings = cancelled_bookings
     else:
-        # For 'all', show ALL bookings (no status filter)
+        # For 'all', show all confirmed and paid bookings (no pending)
         display_bookings = all_bookings
     
     try:
@@ -2974,7 +2979,8 @@ def edit_booking_fare(request, booking_id):
 def user_login(request):
     """Handle user login with email and password"""
     if request.user.is_authenticated:
-        if request.user.is_approved:
+        # Superusers and staff can always access, others need approval
+        if request.user.is_approved or request.user.is_superuser or request.user.is_staff:
             return redirect('homepage')
         else:
             logout(request)
@@ -2993,8 +2999,8 @@ def user_login(request):
             user = form.get_user()
             
             if user is not None:
-                # Check if user account is approved
-                if not user.is_approved:
+                # Check if user account is approved (superusers and staff can always login)
+                if not user.is_approved and not (user.is_superuser or user.is_staff):
                     messages.warning(request, 'Your account is under review. Your account will be activated within 24 hours. Please wait for approval.')
                     return redirect('login')
                 

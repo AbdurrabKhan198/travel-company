@@ -43,6 +43,22 @@
             background: linear-gradient(135deg, #0ea5e9, #0284c7);
         }
         
+        /* Dropdown scrollbar - thinner and more subtle */
+        .user-dropdown-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .user-dropdown-scroll::-webkit-scrollbar-track {
+            background: #f9fafb;
+            border-radius: 3px;
+        }
+        .user-dropdown-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .user-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
         /* Smooth animations */
         @keyframes fadeInUp {
             from {
@@ -231,8 +247,8 @@
                                 </span>
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </button>
-                            <div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50">
-                                <div class="py-2">
+                            <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50 max-h-[85vh] flex flex-col">
+                                <div class="py-2 overflow-y-auto flex-1 user-dropdown-scroll" style="max-height: calc(85vh - 60px);">
                                     <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                         <i class="fas fa-user-circle mr-2"></i> View Profile
                                     </a>
@@ -280,8 +296,9 @@
                                     <a href="{% url 'group_request' %}" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                         <i class="fas fa-users mr-2 text-purple-500"></i> Group Request
                                     </a>
-                                    <hr class="my-1">
-                                    <a href="{% url 'logout' %}" class="block px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
+                                </div>
+                                <div class="border-t border-gray-200 pt-2 pb-2 bg-gray-50 rounded-b-xl">
+                                    <a href="{% url 'logout' %}" class="block px-4 py-2 text-red-600 hover:bg-red-50 transition-colors font-semibold">
                                         <i class="fas fa-sign-out-alt mr-2"></i> Logout
                                     </a>
                                 </div>
@@ -314,10 +331,10 @@
                     <i class="fas fa-plane text-lg"></i>
                     <span>Flights</span>
                 </a>
-                <a href="{% url 'homepage' %}#hotels" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
+                <!-- <a href="{% url 'homepage' %}#hotels" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                     <i class="fas fa-hotel text-lg"></i>
                     <span>Hotels</span>
-                </a>
+                </a> -->
                 <a href="{% url 'homepage' %}#packages" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                     <i class="fas fa-suitcase text-lg"></i>
                     <span>Packages</span>
