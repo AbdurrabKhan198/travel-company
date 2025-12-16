@@ -340,11 +340,18 @@ Thank you,
 Safar Zone Travels Team
                 '''
                 
-                # HTML email template
-                html_message = render_to_string('emails/approval_email.html', {
+                # HTML email template with user details
+                context = {
                     'user_name': user_name,
+                    'user_email': instance.email,
                     'login_url': login_url,
-                })
+                }
+                
+                # Add agency ID if available
+                if hasattr(instance, 'profile') and hasattr(instance.profile, 'agency_id'):
+                    context['user_agency_id'] = instance.profile.agency_id
+                
+                html_message = render_to_string('emails/approval_email.html', context)
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 

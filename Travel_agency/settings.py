@@ -182,31 +182,15 @@ LOGIN_REDIRECT_URL = 'homepage'
 LOGOUT_REDIRECT_URL = 'homepage'
 
 # Easebuzz Payment Gateway Settings
-# Get your keys from Easebuzz dashboard after approval
 # LIVE CREDENTIALS (Production)
 EASEBUZZ_MERCHANT_KEY = os.environ.get('EASEBUZZ_MERCHANT_KEY', 'VMZA9Y0A3K')
 EASEBUZZ_MERCHANT_SALT = os.environ.get('EASEBUZZ_MERCHANT_SALT', '12SZXDDTMA')
-EASEBUZZ_ENV = os.environ.get('EASEBUZZ_ENV', 'prod')  # 'prod' for production, 'test' for test
+EASEBUZZ_ENV = 'prod'
+
 # Easebuzz API URLs
-# IMPORTANT: Try these URLs one by one if getting 404 error:
-# Option 1: https://testpay.easebuzz.in/payment/initiate
-# Option 2: https://testpay.easebuzz.in/
-# Option 3: https://pay.easebuzz.in/payment/initiate (if merchant key is for production)
-# 
-# For test environment: https://testpay.easebuzz.in/payment/initiate
-# For production: https://pay.easebuzz.in/payment/initiate
-# 
-# IMPORTANT: Merchant key must match the environment (test/production)
-# If merchant key is for test, use test URL. If for production, use production URL.
-# 
-# If still getting 404, contact Easebuzz support to verify:
-# 1. Correct payment URL for your merchant account
-# 2. Whether merchant key is for test or production
-# 3. Dashboard configuration settings
-# Try base URL first - Easebuzz might not use /payment/initiate endpoint
-# If this doesn't work, try: https://testpay.easebuzz.in/payment/initiate
-EASEBUZZ_PAYMENT_URL = os.environ.get('EASEBUZZ_PAYMENT_URL', 'https://testpay.easebuzz.in/')
-EASEBUZZ_STATUS_URL = os.environ.get('EASEBUZZ_STATUS_URL', 'https://testpay.easebuzz.in/payment/status')
+# Using Production URL directly
+EASEBUZZ_PAYMENT_URL = 'https://pay.easebuzz.in/payment/initiateLink'
+EASEBUZZ_STATUS_URL = 'https://pay.easebuzz.in/payment/status'
 
 # Email Configuration
 # Using Brevo HTTP API (not SMTP) - DigitalOcean blocks ALL SMTP ports

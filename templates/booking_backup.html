@@ -49,7 +49,8 @@
                                 <h2 class="text-2xl font-bold text-gray-800">Passenger Details</h2>
                                 <p class="text-gray-600">
                                     {% if adults > 0 %}{{ adults }} Adult{{ adults|pluralize }}{% endif %}
-                                    {% if children > 0 %}{% if adults > 0 %}, {% endif %}{{ children }} Child{{ children|pluralize }}{% endif %}
+                                    {% if children > 0 %}{% if adults > 0 %}, {% endif %}{{ children }} Child{{
+                                    children|pluralize }}{% endif %}
                                     {% if infants > 0 %}{% if adults > 0 or children > 0 %}, {% endif %}{{ infants }}
                                     Infant{{ infants|pluralize }}{% endif %}
                                 </p>
@@ -75,10 +76,8 @@
                                 <div class="mb-6 p-4 bg-white rounded-xl border border-blue-200 passenger-form"
                                     data-passenger-type="adult" data-passenger-index="{{ forloop.counter0 }}">
                                     <h4 class="font-semibold text-gray-700 mb-4">Adult {{ forloop.counter }}</h4>
-                                    {% load static %}
-                                    {% with passenger_index=forloop.counter0 passenger_type='adult' today=today passenger=passenger %}
-                                        {% include 'booking_passenger_fields.html' %}
-                                    {% endwith %}
+                                    {% include 'booking_passenger_fields.html' with passenger_index=forloop.counter0
+                                    passenger_type='adult' today=today passenger=passenger %}
                                 </div>
                                 {% endfor %}
                             </div>
@@ -195,7 +194,8 @@
 
                         <!-- Flight Details -->
                         <div class="mb-6 pb-4 border-b">
-                            <p class="text-sm text-gray-600 mb-2">{{ schedule.route.from_location }} → {{ schedule.route.to_location }}</p>
+                            <p class="text-sm text-gray-600 mb-2">{{ schedule.route.from_location }} → {{
+                                schedule.route.to_location }}</p>
                             <p class="text-xs text-gray-500">{{ schedule.departure_date|date:"d M Y" }}</p>
                         </div>
 
@@ -231,19 +231,22 @@
                             <div class="space-y-2" id="return-fare-breakdown">
                                 {% if adults > 0 %}
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">{{ adults }}x Adult (₹{{ return_adult_fare_int }}):</span>
+                                    <span class="text-gray-600">{{ adults }}x Adult (₹{{ return_adult_fare_int
+                                        }}):</span>
                                     <span class="font-semibold" id="return-adult-fare-total">₹0.00</span>
                                 </div>
                                 {% endif %}
                                 {% if children > 0 %}
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">{{ children }}x Child (₹{{ return_child_fare_int }}):</span>
+                                    <span class="text-gray-600">{{ children }}x Child (₹{{ return_child_fare_int
+                                        }}):</span>
                                     <span class="font-semibold" id="return-child-fare-total">₹0.00</span>
                                 </div>
                                 {% endif %}
                                 {% if infants > 0 %}
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">{{ infants }}x Infant (₹{{ return_infant_fare_int }}):</span>
+                                    <span class="text-gray-600">{{ infants }}x Infant (₹{{ return_infant_fare_int
+                                        }}):</span>
                                     <span class="font-semibold" id="return-infant-fare-total">₹0.00</span>
                                 </div>
                                 {% endif %}
@@ -255,16 +258,14 @@
                         <div class="space-y-2 mb-4">
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-600">Base Fare:</span>
-                                <span class="font-semibold" id="base-fare-total">
-                                    ₹{{ adult_fare|add:child_fare|add:infant_fare|add:return_adult_fare|default:0|add:return_child_fare|default:0|add:return_infant_fare|default:0|floatformat:2 }}
-                                </span>
+                                <span class="font-semibold" id="base-fare-total">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
                             </div>
                             <div class="border-t pt-3 mt-3">
                                 <div class="flex justify-between text-lg font-bold text-primary">
                                     <span>Total Amount:</span>
-                                    <span id="total-amount">
-                                        ₹{{ adult_fare|add:child_fare|add:infant_fare|add:return_adult_fare|default:0|add:return_child_fare|default:0|add:return_infant_fare|default:0|floatformat:2 }}
-                                    </span>
+                                    <span id="total-amount">₹0.00</span>
                                 </div>
                             </div>
                         </div>

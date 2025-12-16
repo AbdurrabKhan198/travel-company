@@ -12,7 +12,7 @@
         min-height: 600px;
         position: relative;
     }
-    
+
     /* Professional Form Styling */
     .search-form-container {
         background: #ffffff;
@@ -21,12 +21,12 @@
         padding: 30px;
         margin-top: 40px;
     }
-    
+
     .form-field-wrapper {
         position: relative;
         margin-bottom: 15px;
     }
-    
+
     .form-field-label {
         display: block;
         font-size: 12px;
@@ -36,7 +36,7 @@
         letter-spacing: 0.5px;
         margin-bottom: 6px;
     }
-    
+
     .form-field-input {
         width: 100%;
         padding: 12px 16px;
@@ -47,13 +47,13 @@
         background: #ffffff;
         transition: border-color 0.2s;
     }
-    
+
     .form-field-input:focus {
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
-    
+
     .form-field-display {
         padding: 12px 16px;
         border: 1px solid #d1d5db;
@@ -65,35 +65,35 @@
         flex-direction: column;
         justify-content: center;
     }
-    
+
     .form-field-display:hover {
         border-color: #3b82f6;
     }
-    
+
     .form-field-value {
         font-size: 15px;
         font-weight: 600;
         color: #111827;
     }
-    
+
     .form-field-subtext {
         font-size: 12px;
         color: #9ca3af;
         margin-top: 2px;
     }
-    
+
     .form-field-placeholder {
         font-size: 15px;
         color: #9ca3af;
         font-weight: 400;
     }
-    
+
     .trip-type-container {
         display: flex;
         gap: 10px;
         margin-bottom: 20px;
     }
-    
+
     .trip-type-btn {
         flex: 1;
         padding: 12px 20px;
@@ -107,13 +107,13 @@
         transition: all 0.2s;
         text-align: center;
     }
-    
+
     .trip-type-btn.active {
         background: #3b82f6;
         border-color: #3b82f6;
         color: #ffffff;
     }
-    
+
     .swap-btn {
         width: 40px;
         height: 40px;
@@ -127,12 +127,12 @@
         margin-top: 28px;
         transition: all 0.2s;
     }
-    
+
     .swap-btn:hover {
         background: #f3f4f6;
         border-color: #3b82f6;
     }
-    
+
     .search-btn {
         width: 100%;
         padding: 16px;
@@ -147,11 +147,11 @@
         cursor: pointer;
         transition: background 0.2s;
     }
-    
+
     .search-btn:hover {
         background: #ea580c;
     }
-    
+
     .hidden-input-overlay {
         position: absolute;
         top: 0;
@@ -162,12 +162,12 @@
         cursor: pointer;
         z-index: 5;
     }
-    
+
     .hidden-input-overlay:focus {
         opacity: 1;
         z-index: 10;
     }
-    
+
     .error-notification {
         position: fixed;
         top: 20px;
@@ -184,22 +184,23 @@
         max-width: 400px;
         animation: slideIn 0.3s ease-out;
     }
-    
+
     @keyframes slideIn {
         from {
             transform: translateX(100%);
             opacity: 0;
         }
+
         to {
             transform: translateX(0);
             opacity: 1;
         }
     }
-    
+
     .field-error {
         border-color: #ef4444 !important;
     }
-    
+
     /* Passenger Selection Modal */
     .passenger-modal {
         display: none;
@@ -213,11 +214,11 @@
         justify-content: center;
         align-items: center;
     }
-    
+
     .passenger-modal.active {
         display: flex;
     }
-    
+
     .passenger-modal-content {
         background: #ffffff;
         border-radius: 8px;
@@ -228,11 +229,11 @@
         overflow-y: auto;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     }
-    
+
     .passenger-section {
         margin-bottom: 25px;
     }
-    
+
     .passenger-section-title {
         font-size: 14px;
         font-weight: 600;
@@ -241,13 +242,13 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    
+
     .passenger-count-selector {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
     }
-    
+
     .passenger-count-btn {
         min-width: 50px;
         padding: 10px 16px;
@@ -261,24 +262,24 @@
         transition: all 0.2s;
         text-align: center;
     }
-    
+
     .passenger-count-btn:hover {
         border-color: #3b82f6;
         background: #f3f4f6;
     }
-    
+
     .passenger-count-btn.selected {
         background: #3b82f6;
         border-color: #3b82f6;
         color: #ffffff;
     }
-    
+
     .travel-class-section {
         margin-top: 25px;
         padding-top: 25px;
         border-top: 1px solid #e5e7eb;
     }
-    
+
     .travel-class-btn {
         width: 100%;
         padding: 12px 16px;
@@ -293,18 +294,18 @@
         text-align: left;
         margin-bottom: 8px;
     }
-    
+
     .travel-class-btn:hover {
         border-color: #3b82f6;
         background: #f3f4f6;
     }
-    
+
     .travel-class-btn.selected {
         background: #3b82f6;
         border-color: #3b82f6;
         color: #ffffff;
     }
-    
+
     .modal-apply-btn {
         width: 100%;
         padding: 14px;
@@ -320,7 +321,7 @@
         transition: background 0.2s;
         margin-top: 20px;
     }
-    
+
     .modal-apply-btn:hover {
         background: #ea580c;
     }
@@ -341,7 +342,7 @@
                     Find the best deals for your journey
                 </p>
             </div>
-            
+
             <!-- Search Form -->
             <div class="search-form-container">
                 <form method="GET" action="{% url 'search_flights' %}" id="searchForm">
@@ -353,10 +354,11 @@
                         <button type="button" class="trip-type-btn" id="trip_return_btn">
                             Round Trip
                         </button>
-                        <input type="radio" name="trip_type" value="one_way" checked id="trip_one_way" style="display: none;">
+                        <input type="radio" name="trip_type" value="one_way" checked id="trip_one_way"
+                            style="display: none;">
                         <input type="radio" name="trip_type" value="return" id="trip_return" style="display: none;">
-                            </div>
-                            
+                    </div>
+
                     <!-- Form Fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                         <!-- From -->
@@ -366,25 +368,21 @@
                                 <div class="form-field-value" id="from_display">Enter city</div>
                                 <div class="form-field-subtext" id="from_subtext" style="display: none;"></div>
                             </div>
-                                <input type="text" 
-                                       name="from_location" 
-                                       id="from_location" 
-                                       list="origin-suggestions"
-                                   class="form-field-input hidden-input-overlay"
-                                       required>
-                                <datalist id="origin-suggestions">
-                                    {% for origin in origins %}
-                                <option value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}" 
-                                        data-value="{{ origin }}" 
-                                        data-city="{{ origin|lower }}" 
-                                        data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
+                            <input type="text" name="from_location" id="from_location" list="origin-suggestions"
+                                class="form-field-input hidden-input-overlay" required>
+                            <datalist id="origin-suggestions">
+                                {% for origin in origins %}
+                                <option
+                                    value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}"
+                                    data-value="{{ origin }}" data-city="{{ origin|lower }}"
+                                    data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
                                     {% endfor %}
-                                </datalist>
-                            </div>
-                            
+                            </datalist>
+                        </div>
+
                         <!-- Swap Button -->
-                    
-                        
+
+
                         <!-- To -->
                         <div class="lg:col-span-2 form-field-wrapper">
                             <label class="form-field-label">To</label>
@@ -392,22 +390,18 @@
                                 <div class="form-field-value" id="to_display">Enter city</div>
                                 <div class="form-field-subtext" id="to_subtext" style="display: none;"></div>
                             </div>
-                                <input type="text" 
-                                       name="to_location" 
-                                       id="to_location" 
-                                       list="destination-suggestions"
-                                   class="form-field-input hidden-input-overlay"
-                                       required>
-                                <datalist id="destination-suggestions">
-                                    {% for destination in destinations %}
-                                <option value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}" 
-                                        data-value="{{ destination }}" 
-                                        data-city="{{ destination|lower }}" 
-                                        data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
+                            <input type="text" name="to_location" id="to_location" list="destination-suggestions"
+                                class="form-field-input hidden-input-overlay" required>
+                            <datalist id="destination-suggestions">
+                                {% for destination in destinations %}
+                                <option
+                                    value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}"
+                                    data-value="{{ destination }}" data-city="{{ destination|lower }}"
+                                    data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
                                     {% endfor %}
-                                </datalist>
-                            </div>
-                            
+                            </datalist>
+                        </div>
+
                         <!-- Departure Date -->
                         <div class="lg:col-span-2 form-field-wrapper">
                             <label class="form-field-label">Departure</label>
@@ -415,29 +409,22 @@
                                 <div class="form-field-value" id="departure_display">Select date</div>
                                 <div class="form-field-subtext" id="departure_subtext" style="display: none;"></div>
                             </div>
-                            <input type="date" 
-                                   name="travel_date" 
-                                   id="travel_date"
-                                   min="{{ today }}"
-                                   class="form-field-input hidden-input-overlay"
-                                   required>
-                            </div>
-                            
+                            <input type="date" name="travel_date" id="travel_date" min="{{ today }}"
+                                class="form-field-input hidden-input-overlay" required>
+                        </div>
+
                         <!-- Return Date -->
                         <div class="lg:col-span-2 form-field-wrapper" id="return_date_wrapper">
                             <label class="form-field-label">Return</label>
-                            <div class="form-field-display" id="return_display_card" style="background: #f9fafb; border-color: #e5e7eb;">
+                            <div class="form-field-display" id="return_display_card"
+                                style="background: #f9fafb; border-color: #e5e7eb;">
                                 <div class="form-field-placeholder" id="return_display">Add return date</div>
                                 <div class="form-field-subtext" id="return_subtext" style="display: none;"></div>
                             </div>
-                            <input type="date" 
-                                   name="return_date" 
-                                   id="return_date"
-                                   min="{{ today }}"
-                                   class="form-field-input hidden-input-overlay"
-                                   disabled>
-                            </div>
-                            
+                            <input type="date" name="return_date" id="return_date" min="{{ today }}"
+                                class="form-field-input hidden-input-overlay" disabled>
+                        </div>
+
                         <!-- Passengers -->
                         <div class="lg:col-span-1 form-field-wrapper">
                             <label class="form-field-label">Travellers & Class</label>
@@ -446,21 +433,25 @@
                                 <div class="form-field-subtext" id="passenger_subtext">Economy</div>
                             </div>
                             <!-- Hidden inputs for form submission -->
-                            <input type="hidden" name="adults" id="adults_input" value="1" required>
-                            <input type="hidden" name="children" id="children_input" value="0">
-                            <input type="hidden" name="infants" id="infants_input" value="0">
-                            <input type="hidden" name="travel_class" id="travel_class_input" value="economy">
+                            <input type="hidden" name="adults" id="adults_input"
+                                value="{{ request.GET.adults|default:'1' }}" required>
+                            <input type="hidden" name="children" id="children_input"
+                                value="{{ request.GET.children|default:'0' }}">
+                            <input type="hidden" name="infants" id="infants_input"
+                                value="{{ request.GET.infants|default:'0' }}">
+                            <input type="hidden" name="travel_class" id="travel_class_input"
+                                value="{{ request.GET.travel_class|default:'economy' }}">
                         </div>
-                            </div>
-                            
-                            <!-- Search Button -->
+                    </div>
+
+                    <!-- Search Button -->
                     <div class="mt-6">
                         <button type="submit" class="search-btn">
                             <i class="fas fa-search mr-2"></i>
                             Search Flights
-                                </button>
-                        </div>
-                    </form>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -470,7 +461,7 @@
 <div class="passenger-modal" id="passengerModal" onclick="closeModalOnBackdrop(event)">
     <div class="passenger-modal-content" onclick="event.stopPropagation()">
         <h3 class="text-xl font-bold text-gray-900 mb-6">Travellers & Class</h3>
-        
+
         <!-- Adults Section -->
         <div class="passenger-section">
             <div class="passenger-section-title">Adults (12y +)</div>
@@ -484,9 +475,9 @@
                 <button type="button" class="passenger-count-btn" data-count="7">7</button>
                 <button type="button" class="passenger-count-btn" data-count="8">8</button>
                 <button type="button" class="passenger-count-btn" data-count="9">9</button>
-                </div>
             </div>
-            
+        </div>
+
         <!-- Children Section -->
         <div class="passenger-section">
             <div class="passenger-section-title">Children (2y - 12y)</div>
@@ -498,9 +489,9 @@
                 <button type="button" class="passenger-count-btn" data-count="4">4</button>
                 <button type="button" class="passenger-count-btn" data-count="5">5</button>
                 <button type="button" class="passenger-count-btn" data-count="6">6</button>
-                </div>
             </div>
-            
+        </div>
+
         <!-- Infants Section -->
         <div class="passenger-section">
             <div class="passenger-section-title">Infants (below 2y)</div>
@@ -514,7 +505,7 @@
                 <button type="button" class="passenger-count-btn" data-count="6">6</button>
             </div>
         </div>
-        
+
         <!-- Travel Class Section -->
         <div class="travel-class-section">
             <div class="passenger-section-title">Choose Travel Class</div>
@@ -531,13 +522,13 @@
                 First Class
             </button>
         </div>
-        
+
         <button type="button" class="modal-apply-btn" onclick="applyPassengerSelection()">
             Apply
         </button>
-                </div>
-            </div>
-            
+    </div>
+</div>
+
 <!-- Popular Destinations / Packages -->
 <section id="packages" class="py-16 bg-gray-50">
     <div class="container mx-auto px-4">
@@ -549,12 +540,14 @@
                 Discover amazing destinations around the world
             </p>
         </div>
-            
+
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for package in popular_packages %}
-            <a href="{% url 'apply_package' package.name %}" class="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer group">
+            <a href="{% url 'apply_package' package.name %}"
+                class="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer group">
                 <div class="h-64 relative overflow-hidden">
-                    <img src="{{ package.image }}" alt="{{ package.name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <img src="{{ package.image }}" alt="{{ package.name }}"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                     <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                         <span class="text-gray-800 font-semibold text-sm">Popular</span>
@@ -565,13 +558,15 @@
                     </div>
                 </div>
                 <div class="p-6">
-                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description|default:"Experience the beauty and culture of "|add:package.destination }}</p>
+                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description|default:"Experience the beauty and
+                        culture of "|add:package.destination }}</p>
                     <div class="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div>
                             <span class="text-sm text-gray-500 block">Starting from</span>
                             <span class="text-2xl font-bold text-blue-600">Custom Pricing</span>
                         </div>
-                        <div class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-blue-300 rounded-lg font-semibold group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-200 shadow-lg">
+                        <div
+                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-blue-300 rounded-lg font-semibold group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-200 shadow-lg">
                             <i class="fas fa-paper-plane mr-2"></i>Apply Now
                         </div>
                     </div>
@@ -579,7 +574,7 @@
             </a>
             {% endfor %}
         </div>
-        
+
         <!-- Also show database packages if available -->
         {% if packages %}
         <div class="mt-12">
@@ -589,7 +584,8 @@
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                     <div class="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
                         {% if package.images.first %}
-                        <img src="{{ package.images.first.image.url }}" alt="{{ package.title }}" class="w-full h-full object-cover">
+                        <img src="{{ package.images.first.image.url }}" alt="{{ package.title }}"
+                            class="w-full h-full object-cover">
                         {% else %}
                         <i class="fas fa-image text-white text-4xl opacity-50"></i>
                         {% endif %}
@@ -598,8 +594,10 @@
                         <h3 class="text-xl font-bold text-gray-900 mb-2">{{ package.title }}</h3>
                         <p class="text-gray-600 mb-4">{{ package.short_description|truncatewords:15 }}</p>
                         <div class="flex items-center justify-between">
-                            <span class="text-2xl font-bold text-blue-600">₹{{ package.discounted_price|floatformat:0 }}</span>
-                            <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            <span class="text-2xl font-bold text-blue-600">₹{{ package.discounted_price|floatformat:0
+                                }}</span>
+                            <a href="#"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                                 View Details
                             </a>
                         </div>
@@ -620,36 +618,36 @@
                 Why Choose Safar Zone
             </h2>
         </div>
-        
+
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div class="text-center">
                 <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-dollar-sign text-blue-600 text-2xl"></i>
-                    </div>
+                </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">Best Prices</h3>
                 <p class="text-gray-600">Get the best deals and competitive prices</p>
-                        </div>
-            
+            </div>
+
             <div class="text-center">
                 <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-shield-alt text-green-600 text-2xl"></i>
-                    </div>
+                </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">Secure Booking</h3>
                 <p class="text-gray-600">Your data and payments are protected</p>
             </div>
-            
+
             <div class="text-center">
                 <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-headset text-purple-600 text-2xl"></i>
-                    </div>
+                </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">24/7 Support</h3>
                 <p class="text-gray-600">Round-the-clock customer support</p>
             </div>
-            
+
             <div class="text-center">
                 <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-plane text-orange-600 text-2xl"></i>
-                    </div>
+                </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">Easy Booking</h3>
                 <p class="text-gray-600">Simple and fast booking process</p>
             </div>
@@ -658,497 +656,577 @@
 </section>
 
 <script>
-(function() {
-    'use strict';
-    
-    // Trip Type Toggle
-    const tripOneWayBtn = document.getElementById('trip_one_way_btn');
-    const tripReturnBtn = document.getElementById('trip_return_btn');
-    const tripOneWayRadio = document.getElementById('trip_one_way');
-    const tripReturnRadio = document.getElementById('trip_return');
-    const returnDateInput = document.getElementById('return_date');
-    const returnDisplayCard = document.getElementById('return_display_card');
-    
-    function toggleTripType() {
-        if (tripOneWayBtn && tripReturnBtn) {
-            tripOneWayBtn.addEventListener('click', function() {
-                tripOneWayRadio.checked = true;
-                tripOneWayBtn.classList.add('active');
-                tripReturnBtn.classList.remove('active');
-                if (returnDateInput) {
-                    returnDateInput.disabled = true;
-                    returnDateInput.required = false;
-                    returnDateInput.value = '';
-                    returnDisplayCard.style.background = '#f9fafb';
-                    document.getElementById('return_display').textContent = 'Add return date';
-                    document.getElementById('return_display').className = 'form-field-placeholder';
-                }
-            });
-            
-            tripReturnBtn.addEventListener('click', function() {
-                tripReturnRadio.checked = true;
-                tripReturnBtn.classList.add('active');
-                tripOneWayBtn.classList.remove('active');
-                if (returnDateInput) {
-                    returnDateInput.disabled = false;
-                    returnDateInput.required = true;
-                    returnDisplayCard.style.background = '#ffffff';
-                    document.getElementById('return_display').textContent = 'Select date';
-                    document.getElementById('return_display').className = 'form-field-value';
-                }
-            });
-        }
-    }
-    
-    // Update Location Display
-    function updateLocationDisplay(inputId, displayId, subtextId) {
-        const input = document.getElementById(inputId);
-        const display = document.getElementById(displayId);
-        const subtext = document.getElementById(subtextId);
-        
-        if (input && display) {
-            const value = input.value.trim();
-            if (value) {
-                const match = value.match(/^(.+?)(\s*\(([^)]+)\))?$/);
-                const cityName = match ? match[1].trim() : value;
-                const code = match ? match[3] : '';
-                
-                display.textContent = cityName;
-                display.className = 'form-field-value';
-                
-                if (subtext && code) {
-                    subtext.textContent = code.toUpperCase() + ', ' + cityName;
-                    subtext.style.display = 'block';
-                } else if (subtext) {
-                    subtext.textContent = cityName;
-                    subtext.style.display = 'block';
-                }
-            } else {
-                display.textContent = 'Enter city';
-                display.className = 'form-field-placeholder';
-                if (subtext) {
-                    subtext.style.display = 'none';
-                }
+    (function () {
+        'use strict';
+
+        // Trip Type Toggle
+        const tripOneWayBtn = document.getElementById('trip_one_way_btn');
+        const tripReturnBtn = document.getElementById('trip_return_btn');
+        const tripOneWayRadio = document.getElementById('trip_one_way');
+        const tripReturnRadio = document.getElementById('trip_return');
+        const returnDateInput = document.getElementById('return_date');
+        const returnDisplayCard = document.getElementById('return_display_card');
+        const returnDateWrapper = document.getElementById('return_date_wrapper');
+
+        function toggleTripType() {
+            if (tripOneWayBtn && tripReturnBtn) {
+                tripOneWayBtn.addEventListener('click', function () {
+                    tripOneWayRadio.checked = true;
+                    tripOneWayBtn.classList.add('active');
+                    tripReturnBtn.classList.remove('active');
+                    if (returnDateInput) {
+                        returnDateInput.disabled = true;
+                        returnDateInput.required = false;
+                        returnDateInput.value = '';
+                        returnDisplayCard.style.background = '#f9fafb';
+                        document.getElementById('return_display').textContent = 'Add return date';
+                        document.getElementById('return_display').className = 'form-field-placeholder';
+                        // Client Req: Hide return date column on One Way
+                        if (returnDateWrapper) returnDateWrapper.style.visibility = 'hidden';
+                    }
+                });
+
+                tripReturnBtn.addEventListener('click', function () {
+                    tripReturnRadio.checked = true;
+                    tripReturnBtn.classList.add('active');
+                    tripOneWayBtn.classList.remove('active');
+                    if (returnDateInput) {
+                        returnDateInput.disabled = false;
+                        returnDateInput.required = true;
+                        returnDisplayCard.style.background = '#ffffff';
+                        // Determine if we have a value or need placeholder
+                        if (returnDateInput.value) {
+                            updateDateDisplay('return_date', 'return_display', 'return_subtext');
+                        } else {
+                            document.getElementById('return_display').textContent = 'Select date';
+                            document.getElementById('return_display').className = 'form-field-value';
+                        }
+                        if (returnDateWrapper) returnDateWrapper.style.visibility = 'visible';
+                    }
+                });
             }
         }
-    }
-    
-    // Update Date Display
-    function updateDateDisplay(inputId, displayId, subtextId) {
+
+        // Auto-switch to Round Trip if disabled return date clicked
+        if (returnDisplayCard) {
+            returnDisplayCard.addEventListener('click', function () {
+                if (tripOneWayRadio.checked) {
+                    // Determine if we should switch
+                    tripReturnBtn.click(); // Trigger logic
+                    setTimeout(() => {
+                        if (returnDateInput) returnDateInput.focus();
+                        try { returnDateInput.showPicker(); } catch (e) { }
+                    }, 100);
+                }
+            });
+        }
+
+        // Update Location Display
+        function updateLocationDisplay(inputId, displayId, subtextId) {
             const input = document.getElementById(inputId);
-        const display = document.getElementById(displayId);
-        const subtext = document.getElementById(subtextId);
-        
-        if (input && display) {
-            const dateValue = input.value;
-            if (dateValue) {
-                const date = new Date(dateValue);
-                const formattedDate = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-                
-                display.textContent = formattedDate;
-                display.className = 'form-field-value';
-                
-                if (subtext) {
-                    subtext.textContent = dayName;
-                    subtext.style.display = 'block';
+            const display = document.getElementById(displayId);
+            const subtext = document.getElementById(subtextId);
+
+            if (input && display) {
+                const value = input.value.trim();
+                if (value) {
+                    const match = value.match(/^(.+?)(\s*\(([^)]+)\))?$/);
+                    const cityName = match ? match[1].trim() : value;
+                    const code = match ? match[3] : '';
+
+                    display.textContent = cityName;
+                    display.className = 'form-field-value';
+
+                    if (subtext && code) {
+                        subtext.textContent = code.toUpperCase() + ', ' + cityName;
+                        subtext.style.display = 'block';
+                    } else if (subtext) {
+                        subtext.textContent = cityName;
+                        subtext.style.display = 'block';
+                    }
+                } else {
+                    display.textContent = 'Enter city';
+                    display.className = 'form-field-placeholder';
+                    if (subtext) {
+                        subtext.style.display = 'none';
+                    }
                 }
+            }
+        }
+
+        // Update Date Display
+        function updateDateDisplay(inputId, displayId, subtextId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            const subtext = document.getElementById(subtextId);
+
+            if (input && display) {
+                const dateValue = input.value;
+                if (dateValue) {
+                    const date = new Date(dateValue);
+                    const formattedDate = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                    display.textContent = formattedDate;
+                    display.className = 'form-field-value';
+
+                    if (subtext) {
+                        subtext.textContent = dayName;
+                        subtext.style.display = 'block';
+                    }
+                } else {
+                    display.textContent = inputId === 'travel_date' ? 'Select date' : 'Add return date';
+                    display.className = 'form-field-placeholder';
+                    if (subtext) {
+                        subtext.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // Passenger Selection Modal Functions
+        let currentAdults = 1;
+        let currentChildren = 0;
+        let currentInfants = 0;
+        let currentTravelClass = 'economy';
+
+        function openPassengerModal() {
+            const modal = document.getElementById('passengerModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closePassengerModal() {
+            const modal = document.getElementById('passengerModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function closeModalOnBackdrop(event) {
+            if (event.target.id === 'passengerModal') {
+                closePassengerModal();
+            }
+        }
+
+        function applyPassengerSelection() {
+            try {
+                // Validate selection
+                if (currentAdults < 1) {
+                    showError('At least 1 adult is required');
+                    return;
+                }
+
+                if (currentInfants > currentAdults) {
+                    showError('Number of infants cannot exceed number of adults');
+                    return;
+                }
+
+                // Update hidden inputs
+                const adultsInput = document.getElementById('adults_input');
+                const childrenInput = document.getElementById('children_input');
+                const infantsInput = document.getElementById('infants_input');
+                const travelClassInput = document.getElementById('travel_class_input');
+
+                if (adultsInput) adultsInput.value = currentAdults;
+                if (childrenInput) childrenInput.value = currentChildren;
+                if (infantsInput) infantsInput.value = currentInfants;
+                if (travelClassInput) travelClassInput.value = currentTravelClass;
+
+                // Update display
+                updatePassengerDisplay();
+
+                // Close modal
+                closePassengerModal();
+            } catch (error) {
+                console.error('Error applying passenger selection:', error);
+                showError('An error occurred. Please try again.');
+            }
+        }
+
+        // Make functions globally accessible for onclick handlers
+        window.openPassengerModal = openPassengerModal;
+        window.closePassengerModal = closePassengerModal;
+        window.closeModalOnBackdrop = closeModalOnBackdrop;
+        window.applyPassengerSelection = applyPassengerSelection;
+
+        function updatePassengerDisplay() {
+            const display = document.getElementById('passenger_display');
+            const subtext = document.getElementById('passenger_subtext');
+            const total = currentAdults + currentChildren + currentInfants;
+
+            if (display) {
+                if (total === 1) {
+                    display.textContent = '1 Traveller';
+                } else {
+                    display.textContent = total + ' Travellers';
+                }
+            }
+
+            if (subtext) {
+                const classNames = {
+                    'economy': 'Economy',
+                    'premium_economy': 'Premium Economy',
+                    'business': 'Business',
+                    'first': 'First Class'
+                };
+                subtext.textContent = classNames[currentTravelClass] || 'Economy';
+            }
+        }
+
+        // Initialize passenger selectors
+        function initPassengerSelectors() {
+            // Adults selector
+            const adultsSelector = document.getElementById('adultsSelector');
+            if (adultsSelector) {
+                adultsSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        adultsSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        currentAdults = parseInt(this.dataset.count);
+                    });
+                });
+                // Set initial state from current values (for persistence)
+                adultsSelector.querySelectorAll('.passenger-count-btn').forEach(b => {
+                    if (parseInt(b.dataset.count) === currentAdults) b.click();
+                });
+            }
+
+            // Children selector
+            const childrenSelector = document.getElementById('childrenSelector');
+            if (childrenSelector) {
+                childrenSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        childrenSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        currentChildren = parseInt(this.dataset.count);
+                    });
+                });
+                childrenSelector.querySelectorAll('.passenger-count-btn').forEach(b => {
+                    if (parseInt(b.dataset.count) === currentChildren) b.click();
+                });
+            }
+
+            // Infants selector
+            const infantsSelector = document.getElementById('infantsSelector');
+            if (infantsSelector) {
+                infantsSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        infantsSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        currentInfants = parseInt(this.dataset.count);
+                    });
+                });
+                infantsSelector.querySelectorAll('.passenger-count-btn').forEach(b => {
+                    if (parseInt(b.dataset.count) === currentInfants) b.click();
+                });
+            }
+
+            // Travel class selector
+            document.querySelectorAll('.travel-class-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.travel-class-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentTravelClass = this.dataset.class;
+                });
+            });
+            // Set initial class
+            document.querySelectorAll('.travel-class-btn').forEach(btn => {
+                if (btn.dataset.class === currentTravelClass) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+        }
+
+        // Swap Locations
+        function swapLocations() {
+            const fromInput = document.getElementById('from_location');
+            const toInput = document.getElementById('to_location');
+
+            if (fromInput && toInput) {
+                const temp = fromInput.value;
+                fromInput.value = toInput.value;
+                toInput.value = temp;
+
+                updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+            }
+        }
+
+        // Show Error
+        function showError(message) {
+            const existing = document.querySelector('.error-notification');
+            if (existing) existing.remove();
+
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-notification';
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
+            document.body.appendChild(errorDiv);
+
+            setTimeout(() => {
+                errorDiv.style.opacity = '0';
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Form Validation
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function (e) {
+                const fromInput = document.getElementById('from_location');
+                const toInput = document.getElementById('to_location');
+
+                if (!fromInput.value.trim()) {
+                    e.preventDefault();
+                    showError('Please select a departure city');
+                    fromInput.focus();
+                    return false;
+                }
+
+                if (!toInput.value.trim()) {
+                    e.preventDefault();
+                    showError('Please select a destination city');
+                    toInput.focus();
+                    return false;
+                }
+
+                const fromCity = fromInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || fromInput.value;
+                const toCity = toInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || toInput.value;
+
+                if (fromCity === toCity) {
+                    e.preventDefault();
+                    showError('Departure and destination cannot be the same');
+                    return false;
+                }
+
+                if (tripReturnRadio.checked && returnDateInput && !returnDateInput.value.trim()) {
+                    e.preventDefault();
+                    showError('Please select a return date for round trip');
+                    returnDateInput.focus();
+                    return false;
+                }
+
+                // Validate at least one adult
+                const adults = parseInt(document.getElementById('adults_input').value) || 0;
+                if (adults === 0) {
+                    e.preventDefault();
+                    showError('At least 1 adult is required');
+                    return false;
+                }
+
+                // Validate infants don't exceed adults
+                const infants = parseInt(document.getElementById('infants_input').value) || 0;
+                if (infants > adults) {
+                    e.preventDefault();
+                    showError('Number of infants cannot exceed number of adults');
+                    return false;
+                }
+            });
+        }
+
+        // Store original datalist options
+        const originalOptions = {
+            origin: [],
+            destination: []
+        };
+
+        // Initialize datalists - clear them initially
+        function initializeDatalists() {
+            const originDatalist = document.getElementById('origin-suggestions');
+            const destinationDatalist = document.getElementById('destination-suggestions');
+
+            if (originDatalist) {
+                originalOptions.origin = Array.from(originDatalist.options).map(opt => ({
+                    value: opt.value,
+                    dataValue: opt.dataset.value || '',
+                    dataCity: opt.dataset.city || '',
+                    dataCode: opt.dataset.code || ''
+                }));
+                originDatalist.innerHTML = ''; // Clear initially
+            }
+
+            if (destinationDatalist) {
+                originalOptions.destination = Array.from(destinationDatalist.options).map(opt => ({
+                    value: opt.value,
+                    dataValue: opt.dataset.value || '',
+                    dataCity: opt.dataset.city || '',
+                    dataCode: opt.dataset.code || ''
+                }));
+                destinationDatalist.innerHTML = ''; // Clear initially
+            }
+        }
+
+        // Filter and show datalist options based on input
+        function filterDatalist(input, datalistId, optionsKey) {
+            const datalist = document.getElementById(datalistId);
+            if (!datalist || !originalOptions[optionsKey]) return;
+
+            const searchTerm = input.value.toLowerCase().trim();
+
+            // Clear datalist
+            datalist.innerHTML = '';
+
+            // If search term is empty, don't show any options
+            if (!searchTerm) {
+                return;
+            }
+
+            // Filter options that match
+            const filtered = originalOptions[optionsKey].filter(opt => {
+                const city = opt.dataCity || '';
+                const code = opt.dataCode || '';
+                const value = opt.value.toLowerCase();
+
+                return city.includes(searchTerm) ||
+                    code.includes(searchTerm) ||
+                    value.includes(searchTerm);
+            });
+
+            // Add filtered options to datalist
+            filtered.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.setAttribute('data-value', opt.dataValue);
+                option.setAttribute('data-city', opt.dataCity);
+                option.setAttribute('data-code', opt.dataCode);
+                datalist.appendChild(option);
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize datalists - clear them first
+            initializeDatalists();
+
+            toggleTripType();
+
+            const fromInput = document.getElementById('from_location');
+            const toInput = document.getElementById('to_location');
+            const travelDateInput = document.getElementById('travel_date');
+            const returnDateInput = document.getElementById('return_date');
+            const passengersSelect = document.getElementById('passengers');
+
+            // Initialize Persistence (Client Req 6)
+            // Check if DB/Context values are present in inputs and update display
+            if (fromInput && fromInput.value) {
+                updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+            }
+            if (toInput && toInput.value) {
+                updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+            }
+            if (travelDateInput && travelDateInput.value) {
+                updateDateDisplay('travel_date', 'departure_display', 'departure_subtext');
+            }
+            if (returnDateInput && returnDateInput.value) {
+                // If return date exists, switch to Round Trip
+                if (tripReturnBtn) tripReturnBtn.click();
+                updateDateDisplay('return_date', 'return_display', 'return_subtext');
             } else {
-                display.textContent = inputId === 'travel_date' ? 'Select date' : 'Add return date';
-                display.className = 'form-field-placeholder';
-                if (subtext) {
-                    subtext.style.display = 'none';
-                }
+                // Default to One Way (hide return)
+                if (tripOneWayBtn) tripOneWayBtn.click();
             }
-        }
-    }
-    
-    // Passenger Selection Modal Functions
-    let currentAdults = 1;
-    let currentChildren = 0;
-    let currentInfants = 0;
-    let currentTravelClass = 'economy';
-    
-    function openPassengerModal() {
-        const modal = document.getElementById('passengerModal');
-        if (modal) {
-            modal.classList.add('active');
-        }
-    }
-    
-    function closePassengerModal() {
-        const modal = document.getElementById('passengerModal');
-        if (modal) {
-            modal.classList.remove('active');
-        }
-    }
-    
-    function closeModalOnBackdrop(event) {
-        if (event.target.id === 'passengerModal') {
-            closePassengerModal();
-        }
-    }
-    
-    function applyPassengerSelection() {
-        try {
-            // Validate selection
-            if (currentAdults < 1) {
-                showError('At least 1 adult is required');
-                return;
-            }
-            
-            if (currentInfants > currentAdults) {
-                showError('Number of infants cannot exceed number of adults');
-                return;
-            }
-            
-            // Update hidden inputs
+
+            // Load Passenger persistence
             const adultsInput = document.getElementById('adults_input');
             const childrenInput = document.getElementById('children_input');
             const infantsInput = document.getElementById('infants_input');
             const travelClassInput = document.getElementById('travel_class_input');
-            
-            if (adultsInput) adultsInput.value = currentAdults;
-            if (childrenInput) childrenInput.value = currentChildren;
-            if (infantsInput) infantsInput.value = currentInfants;
-            if (travelClassInput) travelClassInput.value = currentTravelClass;
-            
-            // Update display
-            updatePassengerDisplay();
-            
-            // Close modal
-            closePassengerModal();
-        } catch (error) {
-            console.error('Error applying passenger selection:', error);
-            showError('An error occurred. Please try again.');
-        }
-    }
-    
-    // Make functions globally accessible for onclick handlers
-    window.openPassengerModal = openPassengerModal;
-    window.closePassengerModal = closePassengerModal;
-    window.closeModalOnBackdrop = closeModalOnBackdrop;
-    window.applyPassengerSelection = applyPassengerSelection;
-    
-    function updatePassengerDisplay() {
-        const display = document.getElementById('passenger_display');
-        const subtext = document.getElementById('passenger_subtext');
-        const total = currentAdults + currentChildren + currentInfants;
-        
-        if (display) {
-            if (total === 1) {
-                display.textContent = '1 Traveller';
-            } else {
-                display.textContent = total + ' Travellers';
-            }
-        }
-        
-        if (subtext) {
-            const classNames = {
-                'economy': 'Economy',
-                'premium_economy': 'Premium Economy',
-                'business': 'Business',
-                'first': 'First Class'
-            };
-            subtext.textContent = classNames[currentTravelClass] || 'Economy';
-        }
-    }
-    
-    // Initialize passenger selectors
-    function initPassengerSelectors() {
-        // Adults selector
-        const adultsSelector = document.getElementById('adultsSelector');
-        if (adultsSelector) {
-            adultsSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    adultsSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
-                    this.classList.add('selected');
-                    currentAdults = parseInt(this.dataset.count);
-                });
-            });
-        }
-        
-        // Children selector
-        const childrenSelector = document.getElementById('childrenSelector');
-        if (childrenSelector) {
-            childrenSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    childrenSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
-                    this.classList.add('selected');
-                    currentChildren = parseInt(this.dataset.count);
-                });
-            });
-        }
-        
-        // Infants selector
-        const infantsSelector = document.getElementById('infantsSelector');
-        if (infantsSelector) {
-            infantsSelector.querySelectorAll('.passenger-count-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    infantsSelector.querySelectorAll('.passenger-count-btn').forEach(b => b.classList.remove('selected'));
-                    this.classList.add('selected');
-                    currentInfants = parseInt(this.dataset.count);
-                });
-            });
-        }
-        
-        // Travel class selector
-        document.querySelectorAll('.travel-class-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.travel-class-btn').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                currentTravelClass = this.dataset.class;
-            });
-        });
-    }
-    
-    // Swap Locations
-    function swapLocations() {
-        const fromInput = document.getElementById('from_location');
-        const toInput = document.getElementById('to_location');
-        
-        if (fromInput && toInput) {
-            const temp = fromInput.value;
-            fromInput.value = toInput.value;
-            toInput.value = temp;
-            
-            updateLocationDisplay('from_location', 'from_display', 'from_subtext');
-            updateLocationDisplay('to_location', 'to_display', 'to_subtext');
-        }
-    }
-    
-    // Show Error
-    function showError(message) {
-        const existing = document.querySelector('.error-notification');
-        if (existing) existing.remove();
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
-        document.body.appendChild(errorDiv);
-        
-        setTimeout(() => {
-            errorDiv.style.opacity = '0';
-            setTimeout(() => errorDiv.remove(), 300);
-        }, 4000);
-    }
-    
-    // Form Validation
-    const searchForm = document.getElementById('searchForm');
-        if (searchForm) {
-            searchForm.addEventListener('submit', function(e) {
-                const fromInput = document.getElementById('from_location');
-            const toInput = document.getElementById('to_location');
-            
-            if (!fromInput.value.trim()) {
-                e.preventDefault();
-                showError('Please select a departure city');
-                fromInput.focus();
-                return false;
-            }
-            
-            if (!toInput.value.trim()) {
-            e.preventDefault();
-                showError('Please select a destination city');
-                toInput.focus();
-                return false;
-            }
-            
-            const fromCity = fromInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || fromInput.value;
-            const toCity = toInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || toInput.value;
-            
-            if (fromCity === toCity) {
-                e.preventDefault();
-                showError('Departure and destination cannot be the same');
-                return false;
-            }
-            
-            if (tripReturnRadio.checked && returnDateInput && !returnDateInput.value.trim()) {
-                e.preventDefault();
-                showError('Please select a return date for round trip');
-                returnDateInput.focus();
-                return false;
-            }
-            
-            // Validate at least one adult
-            const adults = parseInt(document.getElementById('adults_input').value) || 0;
-            if (adults === 0) {
-                e.preventDefault();
-                showError('At least 1 adult is required');
-                return false;
-            }
-            
-            // Validate infants don't exceed adults
-            const infants = parseInt(document.getElementById('infants_input').value) || 0;
-            if (infants > adults) {
-                e.preventDefault();
-                showError('Number of infants cannot exceed number of adults');
-                return false;
-                }
-            });
-        }
 
-    // Store original datalist options
-    const originalOptions = {
-        origin: [],
-        destination: []
-    };
-    
-    // Initialize datalists - clear them initially
-    function initializeDatalists() {
-        const originDatalist = document.getElementById('origin-suggestions');
-        const destinationDatalist = document.getElementById('destination-suggestions');
-        
-        if (originDatalist) {
-            originalOptions.origin = Array.from(originDatalist.options).map(opt => ({
-                value: opt.value,
-                dataValue: opt.dataset.value || '',
-                dataCity: opt.dataset.city || '',
-                dataCode: opt.dataset.code || ''
-            }));
-            originDatalist.innerHTML = ''; // Clear initially
-        }
-        
-        if (destinationDatalist) {
-            originalOptions.destination = Array.from(destinationDatalist.options).map(opt => ({
-                value: opt.value,
-                dataValue: opt.dataset.value || '',
-                dataCity: opt.dataset.city || '',
-                dataCode: opt.dataset.code || ''
-            }));
-            destinationDatalist.innerHTML = ''; // Clear initially
-        }
-    }
-    
-    // Filter and show datalist options based on input
-    function filterDatalist(input, datalistId, optionsKey) {
-            const datalist = document.getElementById(datalistId);
-        if (!datalist || !originalOptions[optionsKey]) return;
-        
-        const searchTerm = input.value.toLowerCase().trim();
-        
-        // Clear datalist
-        datalist.innerHTML = '';
-        
-        // If search term is empty, don't show any options
-        if (!searchTerm) {
-                    return;
-                }
-        
-        // Filter options that match
-        const filtered = originalOptions[optionsKey].filter(opt => {
-            const city = opt.dataCity || '';
-            const code = opt.dataCode || '';
-            const value = opt.value.toLowerCase();
-            
-            return city.includes(searchTerm) || 
-                   code.includes(searchTerm) || 
-                   value.includes(searchTerm);
-        });
-        
-        // Add filtered options to datalist
-        filtered.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt.value;
-            option.setAttribute('data-value', opt.dataValue);
-            option.setAttribute('data-city', opt.dataCity);
-            option.setAttribute('data-code', opt.dataCode);
-            datalist.appendChild(option);
-        });
-    }
-    
-    // Event Listeners
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize datalists - clear them first
-        initializeDatalists();
-        
-        toggleTripType();
-        
-        const fromInput = document.getElementById('from_location');
-        const toInput = document.getElementById('to_location');
-        const travelDateInput = document.getElementById('travel_date');
-        const returnDateInput = document.getElementById('return_date');
-        const passengersSelect = document.getElementById('passengers');
-        
-                if (fromInput) {
-            fromInput.addEventListener('input', function() {
-                filterDatalist(this, 'origin-suggestions', 'origin');
-                updateLocationDisplay('from_location', 'from_display', 'from_subtext');
-            });
-            
-            fromInput.addEventListener('change', () => updateLocationDisplay('from_location', 'from_display', 'from_subtext'));
-            
-            fromInput.addEventListener('focus', function() {
-                // Clear options on focus if input is empty
-                if (!this.value.trim()) {
-                    const datalist = document.getElementById('origin-suggestions');
-                if (datalist) {
-                        datalist.innerHTML = '';
-                    }
-                }
-            });
-                }
-                
-                if (toInput) {
-            toInput.addEventListener('input', function() {
-                filterDatalist(this, 'destination-suggestions', 'destination');
-                updateLocationDisplay('to_location', 'to_display', 'to_subtext');
-            });
-            
-            toInput.addEventListener('change', () => updateLocationDisplay('to_location', 'to_display', 'to_subtext'));
-            
-            toInput.addEventListener('focus', function() {
-                // Clear options on focus if input is empty
-                if (!this.value.trim()) {
-                    const datalist = document.getElementById('destination-suggestions');
-                    if (datalist) {
-                        datalist.innerHTML = '';
-                    }
-                }
-            });
-        }
+            if (adultsInput) currentAdults = parseInt(adultsInput.value) || 1;
+            if (childrenInput) currentChildren = parseInt(childrenInput.value) || 0;
+            if (infantsInput) currentInfants = parseInt(infantsInput.value) || 0;
+            if (travelClassInput) currentTravelClass = travelClassInput.value || 'economy';
 
-        if (travelDateInput) {
-            travelDateInput.addEventListener('change', () => {
-                updateDateDisplay('travel_date', 'departure_display', 'departure_subtext');
-                if (returnDateInput && returnDateInput.value) {
-                    returnDateInput.min = travelDateInput.value;
+            updatePassengerDisplay(); // Update display with persistent values
+            initPassengerSelectors(); // Re-init selectors to match persistent values
+
+
+            if (fromInput) {
+                fromInput.addEventListener('input', function () {
+                    filterDatalist(this, 'origin-suggestions', 'origin');
+                    updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                });
+
+                fromInput.addEventListener('change', () => {
+                    updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                    // Client Req 2: Auto Focus To
+                    if (this.value && toInput) {
+                        toInput.focus();
+                    }
+                });
+
+                fromInput.addEventListener('focus', function () {
+                    // Clear options on focus if input is empty
+                    if (!this.value.trim()) {
+                        const datalist = document.getElementById('origin-suggestions');
+                        if (datalist) {
+                            datalist.innerHTML = '';
+                        }
+                    }
+                });
+            }
+
+            if (toInput) {
+                toInput.addEventListener('input', function () {
+                    filterDatalist(this, 'destination-suggestions', 'destination');
+                    updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+                });
+
+                toInput.addEventListener('change', () => updateLocationDisplay('to_location', 'to_display', 'to_subtext'));
+
+                toInput.addEventListener('focus', function () {
+                    // Clear options on focus if input is empty
+                    if (!this.value.trim()) {
+                        const datalist = document.getElementById('destination-suggestions');
+                        if (datalist) {
+                            datalist.innerHTML = '';
+                        }
+                    }
+                });
+            }
+
+            if (travelDateInput) {
+                travelDateInput.addEventListener('change', () => {
+                    updateDateDisplay('travel_date', 'departure_display', 'departure_subtext');
+                    if (returnDateInput && returnDateInput.value) {
+                        returnDateInput.min = travelDateInput.value;
+                    }
+                });
+            }
+
+            if (returnDateInput) {
+                returnDateInput.addEventListener('change', () => updateDateDisplay('return_date', 'return_display', 'return_subtext'));
+            }
+
+
+            // Make display cards clickable
+            document.getElementById('from_display_card').addEventListener('click', () => fromInput.focus());
+            document.getElementById('to_display_card').addEventListener('click', () => toInput.focus());
+            document.getElementById('departure_display_card').addEventListener('click', () => travelDateInput.focus());
+            document.getElementById('return_display_card').addEventListener('click', () => {
+                // Client Req 3: Auto Switch to Round Trip
+                if (tripReturnBtn && !tripReturnBtn.classList.contains('active')) {
+                    tripReturnBtn.click();
                 }
+                setTimeout(() => { if (returnDateInput) returnDateInput.focus(); }, 100);
             });
-        }
-        
-        if (returnDateInput) {
-            returnDateInput.addEventListener('change', () => updateDateDisplay('return_date', 'return_display', 'return_subtext'));
-        }
-        
-        // Initialize passenger selectors
-        initPassengerSelectors();
-        updatePassengerDisplay();
-        
-        // Make display cards clickable
-        document.getElementById('from_display_card').addEventListener('click', () => fromInput.focus());
-        document.getElementById('to_display_card').addEventListener('click', () => toInput.focus());
-        document.getElementById('departure_display_card').addEventListener('click', () => travelDateInput.focus());
-        document.getElementById('return_display_card').addEventListener('click', () => {
-            if (!returnDateInput.disabled) returnDateInput.focus();
+
+            // Passenger display card - open modal
+            const passengerDisplayCard = document.getElementById('passenger_display_card');
+            if (passengerDisplayCard) {
+                passengerDisplayCard.addEventListener('click', openPassengerModal);
+            }
+
+            // Apply button - apply passenger selection
+            const applyBtn = document.querySelector('.modal-apply-btn');
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    applyPassengerSelection();
+                });
+            }
         });
-        
-        // Passenger display card - open modal
-        const passengerDisplayCard = document.getElementById('passenger_display_card');
-        if (passengerDisplayCard) {
-            passengerDisplayCard.addEventListener('click', openPassengerModal);
-        }
-        
-        // Apply button - apply passenger selection
-        const applyBtn = document.querySelector('.modal-apply-btn');
-        if (applyBtn) {
-            applyBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                applyPassengerSelection();
-            });
-        }
-    });
-})();
+    })();
 </script>
 {% endblock %}

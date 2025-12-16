@@ -413,34 +413,44 @@
                     <a href="?trip_type=all{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}"
                         class="px-6 py-3 rounded-lg font-semibold transition-all {% if trip_type == 'all' %}tab-active{% else %}tab-inactive{% endif %}">
                         <i class="fas fa-list mr-2"></i>All Trips
-                        <span class="ml-2 px-2 py-1 {% if trip_type == 'all' %}bg-white text-blue-600{% else %}bg-blue-100 text-blue-700{% endif %} rounded-full text-xs font-bold">{{ total_count }}</span>
+                        <span
+                            class="ml-2 px-2 py-1 {% if trip_type == 'all' %}bg-white text-blue-600{% else %}bg-blue-100 text-blue-700{% endif %} rounded-full text-xs font-bold">{{
+                            total_count }}</span>
                     </a>
                     <a href="?trip_type=upcoming{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}"
                         class="px-6 py-3 rounded-lg font-semibold transition-all {% if trip_type == 'upcoming' %}tab-active{% else %}tab-inactive{% endif %}">
                         <i class="fas fa-calendar-alt mr-2"></i>Upcoming
                         {% if upcoming_count > 0 %}
-                        <span class="ml-2 px-2 py-1 {% if trip_type == 'upcoming' %}bg-white text-blue-600{% else %}bg-green-100 text-green-700{% endif %} rounded-full text-xs font-bold">{{ upcoming_count }}</span>
+                        <span
+                            class="ml-2 px-2 py-1 {% if trip_type == 'upcoming' %}bg-white text-blue-600{% else %}bg-green-100 text-green-700{% endif %} rounded-full text-xs font-bold">{{
+                            upcoming_count }}</span>
                         {% endif %}
                     </a>
                     <a href="?trip_type=past{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}"
                         class="px-6 py-3 rounded-lg font-semibold transition-all {% if trip_type == 'past' %}tab-active{% else %}tab-inactive{% endif %}">
                         <i class="fas fa-history mr-2"></i>Past
                         {% if past_count > 0 %}
-                        <span class="ml-2 px-2 py-1 {% if trip_type == 'past' %}bg-white text-blue-600{% else %}bg-gray-100 text-gray-700{% endif %} rounded-full text-xs font-bold">{{ past_count }}</span>
+                        <span
+                            class="ml-2 px-2 py-1 {% if trip_type == 'past' %}bg-white text-blue-600{% else %}bg-gray-100 text-gray-700{% endif %} rounded-full text-xs font-bold">{{
+                            past_count }}</span>
                         {% endif %}
                     </a>
                     <a href="?trip_type=completed{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}"
                         class="px-6 py-3 rounded-lg font-semibold transition-all {% if trip_type == 'completed' %}tab-active{% else %}tab-inactive{% endif %}">
                         <i class="fas fa-check-circle mr-2"></i>Completed
                         {% if completed_count > 0 %}
-                        <span class="ml-2 px-2 py-1 {% if trip_type == 'completed' %}bg-white text-blue-600{% else %}bg-purple-100 text-purple-700{% endif %} rounded-full text-xs font-bold">{{ completed_count }}</span>
+                        <span
+                            class="ml-2 px-2 py-1 {% if trip_type == 'completed' %}bg-white text-blue-600{% else %}bg-purple-100 text-purple-700{% endif %} rounded-full text-xs font-bold">{{
+                            completed_count }}</span>
                         {% endif %}
                     </a>
                     <a href="?trip_type=cancelled{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}"
                         class="px-6 py-3 rounded-lg font-semibold transition-all {% if trip_type == 'cancelled' %}tab-active{% else %}tab-inactive{% endif %}">
                         <i class="fas fa-times-circle mr-2"></i>Cancelled
                         {% if cancelled_count > 0 %}
-                        <span class="ml-2 px-2 py-1 {% if trip_type == 'cancelled' %}bg-white text-blue-600{% else %}bg-red-100 text-red-700{% endif %} rounded-full text-xs font-bold">{{ cancelled_count }}</span>
+                        <span
+                            class="ml-2 px-2 py-1 {% if trip_type == 'cancelled' %}bg-white text-blue-600{% else %}bg-red-100 text-red-700{% endif %} rounded-full text-xs font-bold">{{
+                            cancelled_count }}</span>
                         {% endif %}
                     </a>
                 </div>
@@ -526,29 +536,47 @@
                                     {% for group in type_groups %}
                                     {% if group.grouper == 'infant' %}
                                     {% for g in type_groups %}
-                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child'
+                                    and g.list|length > 0 %}, {% endif %}
                                     {% endfor %}{{ group.list|length }} INF
                                     {% endif %}
                                     {% endfor %}
                                 </p>
 
-                                <!-- PNR -->
-                                <p class="text-sm mb-2 text-gray-600">
-                                    <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
-                                </p>
-
-                                <!-- Reference Number -->
-                                <p class="text-sm mb-2 text-gray-600">
-                                    <span class="font-semibold">Ref No.:</span>
-                                    <span class="font-mono">{{ booking.booking_reference }}</span>
-                                </p>
-
-                                <!-- Status -->
-                                <p class="text-sm mb-3 text-gray-600">
-                                    <span class="font-semibold">Status:</span>
-                                    <span class="text-green-600 font-semibold">Ticketed</span>
-                                </p>
+                                <!-- Trip Details Grid -->
+                                <div
+                                    class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">PNR</p>
+                                        <p class="font-mono font-bold text-gray-900 text-lg">
+                                            {% if booking.schedule.route.airline_name %}{{
+                                            booking.schedule.route.airline_name|slice:":2"|upper }}{% else %}{{
+                                            booking.schedule.route.carrier_number|slice:":2"|upper }}{% endif %}{{
+                                            booking.booking_reference|slice:"2:8"|upper }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Ref No.
+                                        </p>
+                                        <p class="font-mono font-bold text-gray-900">{{ booking.booking_reference }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Status
+                                        </p>
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                            <i class="fas fa-check-circle mr-1.5"></i>Ticketed
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Fare
+                                            Rules</p>
+                                        <a href="#"
+                                            class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center mt-1">
+                                            <i class="fas fa-info-circle mr-1"></i>View Rules
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Action Links -->
@@ -591,7 +619,8 @@
                         </div>
                     </div>
                     {% elif trip_type == 'past' or trip_type == 'completed' %}
-                    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div
+                        class="bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-lg hover:shadow-xl transition-all duration-300">
                         <!-- Passenger Name Header -->
                         <div class="mb-4">
                             <h3 class="text-xl font-bold mb-3 text-gray-800">
@@ -651,29 +680,47 @@
                                     {% for group in type_groups %}
                                     {% if group.grouper == 'infant' %}
                                     {% for g in type_groups %}
-                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child'
+                                    and g.list|length > 0 %}, {% endif %}
                                     {% endfor %}{{ group.list|length }} INF
                                     {% endif %}
                                     {% endfor %}
                                 </p>
 
-                                <!-- PNR -->
-                                <p class="text-sm mb-2 text-gray-600">
-                                    <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
-                                </p>
-
-                                <!-- Reference Number -->
-                                <p class="text-sm mb-2 text-gray-600">
-                                    <span class="font-semibold">Ref No.:</span>
-                                    <span class="font-mono">{{ booking.booking_reference }}</span>
-                                </p>
-
-                                <!-- Status -->
-                                <p class="text-sm mb-3 text-gray-600">
-                                    <span class="font-semibold">Status:</span>
-                                    <span class="text-green-600 font-semibold">Ticketed</span>
-                                </p>
+                                <!-- Trip Details Grid -->
+                                <div
+                                    class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">PNR</p>
+                                        <p class="font-mono font-bold text-gray-900 text-lg">
+                                            {% if booking.schedule.route.airline_name %}{{
+                                            booking.schedule.route.airline_name|slice:":2"|upper }}{% else %}{{
+                                            booking.schedule.route.carrier_number|slice:":2"|upper }}{% endif %}{{
+                                            booking.booking_reference|slice:"2:8"|upper }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Ref No.
+                                        </p>
+                                        <p class="font-mono font-bold text-gray-900">{{ booking.booking_reference }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Status
+                                        </p>
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                            <i class="fas fa-check-circle mr-1.5"></i>Ticketed
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Fare
+                                            Rules</p>
+                                        <a href="#"
+                                            class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center mt-1">
+                                            <i class="fas fa-info-circle mr-1"></i>View Rules
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Action Links -->
@@ -785,7 +832,8 @@
                                         {% for group in type_groups %}
                                         {% if group.grouper == 'infant' %}
                                         {% for g in type_groups %}
-                                        {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                        {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper ==
+                                        'child' and g.list|length > 0 %}, {% endif %}
                                         {% endfor %}{{ group.list|length }} INF
                                         {% endif %}
                                         {% endfor %}
@@ -800,7 +848,16 @@
                                         <i class="fas fa-barcode" style="color: #ef4444;"></i>
                                         <span class="text-xs font-semibold text-gray-500">PNR</span>
                                     </div>
-                                    <span class="text-sm font-bold text-gray-800">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="text-sm font-bold text-gray-800">
+                                        {% if booking.schedule.route.airline_name %}
+                                        {{ booking.schedule.route.airline_name }} ({{
+                                        booking.schedule.route.carrier_number }})
+                                        {% else %}
+                                        {{ booking.schedule.route.carrier_number }}
+                                        {% endif %}
+                                        - {{ booking.booking_reference|slice:":6"|upper }}
+                                    </span>
+
                                 </div>
                                 <div class="reference-info" style="border-left-color: #ef4444;">
                                     <div class="flex items-center gap-2 mb-1">
@@ -889,7 +946,8 @@
                                     {% for group in type_groups %}
                                     {% if group.grouper == 'infant' %}
                                     {% for g in type_groups %}
-                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child'
+                                    and g.list|length > 0 %}, {% endif %}
                                     {% endfor %}{{ group.list|length }} INF
                                     {% endif %}
                                     {% endfor %}
@@ -898,7 +956,10 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{
+                                        booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number
+                                        }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{
+                                        booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->
@@ -990,7 +1051,8 @@
                                     {% for group in type_groups %}
                                     {% if group.grouper == 'infant' %}
                                     {% for g in type_groups %}
-                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child'
+                                    and g.list|length > 0 %}, {% endif %}
                                     {% endfor %}{{ group.list|length }} INF
                                     {% endif %}
                                     {% endfor %}
@@ -999,7 +1061,10 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{
+                                        booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number
+                                        }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{
+                                        booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->
@@ -1116,7 +1181,8 @@
                                     {% for group in type_groups %}
                                     {% if group.grouper == 'infant' %}
                                     {% for g in type_groups %}
-                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child' and g.list|length > 0 %}, {% endif %}
+                                    {% if g.grouper == 'adult' and g.list|length > 0 %}, {% elif g.grouper == 'child'
+                                    and g.list|length > 0 %}, {% endif %}
                                     {% endfor %}{{ group.list|length }} INF
                                     {% endif %}
                                     {% endfor %}
@@ -1125,7 +1191,10 @@
                                 <!-- PNR -->
                                 <p class="text-sm mb-2 text-gray-600">
                                     <span class="font-semibold">PNR:</span>
-                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{ booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{ booking.booking_reference|slice:":6"|upper }}</span>
+                                    <span class="font-mono">{% if booking.schedule.route.airline_name %}{{
+                                        booking.schedule.route.airline_name }} ({{ booking.schedule.route.carrier_number
+                                        }}){% else %}{{ booking.schedule.route.carrier_number }}{% endif %} - {{
+                                        booking.booking_reference|slice:":6"|upper }}</span>
                                 </p>
 
                                 <!-- Reference Number -->
@@ -1139,7 +1208,8 @@
                                     <span class="font-semibold">Status:</span>
                                     <span
                                         class="{% if booking.status == 'confirmed' %}text-green-600 font-semibold{% elif booking.status == 'cancelled' %}text-red-600{% else %}text-yellow-600{% endif %}">
-                                        {% if booking.status == 'confirmed' %}Ticketed{% else %}{{ booking.get_status_display }}{% endif %}
+                                        {% if booking.status == 'confirmed' %}Ticketed{% else %}{{
+                                        booking.get_status_display }}{% endif %}
                                     </span>
                                 </p>
                             </div>

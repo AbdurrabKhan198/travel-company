@@ -173,6 +173,35 @@
             background: linear-gradient(to right, transparent, #e2e8f0, transparent);
             margin: 25px 0;
         }
+        
+        .user-info {
+            background-color: #f8fafc;
+            border-left: 4px solid #10b981;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .user-info p {
+            margin: 8px 0;
+            color: #334155;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        .user-info p:first-child {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .user-info strong {
+            color: #1e293b;
+            min-width: 90px;
+            display: inline-block;
+        }
         .bilingual-section {
             margin-top: 30px;
             padding-top: 25px;
@@ -300,6 +329,15 @@
             <div class="message">
                 Hello <strong>{{ user_name }}</strong>,<br><br>
                 We are pleased to inform you that your account has been successfully approved! You can now access all the services of Safar Zone Travels.
+            </div>
+
+            <!-- User Information -->
+            <div class="user-info">
+                <p><strong>Account Details:</strong></p>
+                <p><strong>Email:</strong> {{ user_email }}</p>
+                {% if user_agency_id %}
+                <p><strong>Agency ID:</strong> {{ user_agency_id }}</p>
+                {% endif %}
             </div>
 
             <!-- Features Box -->

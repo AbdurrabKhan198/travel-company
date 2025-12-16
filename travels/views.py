@@ -74,22 +74,44 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 # Easebuzz Payment Gateway Helper Functions
 def generate_easebuzz_hash(data_dict, salt):
-    """Generate hash for Easebuzz payment gateway"""
-    # Exclude 'hash' key from hash generation
-    filtered_dict = {k: v for k, v in data_dict.items() if k != 'hash'}
-    # Sort all keys alphabetically
-    sorted_keys = sorted(filtered_dict.keys())
-    # Create hash string
-    hash_string = '|'.join([str(filtered_dict[key]) for key in sorted_keys])
-    hash_string += '|' + salt
+    """Generate hash for Easebuzz payment gateway using the strict sequence"""
+    # Sequence: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5|udf6|udf7|udf8|udf9|udf10|salt
+    hash_sequence = [
+        'key', 'txnid', 'amount', 'productinfo', 'firstname', 'email',
+        'udf1', 'udf2', 'udf3', 'udf4', 'udf5', 'udf6', 'udf7', 'udf8', 'udf9', 'udf10'
+    ]
+    
+    hash_params = []
+    for key in hash_sequence:
+        val = str(data_dict.get(key, '')) if data_dict.get(key) is not None else ''
+        hash_params.append(val)
+    
+    hash_params.append(salt)
+    
+    hash_string = '|'.join(hash_params)
+    
     # Generate SHA512 hash
     hash_value = hashlib.sha512(hash_string.encode('utf-8')).hexdigest()
-    return hash_value.upper()  # Easebuzz expects uppercase hash
+    return hash_value.lower()
 
 def verify_easebuzz_hash(data_dict, salt, received_hash):
     """Verify hash from Easebuzz payment response"""
-    generated_hash = generate_easebuzz_hash(data_dict, salt)
-    return generated_hash == received_hash.upper()
+    # Response Sequence: salt|status|udf10|udf9|udf8|udf7|udf6|udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
+    
+    hash_sequence = [
+        'status', 'udf10', 'udf9', 'udf8', 'udf7', 'udf6', 'udf5', 'udf4', 'udf3', 'udf2', 'udf1', 
+        'email', 'firstname', 'productinfo', 'amount', 'txnid', 'key'
+    ]
+    
+    hash_params = [salt]
+    for key in hash_sequence:
+        val = str(data_dict.get(key, '')) if data_dict.get(key) is not None else ''
+        hash_params.append(val)
+        
+    hash_string = '|'.join(hash_params)
+        
+    generated_hash = hashlib.sha512(hash_string.encode('utf-8')).hexdigest()
+    return generated_hash == received_hash
 
 
 # Comprehensive Airport Codes Dictionary
@@ -466,6 +488,7 @@ def search_flights(request):
     return_date = request.GET.get('return_date', '').strip()
     route_type = request.GET.get('route_type', '').strip()
     trip_type = request.GET.get('trip_type', 'one_way').strip()
+    travel_class = request.GET.get('travel_class', 'economy').strip().lower()
     
     # Get passenger counts (adults, children, infants)
     try:
@@ -551,6 +574,13 @@ def search_flights(request):
     
     # Order by adult fare (or use route base_price) and departure date
     flights = flights.order_by('adult_fare', 'departure_date')
+    
+    # Filter by travel class (Currently only Economy is supported in DB)
+    if travel_class and travel_class != 'economy':
+        # logic: if user asks for Business/First, and we only have Economy (implicit), return nothing.
+        flights = flights.none()
+        if trip_type != 'return': # avoid double messages if checking return too
+             messages.warning(request, f'No {travel_class.title()} Class flights available for this route.')
     
     # Search for return flights if trip_type is 'return'
     return_flights = None
@@ -665,15 +695,31 @@ def booking_page(request, schedule_id):
     """B2B Booking page for a specific flight with multiple passenger support"""
     schedule = get_object_or_404(Schedule, id=schedule_id)
     
+    # Check if we are in "edit mode" (returning from review page) - check this early
+    is_edit_mode = request.GET.get('edit') == 'true'
+    booking_data = request.session.get('booking_data')
+    
     # Get passenger counts (adults, children, infants)
-    try:
-        adults = int(request.GET.get('adults', request.GET.get('passengers', 1)))
-        children = int(request.GET.get('children', 0))
-        infants = int(request.GET.get('infants', 0))
-    except (ValueError, TypeError):
-        adults = 1
-        children = 0
-        infants = 0
+    # In edit mode, use counts from session data to preserve existing data
+    if is_edit_mode and booking_data and str(booking_data.get('schedule_id')) == str(schedule_id):
+        adults = booking_data.get('adult_count', 1)
+        children = booking_data.get('child_count', 0)
+        infants = booking_data.get('infant_count', 0)
+        return_schedule_id = booking_data.get('return_schedule_id')
+        trip_type = booking_data.get('trip_type', 'one_way')
+        travel_class = booking_data.get('travel_class', 'economy')
+    else:
+        try:
+            adults = int(request.GET.get('adults', request.GET.get('passengers', 1)))
+            children = int(request.GET.get('children', 0))
+            infants = int(request.GET.get('infants', 0))
+        except (ValueError, TypeError):
+            adults = 1
+            children = 0
+            infants = 0
+        return_schedule_id = request.GET.get('return_schedule_id', None)
+        trip_type = request.GET.get('trip_type', 'one_way')
+        travel_class = request.GET.get('travel_class', 'economy')
     
     # Validate at least 1 adult
     if adults < 1:
@@ -686,10 +732,6 @@ def booking_page(request, schedule_id):
     
     # Calculate total passengers for seat availability (infants don't need seats)
     passengers = adults + children
-    
-    return_schedule_id = request.GET.get('return_schedule_id', None)
-    trip_type = request.GET.get('trip_type', 'one_way')
-    travel_class = request.GET.get('travel_class', 'economy')
     
     # Get return schedule if provided
     return_schedule = None
@@ -909,11 +951,57 @@ def booking_page(request, schedule_id):
         return_child_fare = return_schedule.get_fare_for_passenger_type('child')
         return_infant_fare = return_schedule.get_fare_for_passenger_type('infant')
     
-    # Create separate ranges for each passenger type
-    adult_range = range(1, adults + 1) if adults > 0 else []
-    child_range = range(1, children + 1) if children > 0 else []
-    infant_range = range(1, infants + 1) if infants > 0 else []
+    # Create separate passenger objects for each passenger type with proper indexing
+    adult_psgs = []
+    child_psgs = []
+    infant_psgs = []
     
+    # Ensure session data persists in edit mode
+    if is_edit_mode and booking_data and str(booking_data.get('schedule_id')) == str(schedule_id):
+        # Pre-fill data from session
+        all_passenger_data = booking_data.get('passenger_data', [])
+        
+        # Helper to find passenger in stored data
+        # Data structure: [ {passenger_type: 'adult', index: 0, ...}, ... ]
+        # The stored list is flat, but we need to segment it.
+        # We need to map them back to their types and relative indices.
+        
+        current_adult_idx = 0
+        current_child_idx = 0
+        current_infant_idx = 0
+        
+        for p in all_passenger_data:
+            p_type = p.get('passenger_type', 'adult')
+            if p_type == 'adult':
+                p['index'] = current_adult_idx
+                adult_psgs.append(p)
+                current_adult_idx += 1
+            elif p_type == 'child':
+                p['index'] = current_child_idx
+                child_psgs.append(p)
+                current_child_idx += 1
+            elif p_type == 'infant':
+                p['index'] = current_infant_idx
+                infant_psgs.append(p)
+                current_infant_idx += 1
+        
+        # Fill remaining slots if counts changed (unlikely but possible if URL params hacked)
+        while len(adult_psgs) < adults:
+            adult_psgs.append({'index': len(adult_psgs), 'passenger_type': 'adult'})
+        while len(child_psgs) < children:
+            child_psgs.append({'index': len(child_psgs), 'passenger_type': 'child'})
+        while len(infant_psgs) < infants:
+            infant_psgs.append({'index': len(infant_psgs), 'passenger_type': 'infant'})
+            
+    else:
+        # New booking - create empty objects with indices
+        for i in range(adults):
+            adult_psgs.append({'index': i, 'passenger_type': 'adult'})
+        for i in range(children):
+            child_psgs.append({'index': i, 'passenger_type': 'child'})
+        for i in range(infants):
+            infant_psgs.append({'index': i, 'passenger_type': 'infant'})
+
     context = {
         'schedule': schedule,
         'return_schedule': return_schedule,
@@ -923,19 +1011,29 @@ def booking_page(request, schedule_id):
         'children': children,
         'infants': infants,
         'travel_class': travel_class,
-        'passenger_range': range(1, passengers + 1),
-        'adult_range': adult_range,
-        'child_range': child_range,
-        'infant_range': infant_range,
+        'passenger_range': range(1, passengers + 1), # Keep for backward compatibility if needed elsewhere
+        'adult_passengers': adult_psgs, # Use these objects instead of ranges
+        'child_passengers': child_psgs,
+        'infant_passengers': infant_psgs,
+        'adult_range': range(1, adults + 1), # Keep just in case template relies on loop counter hacks
+        'child_range': range(1, children + 1),
+        'infant_range': range(1, infants + 1),
         'airport_codes': airport_codes,
         'today': date.today().isoformat(),
         'user': request.user,
         'adult_fare': adult_fare,
         'child_fare': child_fare,
         'infant_fare': infant_fare,
+        'adult_fare_int': int(round(adult_fare)),
+        'child_fare_int': int(round(child_fare)),
+        'infant_fare_int': int(round(infant_fare)),
         'return_adult_fare': return_adult_fare,
         'return_child_fare': return_child_fare,
         'return_infant_fare': return_infant_fare,
+        'return_adult_fare_int': int(round(return_adult_fare)) if return_adult_fare else 0,
+        'return_child_fare_int': int(round(return_child_fare)) if return_child_fare else 0,
+        'return_infant_fare_int': int(round(return_infant_fare)) if return_infant_fare else 0,
+        'booking_data': booking_data, # Pass full data to pre-fill contact info (available in edit mode)
     }
     return render(request, 'booking.html', context)
 
@@ -1665,19 +1763,14 @@ def payment_page(request, booking_id):
     
     # Process Easebuzz payment only if explicitly requested via POST
     if request.method == 'POST' and request.POST.get('payment_method') == 'easebuzz':
-        if easebuzz_merchant_key and easebuzz_merchant_salt and EASEBUZZ_SDK_AVAILABLE:
+        if easebuzz_merchant_key and easebuzz_merchant_salt:
             try:
-                # Initialize Easebuzz SDK
-                easebuzz_obj = Easebuzz(
-                    key=easebuzz_merchant_key,
-                    salt=easebuzz_merchant_salt,
-                    env=easebuzz_env
-                )
+                import requests
                 
                 # Generate unique transaction ID
                 txnid = f"TXN_{booking.id}_{int(timezone.now().timestamp())}"
                 
-                # Prepare payment data for Easebuzz SDK
+                # Prepare payment data for Easebuzz
                 # Get phone number and ensure it's exactly 10 digits
                 raw_phone = booking.contact_phone or (getattr(request.user.profile, 'phone', '') if hasattr(request.user, 'profile') else '')
                 phone_digits = ''.join(filter(str.isdigit, str(raw_phone))) if raw_phone else ''
@@ -1687,135 +1780,92 @@ def payment_page(request, booking_id):
                 else:
                     phone_number = '9999999999'  # Default valid phone number
                 
+                amount_str = f"{float(booking.total_amount):.2f}"
+                payment_url = getattr(settings, 'EASEBUZZ_PAYMENT_URL', 'https://pay.easebuzz.in/payment/initiateLink')
+                
                 payment_data_dict = {
+                    'key': easebuzz_merchant_key,
                     'txnid': txnid,
-                    'amount': f"{float(booking.total_amount):.2f}",  # Easebuzz requires decimal format: "500.00"
+                    'amount': amount_str,
                     'productinfo': f'Flight Booking - {booking.booking_reference}',
                     'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
                     'email': booking.contact_email or request.user.email,
-                    'phone': phone_number,  # Easebuzz requires exactly 10 digit phone number
+                    'phone': phone_number,
                     'surl': request.build_absolute_uri(reverse('payment_success')),
                     'furl': request.build_absolute_uri(reverse('payment_failed')),
-                    # Optional fields
                     'udf1': '',
                     'udf2': '',
                     'udf3': '',
                     'udf4': '',
                     'udf5': '',
+                    'udf6': '',
+                    'udf7': '',
+                    'udf8': '',
+                    'udf9': '',
+                    'udf10': '',
                 }
+                
+                # Generate Hash
+                payment_data_dict['hash'] = generate_easebuzz_hash(payment_data_dict, easebuzz_merchant_salt)
                 
                 # Call Easebuzz API to get payment URL
                 print("=" * 50)
-                print("EASEBUZZ BOOKING PAYMENT INITIATION:")
-                print(f"Booking ID: {booking.id}")
-                print(f"Booking Reference: {booking.booking_reference}")
-                print(f"Merchant Key: {easebuzz_merchant_key}")
-                print(f"Environment: {easebuzz_env}")
-                print(f"Raw Phone: {booking.contact_phone}")
-                print(f"Cleaned Phone: {phone_number}")
-                print(f"Phone Length: {len(phone_number)}")
-                print("Payment Parameters:")
-                for key, value in payment_data_dict.items():
-                    print(f"  {key}: {value}")
+                print("EASEBUZZ DIRECT API CALL:")
+                print(f"URL: {payment_url}")
+                print(f"TxnID: {txnid}")
+                print(f"Amount: {amount_str}")
                 print("=" * 50)
                 
-                # Convert dict to QueryDict (Easebuzz SDK expects Django QueryDict with _mutable attribute)
-                query_dict = QueryDict('', mutable=True)
-                query_dict.update(payment_data_dict)
-                
-                response = easebuzz_obj.initiate_payment_api(query_dict)
-                
-                print("=" * 50)
-                print("EASEBUZZ API RAW RESPONSE (Booking Payment):")
-                print(f"Response: {response}")
-                print(f"Response Type: {type(response)}")
-                print("=" * 50)
-                
-                # Handle different response formats
-                payment_redirect_url = None
-                response_dict = None
-                
-                if response:
-                    # SDK returns JSON string, so parse it
-                    if isinstance(response, str):
-                        try:
-                            response_dict = json.loads(response)
-                            print(f"✅ Parsed JSON response: {response_dict}")
-                        except json.JSONDecodeError as e:
-                            print(f"❌ JSON Parse Error: {e}")
-                            # Check if it's a direct URL
-                            if response.startswith('http'):
-                                payment_redirect_url = response
-                                print(f"✅ Direct URL found: {payment_redirect_url}")
-                            else:
-                                print(f"❌ Unknown response format: {response}")
-                    elif isinstance(response, dict):
-                        response_dict = response
+                try:
+                    response = requests.post(payment_url, data=payment_data_dict)
+                    print(f"Response Status: {response.status_code}")
+                    print(f"Response Text: {response.text}")
                     
-                    # Process parsed response
-                    if response_dict:
-                        print(f"Response Status: {response_dict.get('status')}")
-                        print(f"Response Keys: {list(response_dict.keys())}")
-                        
-                        # Check status (1 = success, 0 = error)
-                        if response_dict.get('status') == 1:
-                            # Try different possible keys for payment URL
-                            payment_redirect_url = (
-                                response_dict.get('data') or
-                                response_dict.get('url') or
-                                response_dict.get('payment_url') or
-                                response_dict.get('redirect_url') or
-                                response_dict.get('payment_link') or
-                                response_dict.get('link')
-                            )
-                            
-                            if payment_redirect_url:
-                                print(f"✅ Payment URL found: {payment_redirect_url}")
-                            else:
-                                print(f"❌ No payment URL in response. Available keys: {list(response_dict.keys())}")
-                                print(f"Full response: {response_dict}")
-                        else:
-                            error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'Unknown error'
-                            print(f"❌ Easebuzz API Error (status={response_dict.get('status')}): {error_msg}")
-                            print(f"Full error response: {response_dict}")
+                    response_json = response.json()
                     
-                    # If we got a payment URL
-                    if payment_redirect_url:
-                        print(f"✅ Payment URL received: {payment_redirect_url}")
-                        
-                        # Store txnid in booking
-                        if not booking.notes:
-                            booking.notes = json.dumps({'easebuzz_txnid': txnid})
-                        else:
-                            try:
-                                notes = json.loads(booking.notes) if booking.notes else {}
-                            except:
-                                notes = {}
-                            notes['easebuzz_txnid'] = txnid
-                            booking.notes = json.dumps(notes)
-                        booking.save()
+                    if response_json.get('status') == 1 and response_json.get('data'):
+                         access_data = response_json.get('data')
+                         # Check if data is a URL or an Access Key
+                         if access_data.startswith('http'):
+                             payment_redirect_url = access_data
+                         else:
+                             # It's an Access Key, construct the URL
+                             # Base URL depends on environment (prod/test)
+                             # We know we are in prod now
+                             payment_redirect_url = f"https://pay.easebuzz.in/pay/{access_data}"
                     else:
-                        print(f"❌ Easebuzz API Error - No payment URL in response")
-                        print(f"Raw response: {response}")
-                        if response_dict:
-                            print(f"Parsed response: {response_dict}")
+                        print(f"❌ Easebuzz Error: {response_json.get('data')}")
                         payment_redirect_url = None
-                else:
-                    print(f"❌ Easebuzz API Error - Empty response")
+                        
+                except Exception as api_err:
+                    print(f"❌ API Request Failed: {str(api_err)}")
                     payment_redirect_url = None
+
                 
-                print("=" * 50)
+                # If we got a payment URL
+                if payment_redirect_url:
+                    print(f"✅ Payment URL received: {payment_redirect_url}")
+                    
+                    # Store txnid in booking
+                    if not booking.notes:
+                        booking.notes = json.dumps({'easebuzz_txnid': txnid})
+                    else:
+                        try:
+                            notes = json.loads(booking.notes) if booking.notes else {}
+                        except:
+                            notes = {}
+                        notes['easebuzz_txnid'] = txnid
+                        booking.notes = json.dumps(notes)
+                    booking.save()
+                else:
+                    messages.error(request, 'Failed to initiate payment. Please try again or use another method.')
             
             except Exception as e:
-                # If Easebuzz fails, log error but continue with wallet options
                 import traceback
-                print(f"❌ Easebuzz error: {str(e)}")
+                print(f"❌ General Error: {str(e)}")
                 print(traceback.format_exc())
+                messages.error(request, 'An internal error occurred. Please try again.')
                 payment_redirect_url = None
-        elif not EASEBUZZ_SDK_AVAILABLE:
-            print("⚠️  Easebuzz SDK not available. Install with: pip install easebuzz")
-            messages.error(request, 'Payment gateway not available. Please try again later.')
-            payment_redirect_url = None
         else:
             messages.error(request, 'Payment gateway not configured.')
             payment_redirect_url = None
@@ -1965,7 +2015,11 @@ def payment_success(request):
         booking.save()
         
         messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
-        return redirect('booking_confirmation', booking_id=booking.id)
+        # Render payment success page with booking details
+        context = {
+            'booking': booking,
+        }
+        return render(request, 'payment_success.html', context)
         
     except Exception as e:
         messages.error(request, f'Payment processing error: {str(e)}')
@@ -3104,10 +3158,14 @@ Best regards,
 Safar Zone Travels Team
                 '''
                 
-                # HTML email template
-                html_message = render_to_string('emails/otp_email.html', {
+                # Prepare context for email template
+                context = {
                     'otp': otp,
-                })
+                    'user': User.objects.filter(email=email).first(),  # Get user if exists
+                }
+                
+                # HTML email template
+                html_message = render_to_string('emails/otp_email.html', context)
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 
@@ -3343,10 +3401,17 @@ Safar Zone Travels Team
                 '''
                 
                 # HTML email template
-                html_message = render_to_string('emails/password_reset_email.html', {
+                context = {
                     'user_name': user_name,
+                    'user_email': user.email,
                     'reset_link': reset_link,
-                })
+                }
+                
+                # Add agency ID if available
+                if hasattr(user, 'profile') and hasattr(user.profile, 'agency_id'):
+                    context['user_agency_id'] = user.profile.agency_id
+                
+                html_message = render_to_string('emails/password_reset_email.html', context)
                 
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@safarzonetravels.com')
                 

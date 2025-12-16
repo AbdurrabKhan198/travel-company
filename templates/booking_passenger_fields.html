@@ -7,17 +7,17 @@
         <label for="passenger_title_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             Title <span class="text-red-500">*</span>
         </label>
-        <select name="passenger_title[]" id="passenger_title_{{ passenger_index }}" required 
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                onchange="updateTitleOptions({{ passenger_index }})">
+        <select name="passenger_title[]" id="passenger_title_{{ passenger_index }}" required
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            onchange="updateTitleOptions({{ passenger_index }})">
             <option value="">Select Title</option>
             {% if passenger_type == 'adult' %}
-            <option value="Mr">Mr</option>
-            <option value="Mrs">Mrs</option>
-            <option value="Miss">Miss</option>
+            <option value="Mr" {% if passenger.title == 'Mr' %}selected{% endif %}>Mr</option>
+            <option value="Mrs" {% if passenger.title == 'Mrs' %}selected{% endif %}>Mrs</option>
+            <option value="Miss" {% if passenger.title == 'Miss' %}selected{% endif %}>Miss</option>
             {% else %}
-            <option value="Master">Master</option>
-            <option value="Miss">Miss</option>
+            <option value="Master" {% if passenger.title == 'Master' %}selected{% endif %}>Master</option>
+            <option value="Miss" {% if passenger.title == 'Miss' %}selected{% endif %}>Miss</option>
             {% endif %}
         </select>
     </div>
@@ -25,13 +25,13 @@
         <label for="passenger_gender_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             Gender <span class="text-red-500">*</span>
         </label>
-        <select name="passenger_gender[]" id="passenger_gender_{{ passenger_index }}" required 
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                onchange="updateTitleOptions({{ passenger_index }})">
+        <select name="passenger_gender[]" id="passenger_gender_{{ passenger_index }}" required
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            onchange="updateTitleOptions({{ passenger_index }})">
             <option value="">Select Gender</option>
-            <option value="M">Male</option>
-            <option value="F">Female</option>
-            <option value="O">Other</option>
+            <option value="M" {% if passenger.gender == 'M' %}selected{% endif %}>Male</option>
+            <option value="F" {% if passenger.gender == 'F' %}selected{% endif %}>Female</option>
+            <option value="O" {% if passenger.gender == 'O' %}selected{% endif %}>Other</option>
         </select>
     </div>
 </div>
@@ -41,17 +41,19 @@
         <label for="passenger_first_name_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             First Name <span class="text-red-500">*</span>
         </label>
-        <input type="text" name="passenger_first_name[]" id="passenger_first_name_{{ passenger_index }}" required 
-               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" 
-               placeholder="First Name">
+        <input type="text" name="passenger_first_name[]" id="passenger_first_name_{{ passenger_index }}" required
+            value="{{ passenger.first_name|default:'' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="First Name">
     </div>
     <div class="form-group">
         <label for="passenger_last_name_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             Last Name <span class="text-red-500">*</span>
         </label>
-        <input type="text" name="passenger_last_name[]" id="passenger_last_name_{{ passenger_index }}" required 
-               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" 
-               placeholder="Last Name">
+        <input type="text" name="passenger_last_name[]" id="passenger_last_name_{{ passenger_index }}" required
+            value="{{ passenger.last_name|default:'' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Last Name">
     </div>
 </div>
 
@@ -60,38 +62,47 @@
         <label for="passenger_dob_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             Date of Birth <span class="text-red-500">*</span>
         </label>
-        <input type="date" name="passenger_dob[]" id="passenger_dob_{{ passenger_index }}" required 
-               max="{{ today }}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+        <input type="date" name="passenger_dob[]" id="passenger_dob_{{ passenger_index }}" required max="{{ today }}"
+            value="{{ passenger.dob|default:'' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
     </div>
 </div>
 
+{# Passport Fields - Only for International Flights #}
+{% if schedule.route.route_type == 'international' or return_schedule.route.route_type == 'international' %}
 <div class="grid grid-cols-2 gap-4 mb-4">
     <div class="form-group">
         <label for="passport_number_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
-            Passport Number
-            <span class="text-xs text-gray-500 ml-2">(Optional)</span>
+            Passport Number <span class="text-red-500">*</span>
         </label>
-        <input type="text" name="passport_number[]" id="passport_number_{{ passenger_index }}" 
-               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" 
-               placeholder="Passport Number">
+        <input type="text" name="passport_number[]" id="passport_number_{{ passenger_index }}" required
+            value="{{ passenger.passport_number|default:'' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Passport Number">
     </div>
     <div class="form-group">
         <label for="passport_expiry_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
-            Passport Expiry Date
+            Passport Expiry Date <span class="text-red-500">*</span>
         </label>
-        <input type="date" name="passport_expiry[]" id="passport_expiry_{{ passenger_index }}" 
-               min="{{ today }}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+        <input type="date" name="passport_expiry[]" id="passport_expiry_{{ passenger_index }}" required
+            min="{{ today }}" value="{{ passenger.passport_expiry|default:'' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
     </div>
 </div>
+{% else %}
+{# Hidden fields for Domestic to avoid form errors if backend expects them (empty) #}
+<input type="hidden" name="passport_number[]" value="">
+<input type="hidden" name="passport_expiry[]" value="">
+{% endif %}
 
 <div class="mb-4">
     <div class="form-group">
         <label for="nationality_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
             Nationality <span class="text-red-500">*</span>
         </label>
-        <input type="text" name="nationality[]" id="nationality_{{ passenger_index }}" required 
-               value="Indian" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" 
-               placeholder="Nationality">
+        <input type="text" name="nationality[]" id="nationality_{{ passenger_index }}" required
+            value="{{ passenger.nationality|default:'Indian' }}"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Nationality">
     </div>
 </div>
-

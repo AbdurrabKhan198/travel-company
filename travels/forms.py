@@ -315,7 +315,37 @@ class UserRegisterForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
-        user.phone = self.cleaned_data.get('phone', '')
+        
+        # Generate Custom Client ID based on Company Name (Format: SZ + 2 chars of Company + Number)
+        if not user.client_id:
+            company_name = self.cleaned_data.get('company_name', '').strip()
+            if company_name:
+                # Get first 2 alphanumeric characters
+                prefix_agency = ''.join(c for c in company_name if c.isalnum())[:2].upper()
+                # Pad with 'X' if less than 2 characters
+                if len(prefix_agency) < 2:
+                    prefix_agency = (prefix_agency + 'XX')[:2]
+                
+                prefix = f'SZ{prefix_agency}'
+                
+                # Find max existing ID sequence
+                # We filter by prefix to limit the search space
+                existing_users = User.objects.filter(client_id__startswith=prefix)
+                max_num = 0
+                
+                # Check IDs to find the highest number
+                # We do this in python to safely handle non-numeric suffixes if any exist
+                for u in existing_users:
+                    if u.client_id and len(u.client_id) > len(prefix):
+                        suffix = u.client_id[len(prefix):]
+                        if suffix.isdigit():
+                            num = int(suffix)
+                            if num > max_num:
+                                max_num = num
+                
+                # Generate next ID (padding to at least 4 digits)
+                next_num = max_num + 1
+                user.client_id = f'{prefix}{next_num:04d}'
         
         if commit:
             user.save()
