@@ -21,15 +21,15 @@ class AgencyIDFilter(admin.SimpleListFilter):
     parameter_name = 'agency_id'
 
     def lookups(self, request, model_admin):
-        # Get all unique agency IDs from users who have cash balance wallets
-        agency_ids = User.objects.filter(
-            cash_balance_wallet__isnull=False
+        # Get all unique agency IDs from user profiles who have cash balance wallets
+        agency_ids = UserProfile.objects.filter(
+            user__cash_balance_wallet__isnull=False
         ).values_list('client_id', flat=True).distinct().order_by('client_id')
         return [(agency_id, agency_id) for agency_id in agency_ids if agency_id]
 
     def queryset(self, request, queryset):
         if self.value():
-            return queryset.filter(cash_balance_wallet__user__client_id=self.value())
+            return queryset.filter(cash_balance_wallet__user__profile__client_id=self.value())
 
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
@@ -41,54 +41,24 @@ class UserProfileInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'agency_id_display', 'first_name', 'last_name', 'sales_rep_display', 'user_type', 'is_approved', 'is_staff', 'is_active')
-    list_filter = ('user_type', 'is_approved', 'sales_representative', 'is_staff', 'is_active', 'date_joined')
-    search_fields = ('email', 'client_id', 'first_name', 'last_name')
+    """Admin interface for Staff and Admin users only"""
+    list_display = ('email', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_active')
+    list_filter = ('user_type', 'is_staff', 'is_active', 'date_joined')
+    search_fields = ('email', 'first_name', 'last_name', 'profile__client_id')  # Add agency ID search
     ordering = ('email',)
-    readonly_fields = ('client_id',)
     inlines = (UserProfileInline,)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone', 'client_id')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone')}),
         (_('Account Status'), {
-            'fields': ('is_approved', 'is_active', 'is_verified', 'sales_representative'),
-            'description': 'is_approved: User can login only if approved. Assign a sales representative during approval.'
+            'fields': ('is_active',),
         }),
         (_('Permissions'), {
             'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions', 'user_type'),
         }),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
-    
-    actions = ['approve_users', 'unapprove_users']
-    
-    def agency_id_display(self, obj):
-        return obj.client_id if obj.client_id else 'N/A'
-    agency_id_display.short_description = 'Agency ID'
-    
-    def sales_rep_display(self, obj):
-        if obj.sales_representative:
-            return obj.sales_representative.name
-        return '-'
-    sales_rep_display.short_description = 'Sales Rep'
-    
-    def approve_users(self, request, queryset):
-        """Approve selected users and send approval emails"""
-        count = 0
-        for user in queryset:
-            if not user.is_approved:
-                user.is_approved = True
-                user.save()  # This will trigger the signal to send approval email
-                count += 1
-        self.message_user(request, f'{count} user(s) approved successfully. Approval emails have been sent.')
-    approve_users.short_description = 'Approve selected users'
-    
-    def unapprove_users(self, request, queryset):
-        """Unapprove selected users"""
-        updated = queryset.update(is_approved=False)
-        self.message_user(request, f'{updated} user(s) unapproved.')
-    unapprove_users.short_description = 'Unapprove selected users'
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
@@ -103,10 +73,14 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'full_name', 'title', 'gst_number', 'id_type', 'city', 'country', 'date_of_birth', 'has_pdfs')
-    search_fields = ('user__email', 'user__client_id', 'full_name', 'gst_number', 'id_number', 'city', 'country')
-    list_filter = ('gender', 'country', 'city', 'id_type', 'title')
+    list_display = ('user', 'full_name', 'client_id_display', 'title', 'gst_number', 'id_type', 'city', 'country', 'is_approved', 'is_verified', 'sales_rep_display', 'has_pdfs')
+    search_fields = ('user__email', 'client_id', 'full_name', 'gst_number', 'id_number', 'city', 'country')
+    list_filter = ('gender', 'country', 'city', 'id_type', 'title', 'is_approved', 'is_verified', 'sales_representative')
     fieldsets = (
+        ('Account Status', {
+            'fields': ('is_approved', 'is_verified', 'client_id', 'sales_representative'),
+            'description': 'is_approved: Agency can login only if approved. Assign a sales representative during approval.'
+        }),
         ('Personal Information', {
             'fields': ('user', 'title', 'full_name', 'date_of_birth', 'gender', 'profile_picture')
         }),
@@ -131,7 +105,35 @@ class UserProfileAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    readonly_fields = ('created_at', 'updated_at', 'profile_picture_preview', 'has_pdfs')
+    readonly_fields = ('created_at', 'updated_at', 'client_id', 'profile_picture_preview', 'has_pdfs')
+    actions = ['approve_agencies', 'unapprove_agencies']
+    
+    def client_id_display(self, obj):
+        return obj.client_id if obj.client_id else 'N/A'
+    client_id_display.short_description = 'Agency ID'
+    
+    def sales_rep_display(self, obj):
+        if obj.sales_representative:
+            return obj.sales_representative.name
+        return '-'
+    sales_rep_display.short_description = 'Sales Rep'
+    
+    def approve_agencies(self, request, queryset):
+        """Approve selected agencies and send approval emails"""
+        count = 0
+        for profile in queryset:
+            if not profile.is_approved:
+                profile.is_approved = True
+                profile.save()  # This will trigger the signal to send approval email
+                count += 1
+        self.message_user(request, f'{count} agency(ies) approved successfully. Approval emails have been sent.')
+    approve_agencies.short_description = 'Approve selected agencies'
+    
+    def unapprove_agencies(self, request, queryset):
+        """Unapprove selected agencies"""
+        updated = queryset.update(is_approved=False)
+        self.message_user(request, f'{updated} agency(ies) unapproved.')
+    unapprove_agencies.short_description = 'Unapprove selected agencies'
     
     def profile_picture_preview(self, obj):
         if obj.profile_picture:
@@ -375,13 +377,20 @@ class ODWalletTransactionInline(admin.TabularInline):
 
 @admin.register(ODWallet)
 class ODWalletAdmin(admin.ModelAdmin):
-    list_display = ('user_email', 'balance_display', 'is_active', 'expiry_info', 'max_balance', 'created_at')
+    list_display = ('user_email', 'agency_id_display', 'balance_display', 'is_active', 'expiry_info', 'max_balance', 'created_at')
     list_filter = ('is_active', 'created_at')
-    search_fields = ('user__email', 'user__first_name', 'user__last_name')
-    readonly_fields = ('created_at', 'updated_at', 'user_email', 'transaction_count')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'user__profile__client_id')
+    readonly_fields = ('created_at', 'updated_at', 'user_email', 'agency_id_display', 'transaction_count')
+    autocomplete_fields = ['user']  # Make user field searchable with autocomplete
     inlines = [ODWalletTransactionInline]
     date_hierarchy = 'created_at'
     actions = ['activate_wallets', 'deactivate_wallets', 'recharge_wallets']
+    
+    def agency_id_display(self, obj):
+        if obj.user and hasattr(obj.user, 'profile') and obj.user.profile.client_id:
+            return obj.user.profile.client_id
+        return 'N/A'
+    agency_id_display.short_description = 'Agency ID'
     
     def balance_display(self, obj):
         if obj.balance < 0:
@@ -657,7 +666,7 @@ class CashBalanceWalletAdmin(admin.ModelAdmin):
 class CashBalanceTransactionAdmin(admin.ModelAdmin):
     list_display = ('wallet_user', 'agency_id_clickable', 'transaction_type', 'amount_display', 'balance_after', 'description_short', 'reference_id', 'created_at')
     list_filter = (AgencyIDFilter, 'transaction_type', 'created_at')
-    search_fields = ('cash_balance_wallet__user__email', 'cash_balance_wallet__user__client_id', 'cash_balance_wallet__user__first_name', 'cash_balance_wallet__user__last_name', 'description', 'reference_id')
+    search_fields = ('cash_balance_wallet__user__email', 'cash_balance_wallet__user__profile__client_id', 'cash_balance_wallet__user__first_name', 'cash_balance_wallet__user__last_name', 'description', 'reference_id')
     readonly_fields = ('cash_balance_wallet', 'transaction_type', 'amount', 'balance_after', 'description', 'reference_id', 'created_at', 'updated_at', 'is_credit_display', 'user_full_details')
     date_hierarchy = 'created_at'
     list_per_page = 50

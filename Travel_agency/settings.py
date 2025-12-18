@@ -36,7 +36,7 @@ ALLOWED_HOSTS = [
     'www.' + DOMAIN_NAME,
     SERVER_IP,
     'localhost',
-    '127.0.0.1',
+    '127.0.0.1','*'
 ]
 
 # CSRF Trusted Origins - Allow Easebuzz payment gateway callbacks
@@ -45,6 +45,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://testpay.easebuzz.in',
     f'https://{DOMAIN_NAME}',
     f'https://www.{DOMAIN_NAME}',
+    'http://127.0.0.1:8000',  # Local development
+    'http://localhost:8000',  # Local development
 ]
 
 

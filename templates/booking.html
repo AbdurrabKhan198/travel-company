@@ -49,7 +49,8 @@
                                 <h2 class="text-2xl font-bold text-gray-800">Passenger Details</h2>
                                 <p class="text-gray-600">
                                     {% if adults > 0 %}{{ adults }} Adult{{ adults|pluralize }}{% endif %}
-                                    {% if children > 0 %}{% if adults > 0 %}, {% endif %}{{ children }} Child{{ children|pluralize }}{% endif %}
+                                    {% if children > 0 %}{% if adults > 0 %}, {% endif %}{{ children }} Child{{
+                                    children|pluralize }}{% endif %}
                                     {% if infants > 0 %}{% if adults > 0 or children > 0 %}, {% endif %}{{ infants }}
                                     Infant{{ infants|pluralize }}{% endif %}
                                 </p>
@@ -196,7 +197,7 @@
                         <!-- Flight Details -->
                         <div class="mb-6 pb-4 border-b">
                             <p class="text-sm text-gray-600 mb-2">{{ schedule.route.from_location }} → {{ schedule.route.to_location }}</p>
-                            <p class="text-xs text-gray-500">{{ schedule.departure_date|date:"d M Y" }}</p>
+                            <p class="text-xs text-gray-500">{{ schedule.departure_date|date:"d F Y" }}</p>
                         </div>
 
                         <!-- Outbound Fare Breakdown -->

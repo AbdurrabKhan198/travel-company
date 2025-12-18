@@ -61,27 +61,27 @@
                                 <div>
                                     <p class="text-sm text-gray-600">Route</p>
                                     <p class="text-lg font-bold text-gray-900">
-                                        {{schedule.route.from_location}}
+                                        {{ schedule.route.from_location }}
                                         <i class="fas fa-arrow-right mx-2 text-sky-500"></i>
-                                        {{schedule.route.to_location}}
+                                        {{ schedule.route.to_location }}
                                     </p>
                                 </div>
                                 <div class="text-right">
                                     {% if schedule.route.airline_name %}
                                     <div class="flex items-center justify-end space-x-2 mb-1">
                                         {% if schedule.route.get_airline_logo_url %}
-                                        <img src="{{schedule.route.get_airline_logo_url}}"
-                                            alt="{{schedule.route.airline_name}} Logo"
+                                        <img src="{{ schedule.route.get_airline_logo_url }}"
+                                            alt="{{ schedule.route.airline_name }} Logo"
                                             class="h-4 w-auto object-contain"
                                             style="max-height: 20px; max-width: 60px;">
                                         {% endif %}
                                     </div>
                                     <p class="text-sm text-gray-600">Airline</p>
-                                    <p class="text-lg font-bold text-sky-600">{{schedule.route.airline_name}}</p>
-                                    <p class="text-xs text-gray-500">Flight: {{schedule.route.carrier_number}}</p>
+                                    <p class="text-lg font-bold text-sky-600">{{ schedule.route.airline_name }}</p>
+                                    <p class="text-xs text-gray-500">Flight: {{ schedule.route.carrier_number }}</p>
                                     {% else %}
                                     <p class="text-sm text-gray-600">Flight Number</p>
-                                    <p class="text-lg font-bold text-sky-600">{{schedule.route.carrier_number}}</p>
+                                    <p class="text-lg font-bold text-sky-600">{{ schedule.route.carrier_number }}</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -89,28 +89,27 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="p-4 bg-gray-50 rounded-xl">
                                     <p class="text-sm text-gray-600 mb-1">Departure</p>
-                                    <p class="text-lg font-bold text-gray-900">{{schedule.departure_date|date:"d M Y" }}</p>
-                                    <p class="text-sm text-gray-600">{{schedule.route.departure_time|time:"H:i"}}</p>
+                                    <p class="text-lg font-bold text-gray-900">{{ schedule.departure_date|date:"d F Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ schedule.route.departure_time|time:"H:i" }}</p>
                                     {% if schedule.route.departure_terminal %}
                                     <p class="text-xs text-purple-600 mt-1"><i class="fas fa-building mr-1"></i>Terminal
-                                        {{schedule.route.departure_terminal}}</p>
+                                        {{ schedule.route.departure_terminal }}</p>
                                     {% endif %}
                                 </div>
                                 <div class="p-4 bg-gray-50 rounded-xl">
                                     <p class="text-sm text-gray-600 mb-1">Arrival</p>
-                                    <p class="text-lg font-bold text-gray-900">{{schedule.arrival_date|date:"d M Y"}}
-                                    </p>
-                                    <p class="text-sm text-gray-600">{{schedule.route.arrival_time|time:"H:i"}}</p>
+                                    <p class="text-lg font-bold text-gray-900">{{ schedule.arrival_date|date:"d F Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ schedule.route.arrival_time|time:"H:i" }}</p>
                                     {% if schedule.route.arrival_terminal %}
                                     <p class="text-xs text-purple-600 mt-1"><i class="fas fa-building mr-1"></i>Terminal
-                                        {{schedule.route.arrival_terminal}}</p>
+                                        {{ schedule.route.arrival_terminal }}</p>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <div class="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-500">
                                 <p class="text-sm text-gray-600 mb-1">Duration</p>
-                                <p class="text-lg font-bold text-gray-900">{{schedule.route.formatted_duration}}</p>
+                                <p class="text-lg font-bold text-gray-900">{{ schedule.route.formatted_duration }}</p>
                             </div>
                         </div>
                     </div>
@@ -130,29 +129,28 @@
                                 <div>
                                     <p class="text-sm text-gray-600">Route</p>
                                     <p class="text-lg font-bold text-gray-900">
-                                        {{return_schedule.route.from_location}}
+                                        {{ return_schedule.route.from_location }}
                                         <i class="fas fa-arrow-right mx-2 text-green-500"></i>
-                                        {{return_schedule.route.to_location}}
+                                        {{ return_schedule.route.to_location }}
                                     </p>
                                 </div>
                                 <div class="text-right">
                                     {% if return_schedule.route.airline_name %}
                                     <div class="flex items-center justify-end space-x-2 mb-1">
                                         {% if return_schedule.route.get_airline_logo_url %}
-                                        <img src="{{return_schedule.route.get_airline_logo_url}}"
-                                            alt="{{return_schedule.route.airline_name}} Logo"
+                                        <img src="{{ return_schedule.route.get_airline_logo_url }}"
+                                            alt="{{ return_schedule.route.airline_name }} Logo"
                                             class="h-6 w-auto object-contain"
                                             style="max-height: 30px; max-width: 100px;">
                                         {% endif %}
                                     </div>
                                     <p class="text-sm text-gray-600">Airline</p>
-                                    <p class="text-lg font-bold text-green-600">{{return_schedule.route.airline_name}}
+                                    <p class="text-lg font-bold text-green-600">{{ return_schedule.route.airline_name }}
                                     </p>
-                                    <p class="text-xs text-gray-500">Flight: {{return_schedule.route.carrier_number}}
-                                    </p>
+                                    <p class="text-xs text-gray-500">Flight: {{ return_schedule.route.carrier_number }}</p>
                                     {% else %}
                                     <p class="text-sm text-gray-600">Flight Number</p>
-                                    <p class="text-lg font-bold text-green-600">{{return_schedule.route.carrier_number }}</p>
+                                    <p class="text-lg font-bold text-green-600">{{ return_schedule.route.carrier_number }}</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -160,28 +158,27 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="p-4 bg-gray-50 rounded-xl">
                                     <p class="text-sm text-gray-600 mb-1">Departure</p>
-                                    <p class="text-lg font-bold text-gray-900">{{return_schedule.departure_date|date:"d M Y"}}</p>
-                                    <p class="text-sm text-gray-600">{{return_schedule.route.departure_time|time:"H:i" }}</p>
+                                    <p class="text-lg font-bold text-gray-900">{{ return_schedule.departure_date|date:"d F Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ return_schedule.route.departure_time|time:"H:i" }}</p>
                                     {% if return_schedule.route.departure_terminal %}
                                     <p class="text-xs text-purple-600 mt-1"><i class="fas fa-building mr-1"></i>Terminal
-                                        {{return_schedule.route.departure_terminal}}</p>
+                                        {{ return_schedule.route.departure_terminal }}</p>
                                     {% endif %}
                                 </div>
                                 <div class="p-4 bg-gray-50 rounded-xl">
                                     <p class="text-sm text-gray-600 mb-1">Arrival</p>
-                                    <p class="text-lg font-bold text-gray-900">{{return_schedule.arrival_date|date:"d M Y"}}</p>
-                                    <p class="text-sm text-gray-600">{{return_schedule.route.arrival_time|time:"H:i"}}
-                                    </p>
+                                    <p class="text-lg font-bold text-gray-900">{{ return_schedule.arrival_date|date:"d F Y" }}</p>
+                                    <p class="text-sm text-gray-600">{{ return_schedule.route.arrival_time|time:"H:i" }}</p>
                                     {% if return_schedule.route.arrival_terminal %}
                                     <p class="text-xs text-purple-600 mt-1"><i class="fas fa-building mr-1"></i>Terminal
-                                        {{return_schedule.route.arrival_terminal}}</p>
+                                        {{ return_schedule.route.arrival_terminal }}</p>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <div class="p-4 bg-green-50 rounded-xl border-l-4 border-green-500">
                                 <p class="text-sm text-gray-600 mb-1">Duration</p>
-                                <p class="text-lg font-bold text-gray-900">{{return_schedule.route.formatted_duration }}</p>
+                                <p class="text-lg font-bold text-gray-900">{{ return_schedule.route.formatted_duration }}</p>
                             </div>
                         </div>
                     </div>
@@ -204,41 +201,41 @@
                                     <div class="flex items-center">
                                         <div
                                             class="bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">
-                                            {{forloop.counter}}
+                                            {{ forloop.counter }}
                                         </div>
                                         <div>
                                             <h3 class="text-lg font-bold text-gray-900">
-                                                {{passenger.title}} {{passenger.first_name}} {{passenger.last_name }}
+                                                {{ passenger.title }} {{ passenger.first_name }} {{ passenger.last_name }}
                                             </h3>
                                             <p class="text-sm text-gray-600 capitalize">
-                                                {{passenger.passenger_type}} • {{passenger.gender|default:"N/A"}}
+                                                {{ passenger.passenger_type }} • {{ passenger.gender|default:"N/A" }}
                                             </p>
                                         </div>
                                     </div>
                                     <span
                                         class="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-semibold capitalize">
-                                        {{passenger.passenger_type}}
+                                        {{ passenger.passenger_type }}
                                     </span>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p class="text-gray-600">Date of Birth</p>
-                                        <p class="font-semibold text-gray-900">{{passenger.dob|date:"d M Y"}}</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.dob|date:"d F Y" }}</p>
                                     </div>
                                     <div>
                                         <p class="text-gray-600">Nationality</p>
-                                        <p class="font-semibold text-gray-900">{{passenger.nationality|default:"Indian" }}</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.nationality|default:"Indian" }}</p>
                                     </div>
                                     {% if passenger.passport_number %}
                                     <div>
                                         <p class="text-gray-600">Passport Number</p>
-                                        <p class="font-semibold text-gray-900">{{passenger.passport_number}}</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.passport_number }}</p>
                                     </div>
                                     {% if passenger.passport_expiry %}
                                     <div>
                                         <p class="text-gray-600">Passport Expiry</p>
-                                        <p class="font-semibold text-gray-900">{{passenger.passport_expiry|date:"d M Y" }}</p>
+                                        <p class="font-semibold text-gray-900">{{ passenger.passport_expiry|date:"d F Y" }}</p>
                                     </div>
                                     {% endif %}
                                     {% endif %}
@@ -260,11 +257,11 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div class="p-4 bg-gray-50 rounded-xl">
                                 <p class="text-sm text-gray-600 mb-1">Email</p>
-                                <p class="font-semibold text-gray-900">{{booking_data.contact_email}}</p>
+                                <p class="font-semibold text-gray-900">{{ booking_data.contact_email }}</p>
                             </div>
                             <div class="p-4 bg-gray-50 rounded-xl">
                                 <p class="text-sm text-gray-600 mb-1">Phone</p>
-                                <p class="font-semibold text-gray-900">{{booking_data.contact_phone}}</p>
+                                <p class="font-semibold text-gray-900">{{ booking_data.contact_phone }}</p>
                             </div>
                         </div>
                     </div>
@@ -281,32 +278,31 @@
                         <div class="space-y-4 mb-6">
                             {% if booking_data.adult_count > 0 %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span class="text-gray-700">Adults ({{booking_data.adult_count}})</span>
+                                <span class="text-gray-700">Adults ({{ booking_data.adult_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{booking_data.adult_fare_per_passenger|default:schedule.adult_fare|floatformat:2 }} × {{booking_data.adult_count}}
+                                    ₹{{ booking_data.adult_fare_per_passenger|default:schedule.adult_fare|floatformat:2 }} × {{ booking_data.adult_count }}
                                 </span>
                             </div>
                             {% endif %}
                             {% if booking_data.child_count > 0 %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span class="text-gray-700">Children ({{booking_data.child_count}})</span>
+                                <span class="text-gray-700">Children ({{ booking_data.child_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{booking_data.child_fare_per_passenger|default:schedule.child_fare|floatformat:2 }} × {{booking_data.child_count}}
+                                    ₹{{ booking_data.child_fare_per_passenger|default:schedule.child_fare|floatformat:2 }} × {{ booking_data.child_count }}
                                 </span>
                             </div>
                             {% endif %}
                             {% if booking_data.infant_count > 0 %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span class="text-gray-700">Infants ({{booking_data.infant_count}})</span>
+                                <span class="text-gray-700">Infants ({{ booking_data.infant_count }})</span>
                                 <span class="font-bold text-gray-900">
-                                    ₹{{booking_data.infant_fare_per_passenger|default:schedule.infant_fare|floatformat:2}}
-                                    × {{booking_data.infant_count}}
+                                    ₹{{ booking_data.infant_fare_per_passenger|default:schedule.infant_fare|floatformat:2 }} × {{ booking_data.infant_count }}
                                 </span>
                             </div>
                             {% endif %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl base-fare-row">
                                 <span class="text-gray-700">Base Fare</span>
-                                <span class="font-bold text-gray-900">₹{{booking_data.base_fare|floatformat:2}}</span>
+                                <span class="font-bold text-gray-900">₹{{ booking_data.base_fare|floatformat:2 }}</span>
                             </div>
 
                             <!-- Coupon Code Section -->
@@ -334,14 +330,14 @@
                                 <span class="text-green-700 font-medium">
                                     <i class="fas fa-tag mr-2"></i>Discount
                                 </span>
-                                <span class="font-bold text-green-700">-₹{{booking_data.discount_amount|floatformat:2 }}</span>
+                                <span class="font-bold text-green-700">-₹{{ booking_data.discount_amount|floatformat:2 }}</span>
                             </div>
                             {% endif %}
 
                             <div class="border-t-2 border-gray-200 pt-4">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xl font-bold text-gray-900">Total Amount</span>
-                                    <span class="text-3xl font-bold text-sky-600" id="total-amount-display">₹{{booking_data.total_amount|floatformat:2}}</span>
+                                    <span class="text-3xl font-bold text-sky-600" id="total-amount-display">₹{{ booking_data.total_amount|floatformat:2 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -397,7 +393,7 @@
         const couponMessage = document.getElementById('coupon-message');
         const appliedCouponId = document.getElementById('applied-coupon-id');
         const totalAmountDisplay = document.getElementById('total-amount-display');
-        const baseFare = parseFloat('{{booking_data.base_fare}}');
+        const baseFare = parseFloat('{{ booking_data.base_fare }}');
 
         if (applyCouponBtn) {
             applyCouponBtn.addEventListener('click', function () {
@@ -417,7 +413,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': '{{csrf_token}}'
+                        'X-CSRFToken': '{{ csrf_token }}'
                     },
                     body: `coupon_code=${encodeURIComponent(couponCode)}`
                 })
@@ -480,6 +476,18 @@
                     }
                 });
             }
+        }
+
+        // Ensure Edit Details button works
+        const editDetailsBtn = document.getElementById('edit-details-btn');
+        if (editDetailsBtn) {
+            editDetailsBtn.addEventListener('click', function(e) {
+                // Ensure the form submits
+                const form = this.closest('form');
+                if (form) {
+                    form.submit();
+                }
+            });
         }
     });
 </script>

@@ -414,7 +414,7 @@
                         </div>
 
                         <!-- Return Date -->
-                        <div class="lg:col-span-2 form-field-wrapper" id="return_date_wrapper">
+                        <div class="lg:col-span-2 form-field-wrapper" id="return_date_wrapper" style="display: none;">
                             <label class="form-field-label">Return</label>
                             <div class="form-field-display" id="return_display_card"
                                 style="background: #f9fafb; border-color: #e5e7eb;">
@@ -558,15 +558,14 @@
                     </div>
                 </div>
                 <div class="p-6">
-                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description|default:"Experience the beauty and
-                        culture of "|add:package.destination }}</p>
+                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description }}</p>
                     <div class="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div>
                             <span class="text-sm text-gray-500 block">Starting from</span>
                             <span class="text-2xl font-bold text-blue-600">Custom Pricing</span>
                         </div>
                         <div
-                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-blue-300 rounded-lg font-semibold group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-200 shadow-lg">
+                            class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-blue-700 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-3">
                             <i class="fas fa-paper-plane mr-2"></i>Apply Now
                         </div>
                     </div>
@@ -681,8 +680,8 @@
                         returnDisplayCard.style.background = '#f9fafb';
                         document.getElementById('return_display').textContent = 'Add return date';
                         document.getElementById('return_display').className = 'form-field-placeholder';
-                        // Client Req: Hide return date column on One Way
-                        if (returnDateWrapper) returnDateWrapper.style.visibility = 'hidden';
+                        // Client Req: Hide return date column on One Way (remove space too)
+                        if (returnDateWrapper) returnDateWrapper.style.display = 'none';
                     }
                 });
 
@@ -701,7 +700,8 @@
                             document.getElementById('return_display').textContent = 'Select date';
                             document.getElementById('return_display').className = 'form-field-value';
                         }
-                        if (returnDateWrapper) returnDateWrapper.style.visibility = 'visible';
+                        // Show return date field with space when round trip is selected
+                        if (returnDateWrapper) returnDateWrapper.style.display = 'block';
                     }
                 });
             }

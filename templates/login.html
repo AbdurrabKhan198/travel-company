@@ -1,41 +1,49 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Safar Zone Travels</title>
 
-    <!-- Tailwind CSS -->
-    <link href="{% static 'css/output.css' %}" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <style>
+        :root {
+            --primary-blue: #1e40af;
+            --primary-blue-light: #3b82f6;
+            --primary-blue-dark: #1e3a8a;
+            --accent-yellow: #fbbf24;
+            --accent-yellow-dark: #f59e0b;
+            --gradient-primary: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #2563eb 100%);
+            --gradient-accent: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            --gradient-dark: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+
         * {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         body {
-            background: #f8fafc;
-            margin: 0;
-            padding: 0;
-        }
-
-        .hero-banner {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #2563eb 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
-        .hero-banner::before {
+        body::before {
             content: '';
             position: absolute;
             top: 0;
@@ -45,14 +53,47 @@
             background-image:
                 radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-            opacity: 0.5;
+            pointer-events: none;
         }
 
+        /* Animated Background Shapes */
         .floating-shape {
             position: absolute;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             animation: float 20s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .shape-3 {
+            width: 150px;
+            height: 150px;
+            top: 50%;
+            right: 5%;
+            animation-delay: 4s;
+        }
+
+        .shape-4 {
+            width: 180px;
+            height: 180px;
+            bottom: 20%;
+            left: 15%;
+            animation-delay: 6s;
         }
 
         @keyframes float {
@@ -71,94 +112,75 @@
             }
         }
 
+        /* Navbar Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-brand img {
+            height: 50px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover img {
+            transform: scale(1.05);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 2px solid white;
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        /* Login Card Styles */
+        .login-container {
+            min-height: calc(100vh - 76px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 15px;
+            position: relative;
+            z-index: 1;
+        }
+
         .login-card {
             background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            max-width: 1100px;
+            width: 100%;
+            animation: slideUp 0.6s ease-out;
         }
 
-        .login-card:hover {
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .input-field {
-            transition: all 0.3s ease;
-            border: 2px solid #e5e7eb;
-        }
-
-        .input-field:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .btn-login {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            transition: all 0.3s ease;
-        }
-
-        .btn-login:hover {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(251, 191, 36, 0.4);
-        }
-
-        .btn-register {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-        }
-
-        .btn-register:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-        }
-
-        .support-banner {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-        }
-
-        .service-card {
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .service-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-        }
-
-        .feature-card:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
-            transform: translateY(-4px);
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.3);
-        }
-
-        .fade-in {
-            animation: fadeIn 0.6s ease-in;
-        }
-
-        @keyframes fadeIn {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
 
             to {
@@ -167,36 +189,22 @@
             }
         }
 
-        .slide-in {
-            animation: slideIn 0.8s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .platinum-card {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        .login-left {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 60px 40px;
             position: relative;
             overflow: hidden;
         }
 
-        .platinum-card::before {
+        .login-left::before {
             content: '';
             position: absolute;
             top: -50%;
             right: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%);
             animation: rotate 20s linear infinite;
         }
 
@@ -210,109 +218,130 @@
             }
         }
 
-        .navbar {
-            background: rgba(255, 255, 255, 0.98);
+        .login-left h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-left p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            line-height: 1.7;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-        }
-
-        .nav-input {
-            background: linear-gradient(to bottom, #ffffff, #fafbfc);
-            border: 1.5px solid #e2e8f0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 500;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .nav-input:hover {
-            border-color: #cbd5e1;
-            background: linear-gradient(to bottom, #ffffff, #f8fafc);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            transform: translateY(-1px);
-        }
-
-        .nav-input:focus {
-            background: #ffffff;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
-            outline: none;
-            transform: translateY(-2px);
-        }
-
-        .nav-input::placeholder {
-            color: #94a3b8;
-            font-size: 13px;
-            font-weight: 400;
-            letter-spacing: 0.2px;
-        }
-
-        .nav-input-group {
-            position: relative;
-        }
-
-        .nav-input-icon {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 10;
-        }
-
-        .nav-input-group:focus-within .nav-input-icon {
-            color: #3b82f6;
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        .nav-input-group::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 0 0 12px 12px;
-        }
-
-        .nav-input-group:focus-within::before {
-            transform: scaleX(1);
-        }
-
-        .nav-input-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        .nav-input-wrapper::after {
-            content: '';
-            position: absolute;
-            inset: -2px;
             border-radius: 12px;
-            padding: 2px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
         }
 
-        .nav-input-group:focus-within .nav-input-wrapper::after {
-            opacity: 1;
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(10px);
         }
 
-        .nav-btn-login {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            box-shadow: 0 4px 14px rgba(251, 191, 36, 0.35);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .login-right {
+            padding: 60px 50px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        .form-floating {
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            height: 58px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-blue-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-floating label {
+            padding: 1rem 1rem;
+            color: #64748b;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            z-index: 10;
+            padding: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-blue-light);
+        }
+
+        .btn-login {
+            background: var(--gradient-accent);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
-        .nav-btn-login::before {
+        .btn-login::before {
             content: '';
             position: absolute;
             top: 0;
@@ -323,73 +352,71 @@
             transition: left 0.5s;
         }
 
-        .nav-btn-login:hover::before {
+        .btn-login:hover::before {
             left: 100%;
         }
 
-        .nav-btn-login:hover {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.45);
+        .btn-login:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(251, 191, 36, 0.4);
         }
 
-        .nav-btn-login:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
-        }
-
-        .nav-btn-register {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-btn-register::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
+        .btn-register {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-            transition: left 0.5s;
-        }
-
-        .nav-btn-register:hover::before {
-            left: 100%;
-        }
-
-        .nav-btn-register:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
-            transform: translateY(-2px);
-        }
-
-        .nav-btn-register:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
-        }
-
-        .nav-form-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 10px 12px;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
             transition: all 0.3s ease;
         }
 
-        .nav-form-container:hover {
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.06);
-            border-color: rgba(203, 213, 225, 0.8);
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            color: #64748b;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 12px 16px;
+            font-size: 0.9rem;
         }
 
         .forgot-link {
+            color: var(--primary-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
             position: relative;
-            transition: all 0.2s ease;
         }
 
         .forgot-link::after {
@@ -399,7 +426,7 @@
             left: 0;
             width: 0;
             height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: var(--primary-blue-light);
             transition: width 0.3s ease;
         }
 
@@ -407,560 +434,826 @@
             width: 100%;
         }
 
-        .logo-container {
+        .stats-section {
+            background: white;
+            padding: 60px 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px 20px;
+            border-radius: 16px;
+            background: var(--gradient-primary);
+            color: white;
             transition: all 0.3s ease;
         }
 
-        .logo-container:hover {
-            transform: scale(1.02);
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 50px 0 30px;
+        }
+
+        .footer h5 {
+            color: var(--accent-yellow);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .footer a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background: #334155;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            background: var(--primary-blue-light);
+            transform: translateY(-3px);
+        }
+
+        /* Navbar Login Form Styles */
+        .navbar-input {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .navbar-input:focus {
+            border-color: var(--primary-blue-light);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: white;
+            outline: none;
+        }
+
+        .navbar-input::placeholder {
+            color: #94a3b8;
+            font-size: 0.813rem;
+        }
+
+        .navbar-password-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.3s ease;
+            z-index: 10;
+        }
+
+        .navbar-password-toggle:hover {
+            color: var(--primary-blue-light);
+        }
+
+        .navbar-btn-login {
+            background: var(--gradient-accent);
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
+        .navbar-btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .navbar-btn-register {
+            background: var(--gradient-primary);
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .navbar-btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+
+        .navbar-login-form {
+            background: rgba(248, 250, 252, 0.5);
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        /* Responsive */
+        @media (max-width: 991px) {
+            .login-left {
+                padding: 40px 30px;
+            }
+
+            .login-right {
+                padding: 40px 30px;
+            }
+
+            .login-left h2 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .login-card {
+                margin: 20px;
+            }
+
+            .login-left,
+            .login-right {
+                padding: 30px 20px;
+            }
+
+            .login-header h3 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 
-<body class="bg-white">
-    <!-- Top Navigation Bar with Login Form -->
-    <div class="navbar sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-24">
-                <!-- Logo -->
-                <div class="logo-container flex items-center space-x-4">
-                    <div class="relative">
-                        <img src="{% static 'images/logo.png' %}" alt="Safar Zone Travels"
-                            class="h-14 md:h-16 w-auto object-contain">
-                        <div
-                            class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse">
-                        </div>
-                    </div>
+<body>
+    <!-- Floating Background Shapes -->
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+    <div class="floating-shape shape-4"></div>
 
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'homepage' %}">
+                <div class="position-relative">
+                    <img src="{% static 'images/logo.png' %}" alt="Safar Zone Travels">
+                    <div class="status-dot"></div>
                 </div>
+            </a>
 
-                <!-- Login Form - Horizontal Layout -->
-                <div class="hidden lg:flex items-center space-x-4">
-                    <div class="nav-form-container flex items-center space-x-3">
-                        <form method="post" action="{% url 'login' %}" class="flex items-center space-x-2.5">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-                            <!-- Email Field -->
-                            <div class="relative">
-                                <input type="email" id="id_username" name="username"
-                                    value="{{ form.username.value|default:'' }}" required autofocus
-                                    placeholder="Email address"
-                                    class="px-4 py-2.5 w-56 rounded-lg border border-gray-300 text-sm text-gray-700 
-                                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                                           placeholder-gray-400 transition-all">
-                            </div>
-
-                            <!-- Password Field -->
-                            <div class="relative">
-                                <input type="password" id="id_password" name="password" required
-                                    placeholder="Password"
-                                    class="px-4 py-2.5 pr-10 w-44 rounded-lg border border-gray-300 text-sm text-gray-700 
-                                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                                           placeholder-gray-400 transition-all">
-                                <button type="button" id="toggle-password-desktop"
-                                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 
-                                           focus:outline-none transition-colors z-10"
-                                    aria-label="Toggle password visibility">
-                                    <i class="fas fa-eye text-sm" id="password-icon-desktop"></i>
-                                </button>
-                            </div>
-
-                            <!-- Login Button -->
-                            <button type="submit"
-                                class="nav-btn-login px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center space-x-2 min-w-[110px] justify-center relative">
-                                <span>Login</span>
-                                <i class="fas fa-arrow-right text-xs"></i>
-                            </button>
-                        </form>
-
-                        <!-- Divider -->
-                        <div class="h-10 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
-
-                        <!-- Register Button -->
-                        <a href="{% url 'signup' %}"
-                            class="nav-btn-register px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center space-x-2 min-w-[140px] justify-center relative">
-                            <i class="fas fa-user-plus text-xs"></i>
-                            <span>Register</span>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">
+                            <i class="fas fa-info-circle me-1"></i> About
                         </a>
-                    </div>
-
-                    <!-- Forgot Password Link -->
-                    <a href="{% url 'password_reset' %}"
-                        class="forgot-link text-gray-600 hover:text-blue-600 text-xs font-semibold transition-all whitespace-nowrap px-2">
-                        Forgot Password?
-                    </a>
-                </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">
+                            <i class="fas fa-envelope me-1"></i> Contact
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
+    </nav>
 
-    <!-- Mobile/Tablet Login Card (Hidden on Desktop) - Moved to Top -->
-    <div class="lg:hidden bg-white py-6 px-4">
-        <div class="max-w-md mx-auto">
-            <div class="login-card rounded-2xl p-6 shadow-lg">
-                <h3 class="text-xl font-bold text-gray-900 mb-4 text-center">
-                    <i class="fas fa-sign-in-alt mr-2 text-blue-600"></i>Login to Your Account
-                </h3>
 
-                <!-- Display Messages -->
-                {% if messages %}
-                <div class="mb-4 space-y-2">
-                    {% for message in messages %}
-                    <div
-                        class="p-2 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %} text-xs">
-                        <i
-                            class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
 
-                <!-- Display Form Errors -->
-                {% if form.errors %}
-                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <strong>Please correct the following errors:</strong>
-                    <ul class="mt-1 list-disc list-inside">
-                        {% for field, errors in form.errors.items %}
-                        {% for error in errors %}
-                        <li>{{ field|title }}: {{ error }}</li>
-                        {% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-
-                <form method="post" action="{% url 'login' %}" class="space-y-4">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.GET.next }}">
-
-                    <!-- Email Field -->
-                    <div class="mb-4">
-                        <label for="id_username_mobile" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            <i class="fas fa-envelope mr-2 text-blue-600"></i>Email Address
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                </svg>
+    <!-- Login Section -->
+    <div class="login-container">
+        <div class="container">
+            <div class="login-card">
+                <div class="row g-0">
+                    <!-- Left Side - Features -->
+                    <div class="col-lg-5 d-none d-lg-block">
+                        <div class="login-left h-100">
+                            <div class="mb-4">
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                    <i class="fas fa-star me-2"></i>Trusted Travel Partner
+                                </span>
                             </div>
-                            <input type="email" id="id_username_mobile" name="username"
-                                value="{{ form.username.value|default:'' }}" required autofocus 
-                                placeholder="Enter your email address"
-                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm 
-                                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                                       text-gray-700 placeholder-gray-400 text-sm transition duration-150 ease-in-out">
-                        </div>
-                    </div>
+                            <h2>Welcome to<br><span class="text-warning">Safar Zone Travels</span></h2>
+                            <p class="mb-4">Your one-stop solution for visa services, flight bookings, and Umrah
+                                packages.</p>
 
-                    <!-- Password Field -->
-                    <div class="mb-1">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="id_password_mobile" class="block text-sm font-medium text-gray-700">
-                                <i class="fas fa-lock mr-2 text-blue-600"></i>Password
-                            </label>
-                            <a href="{% url 'password_reset' %}" 
-                               class="text-xs font-medium text-blue-600 hover:text-blue-500 hover:underline">
-                                Forgot password?
-                            </a>
-                        </div>
-                        <div class="relative rounded-md shadow-sm">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                                </svg>
+                            <div class="mt-5">
+                                <div class="feature-item">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-passport"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">Visit Visa Services</h6>
+                                        <small class="opacity-75">Quick & hassle-free visa processing for all
+                                            countries</small>
+                                    </div>
+                                </div>
+
+                                <div class="feature-item">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-plane-departure"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">Flight Ticket Booking</h6>
+                                        <small class="opacity-75">Best prices on domestic & international
+                                            flights</small>
+                                    </div>
+                                </div>
+
+                                <div class="feature-item">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-kaaba"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">Umrah Packages</h6>
+                                        <small class="opacity-75">Complete Umrah packages with visa &
+                                            accommodation</small>
+                                    </div>
+                                </div>
+
+                                <div class="feature-item">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-headset"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">24/7 Customer Support</h6>
+                                        <small class="opacity-75">Always here to assist you with your travel
+                                            needs</small>
+                                    </div>
+                                </div>
                             </div>
-                            <input type="password" id="id_password_mobile" name="password" required
-                                placeholder="Enter your password"
-                                class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg shadow-sm 
-                                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                                       text-gray-700 placeholder-gray-400 text-sm transition duration-150 ease-in-out">
-                            <button type="button"
-                                onclick="togglePassword('id_password_mobile', 'password-toggle-mobile')"
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-blue-600 focus:outline-none transition-colors"
-                                aria-label="Toggle password visibility">
-                                <i class="fas fa-eye text-base" id="password-toggle-mobile"></i>
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Remember Me -->
-                    <div class="flex items-center mt-1 mb-4">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="id_remember_me_mobile" name="remember_me" value="1"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="id_remember_me_mobile" class="ml-2 block text-sm text-gray-700">
-                                Remember me
-                            </label>
+                    <!-- Right Side - Login Form -->
+                    <div class="col-lg-7">
+                        <div class="login-right">
+                            <div class="login-header">
+                                <h3><i class="fas fa-sign-in-alt text-primary me-2"></i>Login to Your Account</h3>
+                                <p>Enter your credentials to access your dashboard</p>
+                            </div>
+
+                            <!-- Display Messages -->
+                            {% if messages %}
+                            <div class="mb-4">
+                                {% for message in messages %}
+                                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %} d-flex align-items-center"
+                                    role="alert">
+                                    <i
+                                        class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                                    <div>{{ message }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Display Form Errors -->
+                            {% if form.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Please correct the following errors:</strong>
+                                <ul class="mb-0 mt-2">
+                                    {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            <!-- Login Form -->
+                            <form method="post" action="{% url 'login' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+                                <!-- Email Field -->
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control" id="id_username" name="username"
+                                        value="{{ form.username.value|default:'' }}" required autofocus
+                                        placeholder="name@example.com">
+                                    <label for="id_username">
+                                        <i class="fas fa-envelope me-2 text-primary"></i>Email Address
+                                    </label>
+                                </div>
+
+                                <!-- Password Field -->
+                                <div class="form-floating mb-3 position-relative">
+                                    <input type="password" class="form-control" id="id_password" name="password"
+                                        required placeholder="Password">
+                                    <label for="id_password">
+                                        <i class="fas fa-lock me-2 text-primary"></i>Password
+                                    </label>
+                                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Remember Me & Forgot Password -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="remember_me"
+                                            name="remember_me" value="1">
+                                        <label class="form-check-label" for="remember_me">
+                                            Remember me
+                                        </label>
+                                    </div>
+                                    <a href="{% url 'password_reset' %}" class="forgot-link">Forgot Password?</a>
+                                </div>
+
+                                <!-- Login Button -->
+                                <button type="submit" class="btn btn-login mb-3">
+                                    <i class="fas fa-arrow-right me-2"></i>Login to Dashboard
+                                </button>
+
+                                <!-- Divider -->
+                                <div class="divider">
+                                    <span>Don't have an account?</span>
+                                </div>
+
+                                <!-- Register Button -->
+                                <a href="{% url 'signup' %}" class="btn btn-register">
+                                    <i class="fas fa-user-plus me-2"></i>Create New Account
+                                </a>
+                            </form>
                         </div>
                     </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit"
-                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 
-                               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
-                        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
-                        </svg>
-                        Sign in to your account
-                    </button>
-                </form>
-
-                <!-- Sign Up Link -->
-                <div class="mt-4 text-center">
-                    <p class="text-gray-600 text-xs">
-                        Don't have an account?
-                        <a href="{% url 'signup' %}"
-                            class="text-blue-600 hover:text-blue-800 font-semibold transition-colors">
-                            Register Now
-                        </a>
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Hero Banner Section -->
-    <div class="hero-banner relative py-20 md:py-28 text-white">
-        <div class="floating-shape w-64 h-64 top-10 left-10"></div>
-        <div class="floating-shape w-48 h-48 bottom-10 right-20" style="animation-delay: 2s;"></div>
-        <div class="floating-shape w-32 h-32 top-1/2 right-10" style="animation-delay: 4s;"></div>
-        <div class="floating-shape w-40 h-40 bottom-1/4 left-1/4" style="animation-delay: 6s;"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="max-w-4xl fade-in">
-                <div class="mb-6">
-                    <span
-                        class="inline-block px-4 py-2 bg-yellow-400 text-blue-900 rounded-full text-sm font-bold mb-4">
-                        <i class="fas fa-award mr-2"></i>India's #1 Travel Platform
-                    </span>
+    <div class="hero-section py-5"
+        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;">
+        <div class="container py-4">
+            <div class="row align-items-center">
+                <div class="col-lg-6 text-white mb-4 mb-lg-0">
+                    <div class="badge bg-warning text-dark px-3 py-2 rounded-pill mb-3">
+                        <i class="fas fa-star me-2"></i>Trusted Since 2010
+                    </div>
+                    <h1 class="display-4 fw-bold mb-3">Your Trusted Travel Partner</h1>
+                    <p class="lead mb-4">Specializing in Visit Visa, Flight Tickets & Umrah Packages with 24/7 support
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2">
+                            <i class="fas fa-check-circle text-warning me-2"></i>
+                            <span class="small">Instant Booking</span>
+                        </div>
+                        <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2">
+                            <i class="fas fa-check-circle text-warning me-2"></i>
+                            <span class="small">Best Prices</span>
+                        </div>
+                        <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2">
+                            <i class="fas fa-check-circle text-warning me-2"></i>
+                            <span class="small">Secure Payment</span>
+                        </div>
+                    </div>
                 </div>
-                <h2 class="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-                    India's Leading <span class="text-yellow-400">Travel</span> Distribution Platform
-                </h2>
-                <p class="text-xl md:text-2xl text-blue-100 leading-relaxed max-w-3xl mb-8">
-                    Safar Zone Travels is India's leading travel distribution platform. Our cutting-edge technology
-                    enables travel buyers and suppliers to come together seamlessly, creating joyful and memorable
-                    experiences for travellers all over the world.
-                </p>
-                <div class="flex flex-wrap gap-4">
-                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
-                        <i class="fas fa-check-circle text-yellow-400"></i>
-                        <span class="text-sm">Trusted by 50,000+ Travel Agents</span>
-                    </div>
-                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
-                        <i class="fas fa-check-circle text-yellow-400"></i>
-                        <span class="text-sm">24/7 Customer Support</span>
-                    </div>
-                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg">
-                        <i class="fas fa-check-circle text-yellow-400"></i>
-                        <span class="text-sm">Best Prices Guaranteed</span>
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-lg h-100" style="background: rgba(255,255,255,0.95);">
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-passport fa-3x text-primary"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Visit Visa</h5>
+                                    <p class="text-muted small mb-0">Fast visa processing for 50+ countries</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-lg h-100" style="background: rgba(255,255,255,0.95);">
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-plane-departure fa-3x text-success"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Flight Tickets</h5>
+                                    <p class="text-muted small mb-0">Domestic & international flights</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card border-0 shadow-lg" style="background: rgba(255,255,255,0.95);">
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-kaaba fa-3x text-warning"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Umrah Packages</h5>
+                                    <p class="text-muted small mb-0">Complete packages with visa, flights & hotels</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Statistics Section -->
-    <div class="bg-white py-12 border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all">
-                    <div class="text-4xl font-bold mb-2">50K+</div>
-                    <div class="text-blue-100 text-sm">Active Travel Agents</div>
+    <div class="stats-section">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <h3>5000+</h3>
+                        <p>Visa Applications Processed</p>
+                    </div>
                 </div>
-                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all"
-                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <div class="text-4xl font-bold mb-2">1M+</div>
-                    <div class="text-green-100 text-sm">Happy Customers</div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <h3>10K+</h3>
+                        <p>Flight Tickets Booked</p>
+                    </div>
                 </div>
-                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all"
-                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                    <div class="text-4xl font-bold mb-2">500+</div>
-                    <div class="text-yellow-100 text-sm">Travel Suppliers</div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <h3>2000+</h3>
+                        <p>Umrah Pilgrims Served</p>
+                    </div>
                 </div>
-                <div class="stat-card rounded-xl p-6 text-white text-center transform transition-all"
-                    style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <div class="text-4xl font-bold mb-2">100+</div>
-                    <div class="text-purple-100 text-sm">Destinations</div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                        <h3>50+</h3>
+                        <p>Countries Covered</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Support Banner -->
-        <div class="support-banner rounded-2xl p-6 md:p-8 text-white shadow-xl mb-12 fade-in"
-            style="animation-delay: 0.2s;">
-            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
-                        <i class="fas fa-headset text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-lg mb-1">24x7 Helpdesk</p>
-                        <p class="text-yellow-100">+91 9839049767</p>
-                        <p class="text-yellow-100 text-xs">Available round the clock</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
-                        <i class="fas fa-envelope text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-lg mb-1">Customer Service</p>
-                        <p class="text-yellow-100">safarzonetravelsdel@gmail.com</p>
-                        <p class="text-yellow-100 text-xs">Email us anytime</p>
+    <!-- Why Choose Us Section -->
+    <div class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-3">Why Choose Safar Zone Travels?</h2>
+                <p class="text-muted">We provide exceptional service with years of expertise</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100 text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-certificate fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Trusted Agency</h5>
+                        <p class="text-muted small mb-0">Transparent Pricing</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="bg-white/20 rounded-full p-4 backdrop-blur-md">
-                        <i class="fas fa-clock text-2xl"></i>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100 text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-clock fa-3x text-success"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Quick Processing</h5>
+                        <p class="text-muted small mb-0">Fast visa & ticket processing within 24-48 hours</p>
                     </div>
-                    <div>
-                        <p class="font-semibold text-lg mb-1">Business Hours</p>
-                        <p class="text-yellow-100">Mon-Sat: 10:00 AM - 9:00 PM</p>
-                        <p class="text-yellow-100 text-xs">Sunday: 24/7 Support</p>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100 text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-shield-alt fa-3x text-warning"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">100% Secure</h5>
+                        <p class="text-muted small mb-0">SSL encrypted payments & data protection</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100 text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-users fa-3x text-danger"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Expert Team</h5>
+                        <p class="text-muted small mb-0">Experienced travel consultants to guide you</p>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Features Section -->
-        <div class="mb-12 fade-in" style="animation-delay: 0.4s;">
-            <div class="text-center mb-10">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
-                <p class="text-gray-600 text-lg max-w-2xl mx-auto">Experience the best in travel technology and service
-                </p>
+    <!-- Testimonials Section -->
+    <div class="py-5 bg-white">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-3">What Our Customers Say</h2>
+                <p class="text-muted">Trusted by thousands of happy travelers</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-blue-100 rounded-lg p-3">
-                            <i class="fas fa-bolt text-blue-600 text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">Lightning Fast Booking</h3>
-                            <p class="text-gray-600 text-sm">Book flights, hotels, and packages in seconds with our
-                                optimized platform. No waiting, no delays.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-green-100 rounded-lg p-3">
-                            <i class="fas fa-shield-alt text-green-600 text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">Secure & Reliable</h3>
-                            <p class="text-gray-600 text-sm">Your data and transactions are protected with bank-level
-                                security. We take your privacy seriously.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-yellow-100 rounded-lg p-3">
-                            <i class="fas fa-rupee-sign text-yellow-600 text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">Best Prices</h3>
-                            <p class="text-gray-600 text-sm">Get the best deals and competitive prices on all travel
-                                services. Price match guarantee available.</p>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="mb-3">"Excellent service! Got my Dubai visa in just 2 days. The team was very
+                                helpful and professional throughout the process."</p>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                    style="width: 40px; height: 40px;">
+                                    AK
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0 fw-bold">Amit Kumar</h6>
+                                    <small class="text-muted">Dubai Visa</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-purple-100 rounded-lg p-3">
-                            <i class="fas fa-mobile-alt text-purple-600 text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">Mobile Friendly</h3>
-                            <p class="text-gray-600 text-sm">Access our platform from any device. Responsive design
-                                ensures seamless experience on mobile, tablet, and desktop.</p>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="mb-3">"Best Umrah package I could find! Everything was well organized - visa,
+                                flights, and hotel. Highly recommended!"</p>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                    style="width: 40px; height: 40px;">
+                                    FH
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0 fw-bold">Fatima Hassan</h6>
+                                    <small class="text-muted">Umrah Package</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-red-100 rounded-lg p-3">
-                            <i class="fas fa-headset text-red-600 text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">24/7 Support</h3>
-                            <p class="text-gray-600 text-sm">Round-the-clock customer support via phone, email, and
-                                chat. We're always here to help you.</p>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="mb-3">"Got the best price for my international flight tickets. Customer support
+                                was available 24/7 to help with my queries."</p>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold"
+                                    style="width: 40px; height: 40px;">
+                                    RS
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0 fw-bold">Rahul Sharma</h6>
+                                    <small class="text-muted">Flight Booking</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="feature-card rounded-xl p-6">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-indigo-100 rounded-lg p-3">
-                            <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+    <!-- Trust Badges Section -->
+    <div class="py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <div class="row align-items-center text-white">
+                <div class="col-lg-4 mb-4 mb-lg-0 text-center text-lg-start">
+                    <h3 class="fw-bold mb-2">Trusted & Certified</h3>
+                    <p class="mb-0">Recognized by leading travel authorities</p>
+                </div>
+                <div class="col-lg-8">
+                    <div class="row g-3 text-center">
+                        <div class="col-6 col-md-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3">
+                                <i class="fas fa-award fa-2x mb-2"></i>
+                                <p class="small mb-0 fw-semibold">Trusted Agency</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">Real-time Reports</h3>
-                            <p class="text-gray-600 text-sm">Track your bookings, sales, and commissions with detailed
-                                analytics and real-time reporting dashboard.</p>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3">
+                                <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                                <p class="small mb-0 fw-semibold">SSL Secured</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <p class="small mb-0 fw-semibold">Verified Agency</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3">
+                                <i class="fas fa-star fa-2x mb-2"></i>
+                                <p class="small mb-0 fw-semibold">5 Star Rated</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Platinum Collection Section -->
-        <div class="platinum-card rounded-2xl p-8 md:p-12 text-white mb-12 fade-in relative overflow-hidden"
-            style="animation-delay: 0.5s;">
-            <div class="relative z-10">
-                <div class="flex items-center space-x-2 mb-4">
-                    <span class="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">
-                        <i class="fas fa-crown mr-1"></i>PREMIUM
-                    </span>
-                </div>
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">The Platinum Collection</h2>
-                <p class="text-gray-200 text-lg mb-6 max-w-2xl">
-                    Discover The Platinum Collection - exclusive, handpicked hotels offering world-class service,
-                    luxurious amenities, and unforgettable experiences. Perfect for discerning travelers who seek
-                    nothing but the best.
-                </p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
-                        <i class="fas fa-star text-yellow-400 text-xl mb-2"></i>
-                        <p class="font-semibold mb-1">5-Star Properties</p>
-                        <p class="text-gray-300 text-sm">Luxury hotels worldwide</p>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
-                        <i class="fas fa-concierge-bell text-yellow-400 text-xl mb-2"></i>
-                        <p class="font-semibold mb-1">Premium Services</p>
-                        <p class="text-gray-300 text-sm">Concierge & butler service</p>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-md rounded-lg p-4">
-                        <i class="fas fa-gift text-yellow-400 text-xl mb-2"></i>
-                        <p class="font-semibold mb-1">Exclusive Benefits</p>
-                        <p class="text-gray-300 text-sm">Complimentary upgrades</p>
+    <!-- Services Showcase -->
+    <div class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-3">Our Premium Services</h2>
+                <p class="text-muted">Comprehensive travel solutions for all your needs</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                        <div class="card-body p-0">
+                            <div class="p-4 text-white"
+                                style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                                <i class="fas fa-passport fa-3x mb-3"></i>
+                                <h4 class="fw-bold mb-2">Visit Visa Services</h4>
+                            </div>
+                            <div class="p-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tourist Visa</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Business Visa</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Transit Visa</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Express Processing
+                                    </li>
+                                    <li class="mb-0"><i class="fas fa-check text-success me-2"></i>Document Assistance
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button
-                    class="px-8 py-3 bg-yellow-400 text-gray-900 rounded-lg font-bold hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-compass mr-2"></i>Explore Collection
-                </button>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                        <div class="card-body p-0">
+                            <div class="p-4 text-white"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fas fa-plane-departure fa-3x mb-3"></i>
+                                <h4 class="fw-bold mb-2">Flight Tickets</h4>
+                            </div>
+                            <div class="p-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Domestic Flights</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>International Flights
+                                    </li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Group Bookings</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Best Price Guarantee
+                                    </li>
+                                    <li class="mb-0"><i class="fas fa-check text-success me-2"></i>Instant Confirmation
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                        <div class="card-body p-0">
+                            <div class="p-4 text-white"
+                                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                <i class="fas fa-kaaba fa-3x mb-3"></i>
+                                <h4 class="fw-bold mb-2">Umrah Packages</h4>
+                            </div>
+                            <div class="p-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Complete Packages
+                                    </li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Visa Included</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Umrah Packages</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Transportation</li>
+                                    <li class="mb-0"><i class="fas fa-check text-success me-2"></i>24/7 Support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 
     <!-- Footer -->
-    <div class="bg-gray-900 text-white py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="text-xl font-bold mb-4">
-                        <span class="text-yellow-400">Safar Zone Travels</span>
-                    </h3>
-                    <p class="text-gray-400 text-sm mb-4">India's leading travel distribution platform connecting
-                        agents, suppliers, and travelers.</p>
-                    <div class="flex space-x-4">
-                        <a href="#"
-                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-all">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-all">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-all">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-700 transition-all">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5>Safar Zone Travels</h5>
+                    <p class="text-muted">Your trusted partner for Visit Visa services, Flight Ticket bookings, and
+                        Umrah Packages with 24/7 customer support.</p>
+                    <div class="mt-3">
+                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
                     </div>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-4">Quick Links</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="{% url 'about' %}" class="hover:text-white transition-colors">About Us</a></li>
-                        <li><a href="{% url 'contact' %}" class="hover:text-white transition-colors">Contact Us</a></li>
-                        <li><a href="{% url 'privacy_policy' %}" class="hover:text-white transition-colors">Privacy
-                                Policy</a></li>
-                        <li><a href="{% url 'terms_conditions' %}" class="hover:text-white transition-colors">Terms &
-                                Conditions</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">FAQs</a></li>
+                <div class="col-lg-2 col-6">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{% url 'about' %}">About Us</a></li>
+                        <li class="mb-2"><a href="{% url 'contact' %}">Contact</a></li>
+                        <li class="mb-2"><a href="{% url 'privacy_policy' %}">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="{% url 'terms_conditions' %}">Terms & Conditions</a></li>
                     </ul>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-4">Services</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">Flight Booking</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Hotel Booking</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Travel Packages</a></li>
+                <div class="col-lg-3 col-6">
+                    <h5>Services</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#">Flight Booking</a></li>
+                        <li class="mb-2"><a href="#">Umrah Packages</a></li>
+                        <li class="mb-2"><a href="#">Travel Packages</a></li>
                     </ul>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-4">Contact Info</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li class="flex items-center"><i class="fas fa-phone mr-2 text-yellow-400"></i>+91 9839049767
+                <div class="col-lg-3">
+                    <h5>Contact Info</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-phone text-warning me-2"></i>+91 9839049767
                         </li>
-                        <li class="flex items-center"><i
-                                class="fas fa-envelope mr-2 text-yellow-400"></i>safarzonetravelsdel@gmail.com</li>
-                        <li class="flex items-center"><i class="fas fa-clock mr-2 text-yellow-400"></i>24/7 Support
-                            Available</li>
+                        <li class="mb-2">
+                            <i class="fas fa-envelope text-warning me-2"></i>safarzonetravelsdel@gmail.com
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-warning me-2"></i>24/7 Support Available
+                        </li>
                     </ul>
                 </div>
             </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-                <p>&copy; 2025 Safar Zone Travels. All rights reserved.</p>
+            <hr class="my-4 border-secondary">
+            <div class="text-center text-muted">
+                <p class="mb-0">&copy; 2025 Safar Zone Travels. All rights reserved.</p>
             </div>
         </div>
-    </div>
+    </footer>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Password Toggle Script -->
     <script>
-        function togglePassword(inputId, toggleId) {
-            const passwordInput = document.getElementById(inputId);
-            const toggleIcon = document.getElementById(toggleId);
-            
+        function togglePassword() {
+            const passwordInput = document.getElementById('id_password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
             if (passwordInput.type === 'password') {
-                // Show password
                 passwordInput.type = 'text';
                 toggleIcon.classList.remove('fa-eye');
                 toggleIcon.classList.add('fa-eye-slash');
-                toggleIcon.classList.add('text-blue-600');
             } else {
-                // Hide password
                 passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash', 'text-blue-600');
+                toggleIcon.classList.remove('fa-eye-slash');
                 toggleIcon.classList.add('fa-eye');
             }
-            
-            // Keep focus on the password field
-            passwordInput.focus();
         }
 
-        // Add click event listeners to all password toggle buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButtons = document.querySelectorAll('[onclick^="togglePassword"]');
-            toggleButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const inputId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    const toggleId = this.getAttribute('onclick').match(/'([^']+)'/g)[1].replace(/'/g, '');
-                    togglePassword(inputId, toggleId);
-                });
-            });
-        });
+        function toggleNavbarPassword() {
+            const passwordInput = document.getElementById('navbar_password');
+            const toggleIcon = document.getElementById('navbarToggleIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
     </script>
 </body>
 

@@ -38,9 +38,8 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractUser):
-    """Custom user model that uses email as the unique identifier"""
+    """Custom user model for staff and admin only - uses email as the unique identifier"""
     class UserType(models.TextChoices):
-        CUSTOMER = 'customer', _('Customer')
         STAFF = 'staff', _('Staff')
         ADMIN = 'admin', _('Admin')
     
@@ -51,27 +50,7 @@ class User(AbstractUser):
         message=_("Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
     )
     phone = models.CharField(_('phone number'), validators=[phone_regex], max_length=17, blank=True)
-    user_type = models.CharField(_('user type'), max_length=20, choices=UserType.choices, default=UserType.CUSTOMER)
-    is_verified = models.BooleanField(_('verified'), default=False)
-    is_approved = models.BooleanField(_('approved'), default=False, help_text=_('Account approval status - user can login only after approval'))
-    client_id = models.CharField(
-        _('Agency ID'), 
-        max_length=20, 
-        unique=True, 
-        editable=False,
-        null=True,
-        blank=True,
-        help_text=_('Unique agency identifier assigned on registration')
-    )
-    sales_representative = models.ForeignKey(
-        'SalesRepresentative',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='assigned_users',
-        verbose_name=_('Sales Representative'),
-        help_text=_('Assigned sales representative for this user')
-    )
+    user_type = models.CharField(_('user type'), max_length=20, choices=UserType.choices, default=UserType.STAFF)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -86,43 +65,27 @@ class User(AbstractUser):
             ('can_manage_routes', 'Can manage routes'),
             ('can_view_reports', 'Can view reports'),
         ]
-        indexes = [
-            models.Index(fields=['client_id'], name='user_client_id_idx'),
-        ]
     
     def __str__(self):
         return self.email
     
-    def generate_client_id(self):
-        """Generate a unique random client ID"""
-        import random
-        import string
-        
-        while True:
-            # Format: SZ + 8 random alphanumeric characters (uppercase)
-            # Example: SZ-A1B2C3D4
-            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-            client_id = f'SZ-{random_part}'
-            
-            # Check if this ID already exists
-            if not User.objects.filter(client_id=client_id).exists():
-                return client_id
-    
-    @property
-    def is_customer(self):
-        return self.user_type == self.UserType.CUSTOMER
-    
     @property
     def is_staff_member(self):
         return self.user_type in [self.UserType.STAFF, self.UserType.ADMIN]
+
+    @property
+    def is_approved(self):
+        """Check if user is approved (delegates to profile for customers)"""
+        if self.is_superuser or self.is_staff_member:
+            return True
+        if hasattr(self, 'profile'):
+            return self.profile.is_approved
+        return False
     
     def save(self, *args, **kwargs):
-        if not self.pk and not self.user_type:
-            self.user_type = self.UserType.CUSTOMER
-        
-        # Generate client_id if it doesn't exist (for new users)
-        if not self.client_id:
-            self.client_id = self.generate_client_id()
+        # Only staff and admin can be created through User model
+        if not self.user_type:
+            self.user_type = self.UserType.STAFF
         
         super().save(*args, **kwargs)
 
@@ -162,6 +125,28 @@ class UserProfile(TimestampedModel):
     state = models.CharField(_('state/province'), max_length=100, blank=True)
     country = models.CharField(_('country'), max_length=100, default='India')
     pincode = models.CharField(_('postal code'), max_length=10, blank=True)
+    
+    # Account Status Fields (moved from User model)
+    is_verified = models.BooleanField(_('verified'), default=False)
+    is_approved = models.BooleanField(_('approved'), default=False, help_text=_('Account approval status - user can login only after approval'))
+    client_id = models.CharField(
+        _('Agency ID'), 
+        max_length=20, 
+        unique=True, 
+        editable=False,
+        null=True,
+        blank=True,
+        help_text=_('Unique agency identifier assigned on registration')
+    )
+    sales_representative = models.ForeignKey(
+        'SalesRepresentative',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_agencies',
+        verbose_name=_('Sales Representative'),
+        help_text=_('Assigned sales representative for this agency')
+    )
     profile_picture = models.ImageField(
         _('profile picture'), 
         upload_to='profile_pics/', 
@@ -243,9 +228,35 @@ class UserProfile(TimestampedModel):
     class Meta:
         verbose_name = _('Agency')
         verbose_name_plural = _('Agencies')
+        indexes = [
+            models.Index(fields=['client_id'], name='userprofile_client_id_idx'),
+        ]
     
     def __str__(self):
         return f"{self.full_name}'s profile"
+    
+    def generate_client_id(self):
+        """Generate a unique random client ID based on company name"""
+        import random
+        import string
+        
+        # Get company name prefix (first 2 alphanumeric characters)
+        company_name = self.company_name or ''
+        prefix_agency = ''.join(c for c in company_name if c.isalnum())[:2].upper()
+        
+        # Pad with 'X' if less than 2 characters
+        if len(prefix_agency) < 2:
+            prefix_agency = (prefix_agency + 'XX')[:2]
+        
+        while True:
+            # Format: SZ + CompanyPrefix + Random String (no hyphens)
+            # Example: SZSA1A2B3C4D
+            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            client_id = f'SZ{prefix_agency}{random_part}'
+            
+            # Check if this ID already exists
+            if not UserProfile.objects.filter(client_id=client_id).exists():
+                return client_id
     
     @property
     def age(self):
@@ -253,6 +264,13 @@ class UserProfile(TimestampedModel):
             today = date.today()
             return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
         return None
+    
+    def save(self, *args, **kwargs):
+        # Generate client_id if it doesn't exist (for new profiles)
+        if not self.client_id:
+            self.client_id = self.generate_client_id()
+        
+        super().save(*args, **kwargs)
     
     def clean(self):
         if self.date_of_birth and self.date_of_birth > date.today():
@@ -282,27 +300,27 @@ def create_user_profile(sender, instance, created, **kwargs):
             logger = logging.getLogger(__name__)
             logger.error(f'Error creating user profile: {str(e)}')
 
-@receiver(pre_save, sender=User)
+@receiver(pre_save, sender=UserProfile)
 def store_old_is_approved(sender, instance, **kwargs):
     """Store old is_approved value before save"""
     if instance.pk:
         try:
-            old_instance = User.objects.get(pk=instance.pk)
+            old_instance = UserProfile.objects.get(pk=instance.pk)
             instance._old_is_approved = old_instance.is_approved
-        except User.DoesNotExist:
+        except UserProfile.DoesNotExist:
             instance._old_is_approved = False
     else:
         instance._old_is_approved = False
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=UserProfile)
 def send_approval_email(sender, instance, created, **kwargs):
-    """Send approval email when user is approved"""
-    # Only send email if user is approved and this is not a new user creation
+    """Send approval email when agency is approved"""
+    # Only send email if agency is approved and this is not a new profile creation
     if not created and instance.is_approved:
         # Check if is_approved was just changed to True
         was_approved = getattr(instance, '_old_is_approved', False)
         
-        # Only send if user was not approved before
+        # Only send if agency was not approved before
         if not was_approved and instance.is_approved:
             try:
                 from django.core.mail import send_mail
@@ -310,7 +328,8 @@ def send_approval_email(sender, instance, created, **kwargs):
                 from django.template.loader import render_to_string
                 from django.urls import reverse
                 
-                user_name = instance.get_full_name() or instance.email.split('@')[0]
+                user_name = instance.full_name or instance.user.email.split('@')[0]
+                user_email = instance.user.email
                 
                 # Get login URL
                 try:
@@ -343,13 +362,13 @@ Safar Zone Travels Team
                 # HTML email template with user details
                 context = {
                     'user_name': user_name,
-                    'user_email': instance.email,
+                    'user_email': user_email,
                     'login_url': login_url,
                 }
                 
                 # Add agency ID if available
-                if hasattr(instance, 'profile') and hasattr(instance.profile, 'agency_id'):
-                    context['user_agency_id'] = instance.profile.agency_id
+                if instance.client_id:
+                    context['user_agency_id'] = instance.client_id
                 
                 html_message = render_to_string('emails/approval_email.html', context)
                 
@@ -359,7 +378,7 @@ Safar Zone Travels Team
                     subject,
                     plain_message,
                     from_email,
-                    [instance.email],
+                    [user_email],
                     fail_silently=False,
                     html_message=html_message,
                 )

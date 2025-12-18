@@ -376,11 +376,15 @@ def approved_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('login')
-        if not request.user.is_approved:
-            messages.warning(request, 'Your account is under review. You will be able to access the site once your account is approved (within 24 hours).')
-            logout(request)
-            return redirect('login')
-        return view_func(request, *args, **kwargs)
+        # Staff and superuser don't need approval
+        if request.user.is_staff or request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        # For customers, check profile approval
+        if hasattr(request.user, 'profile') and request.user.profile.is_approved:
+            return view_func(request, *args, **kwargs)
+        messages.warning(request, 'Your account is under review. You will be able to access the site once your account is approved (within 24 hours).')
+        logout(request)
+        return redirect('login')
     return _wrapped_view
 
 def get_client_ip(request):
@@ -3034,7 +3038,7 @@ def user_login(request):
     """Handle user login with email and password"""
     if request.user.is_authenticated:
         # Superusers and staff can always access, others need approval
-        if request.user.is_approved or request.user.is_superuser or request.user.is_staff:
+        if request.user.is_superuser or request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.is_approved):
             return redirect('homepage')
         else:
             logout(request)
@@ -3054,7 +3058,8 @@ def user_login(request):
             
             if user is not None:
                 # Check if user account is approved (superusers and staff can always login)
-                if not user.is_approved and not (user.is_superuser or user.is_staff):
+                # Staff and superuser don't need approval, customers need profile approval
+                if not (user.is_superuser or user.is_staff) and (not hasattr(user, 'profile') or not user.profile.is_approved):
                     messages.warning(request, 'Your account is under review. Your account will be activated within 24 hours. Please wait for approval.')
                     return redirect('login')
                 
@@ -3275,7 +3280,7 @@ def verify_otp(request):
 def user_signup(request):
     """Handle new user registration - account needs admin approval with OTP verification"""
     if request.user.is_authenticated:
-        if request.user.is_approved:
+        if request.user.is_superuser or request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.is_approved):
             return redirect('homepage')
         else:
             logout(request)
@@ -3302,9 +3307,15 @@ def user_signup(request):
                 # User will NOT be approved by default - needs admin approval
                 user = form.save()
                 
-                # Set is_approved to False (default, but explicit)
-                user.is_approved = False
-                user.save()
+                # Create profile with is_approved = False (default, but explicit)
+                from .models import UserProfile
+                profile, created = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={'full_name': user.get_full_name() or user.email.split('@')[0], 'is_approved': False}
+                )
+                if not created:
+                    profile.is_approved = False
+                    profile.save()
                 
                 # Clear OTP verification from session
                 if 'email_verified' in request.session:
