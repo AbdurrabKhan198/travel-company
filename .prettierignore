@@ -1,0 +1,3 @@
+# Ignore Django templates to prevent Prettier from breaking template tags
+*.html
+templates/**/*.html

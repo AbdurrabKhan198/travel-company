@@ -14,17 +14,27 @@ def wallet_context(request):
     
     # Get sales representatives for header - show only assigned rep if user is logged in
     try:
-        if request.user.is_authenticated and request.user.sales_representative:
-            # Show only the assigned sales representative for this user
-            sales_reps = SalesRepresentative.objects.filter(
-                id=request.user.sales_representative.id,
-                is_active=True
-            )
+        user = request.user
+        if user.is_authenticated:
+            # Try to get profile - some users might have profile through signals
+            profile = getattr(user, 'profile', None)
+            if profile and profile.sales_representative:
+                # Show the assigned sales representative even if not globally active
+                # as it was explicitly assigned to this user/agency
+                sales_reps = [profile.sales_representative]
+                context['sales_representatives'] = sales_reps
+            else:
+                # If no specific rep assigned, show all active ones
+                sales_reps = SalesRepresentative.objects.filter(is_active=True).order_by('display_order', 'name')
+                context['sales_representatives'] = sales_reps
         else:
-            # For non-authenticated users or users without assigned rep, show all active
+            # For non-authenticated users, show all active ones
             sales_reps = SalesRepresentative.objects.filter(is_active=True).order_by('display_order', 'name')
-        context['sales_representatives'] = sales_reps
-    except Exception:
+            context['sales_representatives'] = sales_reps
+    except Exception as e:
+        # For development debugging
+        if settings.DEBUG:
+            print(f"Error in sales_reps context processor: {e}")
         pass
     
     if request.user.is_authenticated:

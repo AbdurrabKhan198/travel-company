@@ -213,6 +213,101 @@
         border-color: var(--primary);
     }
 
+    /* ===== Terminal Info Section ===== */
+    .terminal-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: var(--radius);
+        padding: .75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid #dee2e6;
+    }
+
+    .terminal-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .terminal-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gradient-primary);
+        color: #fff;
+        border-radius: 8px;
+        font-size: .85rem;
+    }
+
+    .terminal-icon.arrival {
+        background: var(--gradient-success);
+    }
+
+    .terminal-label {
+        font-size: .7rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .terminal-value {
+        font-size: .95rem;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .terminal-city {
+        font-size: .75rem;
+        color: #495057;
+    }
+
+    .terminal-separator {
+        width: 40px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+        position: relative;
+    }
+
+    .terminal-separator::after {
+        content: '\f0e5';
+        font-family: 'bootstrap-icons';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #f8f9fa;
+        padding: 0 .25rem;
+        color: #6c757d;
+        font-size: .7rem;
+    }
+
+    @media (max-width: 480px) {
+        .terminal-info {
+            flex-direction: row;
+            gap: .75rem;
+            padding: .6rem;
+        }
+
+        .terminal-icon {
+            width: 28px;
+            height: 28px;
+            font-size: .75rem;
+        }
+
+        .terminal-value {
+            font-size: .85rem;
+        }
+
+        .terminal-separator {
+            width: 20px;
+        }
+    }
+
     /* ===== Results Header ===== */
     .results-header {
         display: flex;
@@ -295,6 +390,30 @@
         justify-content: center;
         color: #fff;
         font-size: 1rem;
+    }
+
+    .fc-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: #fff;
+        padding: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, .08);
+        flex-shrink: 0;
+    }
+
+    .fc-logo-placeholder {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--primary), #0dcaf0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.25rem;
+        flex-shrink: 0;
     }
 
     .fc-airline {
@@ -385,6 +504,13 @@
         margin-top: .2rem;
     }
 
+    .fc-terminal {
+        font-size: .6rem;
+        color: #6c757d;
+        margin-top: .15rem;
+        font-weight: 500;
+    }
+
     .fc-duration-col {
         flex: 0 0 80px;
         text-align: center;
@@ -419,6 +545,24 @@
     .fc-stop {
         font-size: .65rem;
         color: var(--success);
+    }
+
+    .fc-refund-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .2rem;
+        font-size: .6rem;
+        font-weight: 600;
+        color: #dc3545;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+        padding: .2rem .4rem;
+        border-radius: 4px;
+        margin-top: .35rem;
+        border: 1px solid #f8d7da;
+    }
+
+    .fc-refund-badge i {
+        font-size: .55rem;
     }
 
     /* Price Row */
@@ -824,8 +968,7 @@
                 </span>
                 {% endif %}
                 {% if passengers %}
-                <span class="trip-badge"><i class="bi bi-people"></i>{{ adults }}A{% if children > 0 %} {{ children
-                    }}C{% endif %}{% if infants > 0 %} {{ infants }}I{% endif %}</span>
+                <span class="trip-badge"><i class="bi bi-people"></i>{{ adults }}A{% if children > 0 %} {{ children }}C{% endif %}{% if infants > 0 %} {{ infants }}I{% endif %}</span>
                 {% endif %}
                 {% if trip_type == 'return' %}
                 <span class="trip-badge">
@@ -902,9 +1045,7 @@
                     </div>
                     <div class="fc-badges">
                         <span
-                            class="fc-badge {% if flight.route.route_type == 'domestic' %}fc-badge-domestic{% else %}fc-badge-international{% endif %}">
-                            {{ flight.route.route_type|title }}
-                        </span>
+                            class="fc-badge {% if flight.route.route_type == 'domestic' %}fc-badge-domestic{% else %}fc-badge-international{% endif %}">{{ flight.route.route_type|title }}</span>
                         <span class="fc-badge fc-badge-seats">{{ flight.available_seats }} seats</span>
                     </div>
                 </div>
@@ -917,17 +1058,20 @@
                             <div class="fc-city">{{ from_location }}</div>
                             <div class="fc-code">{{ from_airport_code }}</div>
                             <div class="fc-date">{{ flight.departure_date|date:"d M" }}</div>
+                            {% if flight.route.departure_terminal %}<div class="fc-terminal">Terminal {{ flight.route.departure_terminal }}</div>{% endif %}
                         </div>
                         <div class="fc-duration-col">
                             <div class="fc-duration">{{ flight.route.formatted_duration }}</div>
                             <div class="fc-duration-line"></div>
                             <div class="fc-stop">Non-stop</div>
+                            <div class="fc-refund-badge"><i class="bi bi-x-circle-fill"></i> Non-Refundable</div>
                         </div>
                         <div class="fc-time-col">
                             <div class="fc-time">{{ flight.route.arrival_time|time:"H:i" }}</div>
                             <div class="fc-city">{{ to_location }}</div>
                             <div class="fc-code">{{ to_airport_code }}</div>
                             <div class="fc-date">{{ flight.arrival_date|date:"d M" }}</div>
+                            {% if flight.route.arrival_terminal %}<div class="fc-terminal">Terminal {{ flight.route.arrival_terminal }}</div>{% endif %}
                         </div>
                     </div>
                 </div>

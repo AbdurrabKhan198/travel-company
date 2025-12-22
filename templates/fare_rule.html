@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Fare Rules - {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.fare-rule-container{min-height:100vh;background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);padding:2rem 1rem}
+.fare-card{background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);overflow:hidden;max-width:900px;margin:0 auto}
+.fare-header{background:linear-gradient(135deg,#1e40af 0%,#3b82f6 100%);color:#fff;padding:1.5rem 2rem}
+.fare-header h1{font-size:1.5rem;font-weight:700;margin:0}
+.fare-header p{margin:0.5rem 0 0;opacity:0.9}
+.fare-body{padding:2rem}
+.rule-section{margin-bottom:2rem}
+.rule-section h3{font-size:1.1rem;font-weight:700;color:#1e40af;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.rule-section h3 i{font-size:1.2rem}
+.rule-table{width:100%;border-collapse:collapse;font-size:0.875rem}
+.rule-table th{background:#f1f5f9;color:#374151;font-weight:600;text-align:left;padding:0.75rem 1rem;border-bottom:2px solid #e2e8f0}
+.rule-table td{padding:0.75rem 1rem;border-bottom:1px solid #e2e8f0}
+.rule-table tr:hover{background:#f8fafc}
+.fee-amount{font-weight:600;color:#dc2626}
+.refund-info{color:#059669}
+.general-rules{background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:1rem}
+.general-rules li{color:#92400e;padding:0.25rem 0;font-size:0.875rem}
+.baggage-info{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.baggage-box{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:1rem;text-align:center}
+.baggage-box .icon{font-size:2rem;color:#22c55e;margin-bottom:0.5rem}
+.baggage-box .label{font-size:0.75rem;color:#6b7280;text-transform:uppercase}
+.baggage-box .value{font-size:1.25rem;font-weight:700;color:#15803d}
+.back-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-weight:600;text-decoration:none;margin-top:1rem}
+.back-btn:hover{background:#2563eb}
+@media(max-width:600px){.baggage-info{grid-template-columns:1fr}.rule-table{font-size:0.75rem}.rule-table th,.rule-table td{padding:0.5rem}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fare-rule-container">
+<div class="fare-card">
+<div class="fare-header">
+<h1><i class="fas fa-file-contract"></i> Fare Rules & Policies</h1>
+<p>{{ fare_rules.airline }} | Booking: {{ booking.booking_reference }}</p>
+</div>
+<div class="fare-body">
+
+<div class="rule-section">
+<h3><i class="fas fa-times-circle" style="color:#dc2626"></i> Cancellation Policy</h3>
+<table class="rule-table">
+<thead>
+<tr>
+<th>Timeframe</th>
+<th>Cancellation Fee</th>
+<th>Refund</th>
+</tr>
+</thead>
+<tbody>
+{% for rule in fare_rules.cancellation %}
+<tr>
+<td>{{ rule.timeframe }}</td>
+<td class="fee-amount">{{ rule.fee }}</td>
+<td class="refund-info">{{ rule.refund }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="rule-section">
+<h3><i class="fas fa-calendar-alt" style="color:#f59e0b"></i> Date Change Policy</h3>
+<table class="rule-table">
+<thead>
+<tr>
+<th>Timeframe</th>
+<th>Change Fee</th>
+</tr>
+</thead>
+<tbody>
+{% for rule in fare_rules.date_change %}
+<tr>
+<td>{{ rule.timeframe }}</td>
+<td class="fee-amount">{{ rule.fee }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="rule-section">
+<h3><i class="fas fa-user-edit" style="color:#8b5cf6"></i> Name Change Policy</h3>
+<table class="rule-table">
+<thead>
+<tr>
+<th>Policy</th>
+<th>Fee</th>
+</tr>
+</thead>
+<tbody>
+{% for rule in fare_rules.name_change %}
+<tr>
+<td>{{ rule.policy }}</td>
+<td class="fee-amount">{{ rule.fee }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="rule-section">
+<h3><i class="fas fa-suitcase-rolling" style="color:#06b6d4"></i> Baggage Allowance</h3>
+<div class="baggage-info">
+<div class="baggage-box">
+<div class="icon"><i class="fas fa-briefcase"></i></div>
+<div class="label">Cabin Baggage</div>
+<div class="value">{{ fare_rules.baggage.cabin }}</div>
+</div>
+<div class="baggage-box">
+<div class="icon"><i class="fas fa-suitcase"></i></div>
+<div class="label">Check-in Baggage</div>
+<div class="value">{{ fare_rules.baggage.checkin }}</div>
+</div>
+</div>
+</div>
+
+<div class="rule-section">
+<h3><i class="fas fa-info-circle" style="color:#64748b"></i> General Terms</h3>
+<div class="general-rules">
+<ul style="list-style:disc;padding-left:1.25rem;margin:0">
+{% for rule in fare_rules.general %}
+<li>{{ rule }}</li>
+{% endfor %}
+</ul>
+</div>
+</div>
+
+<a href="{% url 'my_trips' %}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to My Trips</a>
+
+</div>
+</div>
+</div>
+{% endblock %}

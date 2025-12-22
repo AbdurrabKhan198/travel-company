@@ -12,7 +12,7 @@ from django.db.models import Sum, Count
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
     Package, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, Coupon
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, Coupon, VisaBooking, BookingChangeRequest
 )
 
 # Custom Admin Filter for Agency ID
@@ -21,10 +21,10 @@ class AgencyIDFilter(admin.SimpleListFilter):
     parameter_name = 'agency_id'
 
     def lookups(self, request, model_admin):
-        # Get all unique agency IDs from user profiles who have cash balance wallets
+        # Get all unique agency IDs from user profiles who have cash balance wallets (newest first)
         agency_ids = UserProfile.objects.filter(
             user__cash_balance_wallet__isnull=False
-        ).values_list('client_id', flat=True).distinct().order_by('client_id')
+        ).order_by('-created_at').values_list('client_id', flat=True).distinct()
         return [(agency_id, agency_id) for agency_id in agency_ids if agency_id]
 
     def queryset(self, request, queryset):
@@ -41,12 +41,11 @@ class UserProfileInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Admin interface for Staff and Admin users only"""
-    list_display = ('email', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_active')
-    list_filter = ('user_type', 'is_staff', 'is_active', 'date_joined')
-    search_fields = ('email', 'first_name', 'last_name', 'profile__client_id')  # Add agency ID search
+    """Admin interface for Staff and Admin users only - NOT agencies"""
+    list_display = ('email', 'first_name', 'last_name', 'user_type', 'is_staff', 'is_superuser', 'is_active', 'last_login')
+    list_filter = ('user_type', 'is_staff', 'is_superuser', 'is_active', 'date_joined')
+    search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
-    inlines = (UserProfileInline,)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -66,51 +65,95 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     
-    def get_inline_instances(self, request, obj=None):
-        if not obj:
-            return []
-        return super().get_inline_instances(request, obj)
+    def get_queryset(self, request):
+        """Only show staff/superuser accounts - hide agencies"""
+        qs = super().get_queryset(request)
+        return qs.filter(is_staff=True) | qs.filter(is_superuser=True)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'full_name', 'client_id_display', 'title', 'gst_number', 'id_type', 'city', 'country', 'is_approved', 'is_verified', 'sales_rep_display', 'has_pdfs')
-    search_fields = ('user__email', 'client_id', 'full_name', 'gst_number', 'id_number', 'city', 'country')
-    list_filter = ('gender', 'country', 'city', 'id_type', 'title', 'is_approved', 'is_verified', 'sales_representative')
+    """Admin interface for Agencies/Customers - NOT staff/admin accounts"""
+    list_display = (
+        'agency_id_display', 'user_email', 'full_name', 'company_name', 
+        'city', 'is_approved_badge', 'is_verified', 'sales_rep_display', 
+        'wallet_balance_display', 'created_at_display'
+    )
+    search_fields = ('user__email', 'client_id', 'full_name', 'gst_number', 'id_number', 'city', 'country', 'company_name')
+    list_filter = ('is_approved', 'is_verified', 'country', 'city', 'sales_representative', 'gender', 'id_type')
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    
     fieldsets = (
-        ('Account Status', {
-            'fields': ('is_approved', 'is_verified', 'client_id', 'sales_representative'),
-            'description': 'is_approved: Agency can login only if approved. Assign a sales representative during approval.'
+        ('🏢 Agency Account', {
+            'fields': ('user', 'client_id', 'is_approved', 'is_verified', 'sales_representative'),
+            'description': 'Manage agency account status. Agency can only login if approved.'
         }),
-        ('Personal Information', {
-            'fields': ('user', 'title', 'full_name', 'date_of_birth', 'gender', 'profile_picture')
+        ('👤 Owner/Contact Details', {
+            'fields': ('title', 'full_name', 'date_of_birth', 'gender', 'profile_picture')
         }),
-        ('Contact Information', {
+        ('📍 Address', {
             'fields': ('address', 'city', 'state', 'country', 'pincode')
         }),
-        ('Company Information', {
+        ('🏛️ Company Information', {
             'fields': ('company_name', 'gst_number'),
-            'classes': ('collapse',)
         }),
-        ('Identification', {
+        ('📄 Identification', {
             'fields': ('id_type', 'id_number'),
             'classes': ('collapse',)
         }),
-        ('PDF Documents', {
+        ('📁 PDF Documents', {
             'fields': ('id_document_pdf', 'passport_pdf', 'other_documents'),
             'classes': ('collapse',),
-            'description': 'User uploaded PDF documents'
         }),
-        ('System Information', {
+        ('⏱️ Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     readonly_fields = ('created_at', 'updated_at', 'client_id', 'profile_picture_preview', 'has_pdfs')
-    actions = ['approve_agencies', 'unapprove_agencies']
+    actions = ['approve_agencies', 'unapprove_agencies', 'verify_agencies', 'unverify_agencies']
     
-    def client_id_display(self, obj):
-        return obj.client_id if obj.client_id else 'N/A'
-    client_id_display.short_description = 'Agency ID'
+    def get_queryset(self, request):
+        """Only show non-staff user profiles (agencies only)"""
+        qs = super().get_queryset(request)
+        return qs.filter(user__is_staff=False, user__is_superuser=False)
+    
+    def agency_id_display(self, obj):
+        return format_html(
+            '<span style="font-weight: bold; color: #2563eb; background: #dbeafe; padding: 3px 8px; border-radius: 4px;">{}</span>',
+            obj.client_id if obj.client_id else 'N/A'
+        )
+    agency_id_display.short_description = 'Agency ID'
+    agency_id_display.admin_order_field = 'client_id'
+    
+    def user_email(self, obj):
+        if obj.user:
+            return format_html('<a href="/admin/travels/user/{}/change/">{}</a>', obj.user.id, obj.user.email)
+        return 'N/A'
+    user_email.short_description = 'Email'
+    user_email.admin_order_field = 'user__email'
+    
+    def is_approved_badge(self, obj):
+        if obj.is_approved:
+            return format_html('<span style="background: #22c55e; color: white; padding: 3px 8px; border-radius: 10px;">✓ Yes</span>')
+        return format_html('<span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 10px;">✗ No</span>')
+    is_approved_badge.short_description = 'Approved'
+    is_approved_badge.admin_order_field = 'is_approved'
+    
+    def wallet_balance_display(self, obj):
+        try:
+            if hasattr(obj.user, 'cash_balance_wallet'):
+                balance = obj.user.cash_balance_wallet.balance
+                return format_html('<span style="font-weight: bold; color: #059669;">₹{:.2f}</span>', float(balance))
+        except:
+            pass
+        return '₹0.00'
+    wallet_balance_display.short_description = 'Wallet'
+    
+    def created_at_display(self, obj):
+        return obj.created_at.strftime('%d %b %Y')
+    created_at_display.short_description = 'Joined'
+    created_at_display.admin_order_field = 'created_at'
     
     def sales_rep_display(self, obj):
         if obj.sales_representative:
@@ -124,16 +167,26 @@ class UserProfileAdmin(admin.ModelAdmin):
         for profile in queryset:
             if not profile.is_approved:
                 profile.is_approved = True
-                profile.save()  # This will trigger the signal to send approval email
+                profile.save()
                 count += 1
-        self.message_user(request, f'{count} agency(ies) approved successfully. Approval emails have been sent.')
-    approve_agencies.short_description = 'Approve selected agencies'
+        self.message_user(request, f'{count} agency(ies) approved successfully. Approval emails sent.')
+    approve_agencies.short_description = '✅ Approve selected agencies'
     
     def unapprove_agencies(self, request, queryset):
         """Unapprove selected agencies"""
         updated = queryset.update(is_approved=False)
         self.message_user(request, f'{updated} agency(ies) unapproved.')
-    unapprove_agencies.short_description = 'Unapprove selected agencies'
+    unapprove_agencies.short_description = '❌ Unapprove selected agencies'
+    
+    def verify_agencies(self, request, queryset):
+        updated = queryset.update(is_verified=True)
+        self.message_user(request, f'{updated} agency(ies) verified.')
+    verify_agencies.short_description = '✔️ Verify selected agencies'
+    
+    def unverify_agencies(self, request, queryset):
+        updated = queryset.update(is_verified=False)
+        self.message_user(request, f'{updated} agency(ies) unverified.')
+    unverify_agencies.short_description = '✖️ Unverify selected agencies'
     
     def profile_picture_preview(self, obj):
         if obj.profile_picture:
@@ -268,7 +321,7 @@ class PackageAdmin(admin.ModelAdmin):
     list_filter = ('package_type', 'is_featured', 'is_active')
     search_fields = ('title', 'destination', 'short_description')
     prepopulated_fields = {'slug': ('title', 'destination')}
-    readonly_fields = ('created_at', 'updated_at', 'meta_preview')
+    readonly_fields = ('created_at', 'updated_at', 'meta_preview', 'discounted_price')
     save_on_top = True
     
     fieldsets = (
@@ -276,7 +329,7 @@ class PackageAdmin(admin.ModelAdmin):
             'fields': ('title', 'slug', 'destination', 'package_type', 'is_featured', 'is_active')
         }),
         ('Pricing', {
-            'fields': ('base_price', 'discount_percentage', 'discounted_price')
+            'fields': ('base_price', 'discount_percentage')
         }),
         ('Duration', {
             'fields': ('duration_days', 'duration_nights')
@@ -558,7 +611,9 @@ class CashBalanceWalletAdmin(admin.ModelAdmin):
     user_email.short_description = 'User Email'
     
     def agency_id_display(self, obj):
-        return obj.user.client_id if obj.user else 'N/A'
+        if obj.user and hasattr(obj.user, 'profile'):
+            return getattr(obj.user.profile, 'client_id', 'N/A') or 'N/A'
+        return 'N/A'
     agency_id_display.short_description = 'Agency ID'
     
     def balance_display(self, obj):
@@ -579,7 +634,7 @@ class CashBalanceWalletAdmin(admin.ModelAdmin):
                     </tr>
                     <tr style="background: white;">
                         <td style="padding: 8px; font-weight: bold;">Agency ID:</td>
-                        <td style="padding: 8px;">{user.client_id}</td>
+                        <td style="padding: 8px;">{profile.client_id if profile else 'N/A'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; font-weight: bold;">Full Name:</td>
@@ -683,9 +738,9 @@ class CashBalanceTransactionAdmin(admin.ModelAdmin):
     def agency_details_view(self, request, agency_id):
         """Custom view to show complete agency balance details"""
         try:
-            # Get user with this agency ID
-            user = User.objects.get(client_id=agency_id)
-            profile = getattr(user, 'profile', None)
+            # Get user with this agency ID (client_id is on UserProfile, not User)
+            profile = UserProfile.objects.get(client_id=agency_id)
+            user = profile.user
             
             # Get cash balance wallet
             try:
@@ -770,7 +825,8 @@ class CashBalanceTransactionAdmin(admin.ModelAdmin):
     
     def agency_id_clickable(self, obj):
         if obj.cash_balance_wallet and obj.cash_balance_wallet.user:
-            agency_id = obj.cash_balance_wallet.user.client_id
+            user = obj.cash_balance_wallet.user
+            agency_id = getattr(user.profile, 'client_id', None) if hasattr(user, 'profile') else None
             if agency_id:
                 # Create a clickable link to agency details page
                 url = reverse('admin:agency_balance_details', args=[agency_id])
@@ -790,7 +846,7 @@ class CashBalanceTransactionAdmin(admin.ModelAdmin):
             <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
                 <h3 style="margin-top: 0;">User Details</h3>
                 <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Agency ID:</strong> {user.client_id}</p>
+                <p><strong>Agency ID:</strong> {profile.client_id if profile else 'N/A'}</p>
                 <p><strong>Name:</strong> {profile.full_name if profile else 'N/A'}</p>
                 <p><strong>Phone:</strong> {user.phone if user.phone else 'N/A'}</p>
                 <p><strong>Current Balance:</strong> ₹{obj.cash_balance_wallet.balance}</p>
@@ -1071,4 +1127,171 @@ class CouponAdmin(admin.ModelAdmin):
         updated = queryset.update(used_count=0)
         self.message_user(request, f"Usage count reset for {updated} coupon(s).")
     reset_usage_count.short_description = "Reset usage count for selected coupons"
+
+
+@admin.register(VisaBooking)
+class VisaBookingAdmin(admin.ModelAdmin):
+    """Admin interface for managing Visa Bookings/Applications"""
+    list_display = (
+        'reference_id', 'full_name', 'country_display', 'duration', 
+        'price_display', 'status_badge', 'payment_status_badge', 
+        'travel_date', 'created_at'
+    )
+    list_filter = ('country', 'status', 'payment_status', 'created_at', 'travel_date')
+    search_fields = ('reference_id', 'full_name', 'email', 'phone', 'passport_number')
+    ordering = ('-created_at',)
+    readonly_fields = ('reference_id', 'created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Application Info', {
+            'fields': ('reference_id', 'user', 'status', 'payment_status', 'payment_id')
+        }),
+        ('Applicant Details', {
+            'fields': ('full_name', 'email', 'phone', 'passport_number', 'nationality', 'address')
+        }),
+        ('Visa Details', {
+            'fields': ('country', 'duration', 'visa_type', 'travel_date', 'price', 'currency')
+        }),
+        ('Documents', {
+            'fields': ('passport_front', 'passport_back', 'passport_size_photo'),
+            'classes': ('collapse',)
+        }),
+        ('Notes', {
+            'fields': ('notes', 'admin_notes'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def country_display(self, obj):
+        return f"{obj.get_country_flag()} {obj.get_country_display()}"
+    country_display.short_description = 'Country'
+    country_display.admin_order_field = 'country'
+    
+    def price_display(self, obj):
+        return f"₹{obj.price:,.2f}"
+    price_display.short_description = 'Price'
+    price_display.admin_order_field = 'price'
+    
+    def status_badge(self, obj):
+        colors = {
+            'pending': '#FFA500',
+            'processing': '#3498db',
+            'approved': '#27ae60',
+            'rejected': '#e74c3c',
+            'completed': '#2ecc71',
+        }
+        color = colors.get(obj.status, '#95a5a6')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 10px; font-size: 11px;">{}</span>',
+            color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+    status_badge.admin_order_field = 'status'
+    
+    def payment_status_badge(self, obj):
+        colors = {
+            'pending': '#f39c12',
+            'paid': '#27ae60',
+            'failed': '#e74c3c',
+            'refunded': '#9b59b6',
+        }
+        color = colors.get(obj.payment_status, '#95a5a6')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 10px; font-size: 11px;">{}</span>',
+            color, obj.get_payment_status_display()
+        )
+    payment_status_badge.short_description = 'Payment'
+    payment_status_badge.admin_order_field = 'payment_status'
+    
+    actions = ['mark_as_processing', 'mark_as_approved', 'mark_as_rejected', 'mark_as_paid', 'mark_as_refunded']
+    
+    def mark_as_processing(self, request, queryset):
+        updated = queryset.update(status='processing')
+        self.message_user(request, f"{updated} application(s) marked as Processing.")
+    mark_as_processing.short_description = "Mark selected as Processing"
+    
+    def mark_as_approved(self, request, queryset):
+        updated = queryset.update(status='approved')
+        self.message_user(request, f"{updated} application(s) marked as Approved.")
+    mark_as_approved.short_description = "Mark selected as Approved"
+    
+    def mark_as_rejected(self, request, queryset):
+        updated = queryset.update(status='rejected')
+        self.message_user(request, f"{updated} application(s) marked as Rejected.")
+    mark_as_rejected.short_description = "Mark selected as Rejected"
+    
+    def mark_as_paid(self, request, queryset):
+        updated = queryset.update(payment_status='paid')
+        self.message_user(request, f"{updated} application(s) marked as Paid.")
+    mark_as_paid.short_description = "Mark payment as Paid"
+    
+    def mark_as_refunded(self, request, queryset):
+        updated = queryset.update(payment_status='refunded')
+        self.message_user(request, f"{updated} application(s) marked as Refunded.")
+    mark_as_refunded.short_description = "Mark payment as Refunded"
+
+
+@admin.register(BookingChangeRequest)
+class BookingChangeRequestAdmin(admin.ModelAdmin):
+    """Admin interface for managing booking change requests"""
+    list_display = ('reference_number', 'booking_ref', 'request_type', 'user_email', 'status', 'created_at', 'processed_at')
+    list_filter = ('status', 'request_type', 'created_at')
+    search_fields = ('reference_number', 'booking__booking_reference', 'user__email', 'requested_value')
+    readonly_fields = ('reference_number', 'created_at', 'updated_at')
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Request Details', {
+            'fields': ('reference_number', 'booking', 'user', 'request_type', 'status')
+        }),
+        ('Change Information', {
+            'fields': ('current_value', 'requested_value', 'reason')
+        }),
+        ('Admin Response', {
+            'fields': ('admin_notes', 'processed_by', 'processed_at', 'change_fee')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def booking_ref(self, obj):
+        return obj.booking.booking_reference
+    booking_ref.short_description = 'Booking Ref'
+    
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = 'Requested By'
+    
+    actions = ['mark_as_processing', 'mark_as_approved', 'mark_as_rejected', 'mark_as_completed']
+    
+    def mark_as_processing(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.update(status='processing', processed_by=request.user, processed_at=timezone.now())
+        self.message_user(request, f"{updated} request(s) marked as Processing.")
+    mark_as_processing.short_description = "Mark as Processing"
+    
+    def mark_as_approved(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.update(status='approved', processed_by=request.user, processed_at=timezone.now())
+        self.message_user(request, f"{updated} request(s) marked as Approved.")
+    mark_as_approved.short_description = "Mark as Approved"
+    
+    def mark_as_rejected(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.update(status='rejected', processed_by=request.user, processed_at=timezone.now())
+        self.message_user(request, f"{updated} request(s) marked as Rejected.")
+    mark_as_rejected.short_description = "Mark as Rejected"
+    
+    def mark_as_completed(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.update(status='completed', processed_by=request.user, processed_at=timezone.now())
+        self.message_user(request, f"{updated} request(s) marked as Completed.")
+    mark_as_completed.short_description = "Mark as Completed"
 

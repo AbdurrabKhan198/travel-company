@@ -496,24 +496,34 @@ class Route(TimestampedModel):
             'indigo': 'images/flight-logo/indigo.png',
             'indigo airlines': 'images/flight-logo/indigo.png',
             'indigo airline': 'images/flight-logo/indigo.png',
+            '6e': 'images/flight-logo/indigo.png',
             'air arabia': 'images/flight-logo/air-arabia.png',
             'airarabia': 'images/flight-logo/air-arabia.png',
+            'g9': 'images/flight-logo/air-arabia.png',
             'air india': 'images/flight-logo/air india.png',
             'airindia': 'images/flight-logo/air india.png',
             'air india express': 'images/flight-logo/air india.png',
+            'ai': 'images/flight-logo/air india.png',
+            'ix': 'images/flight-logo/air india.png',
             'flynas': 'images/flight-logo/flynas.png',
+            'xn': 'images/flight-logo/flynas.png',
             'jazeera': 'images/flight-logo/jazeera.png',
             'jazeera airways': 'images/flight-logo/jazeera.png',
             'jazeera airway': 'images/flight-logo/jazeera.png',
+            'j9': 'images/flight-logo/jazeera.png',
             'saudi airlines': 'images/flight-logo/saudi-airline.png',
             'saudi arabian airlines': 'images/flight-logo/saudi-airline.png',
             'saudi arabia': 'images/flight-logo/saudi-airline.png',
             'saudi arabian': 'images/flight-logo/saudi-airline.png',
+            'saudia': 'images/flight-logo/saudi-airline.png',
+            'sv': 'images/flight-logo/saudi-airline.png',
             'fly dubai': 'images/flight-logo/fly-dubai.png',
             'flydubai': 'images/flight-logo/fly-dubai.png',
             'fly dubai airlines': 'images/flight-logo/fly-dubai.png',
+            'fz': 'images/flight-logo/fly-dubai.png',
             'emirates': 'images/flight-logo/fly-dubai.png',  # Using fly-dubai as placeholder
             'emirates airlines': 'images/flight-logo/fly-dubai.png',
+            'ek': 'images/flight-logo/fly-dubai.png',  # Emirates carrier code
         }
         
         # Normalize airline name (lowercase, strip spaces)
@@ -530,6 +540,17 @@ class Route(TimestampedModel):
         for key, path in airline_logos.items():
             if key in airline_key or airline_key in key:
                 return static(path)
+        
+        # Try to detect from carrier number (e.g., EK701 -> ek)
+        if self.carrier_number:
+            # Extract the airline code prefix (letters only)
+            import re
+            match = re.match(r'^([A-Za-z]+)', self.carrier_number.strip())
+            if match:
+                carrier_code = match.group(1).lower()
+                logo_path = airline_logos.get(carrier_code)
+                if logo_path:
+                    return static(logo_path)
         
         return None
     
@@ -1786,4 +1807,234 @@ class Umrah(TimestampedModel):
     def __str__(self):
         return f"Umrah {self.reference_id} - {self.full_name} ({self.get_duration_display()})"
 
+
+class VisaBooking(TimestampedModel):
+    """Model to store Visit Visa booking/applications"""
+    
+    class StatusChoices(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        PROCESSING = 'processing', _('Processing')
+        APPROVED = 'approved', _('Approved')
+        REJECTED = 'rejected', _('Rejected')
+        COMPLETED = 'completed', _('Completed')
+    
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        PAID = 'paid', _('Paid')
+        FAILED = 'failed', _('Failed')
+        REFUNDED = 'refunded', _('Refunded')
+    
+    COUNTRY_CHOICES = [
+        ('dubai', _('Dubai (UAE)')),
+        ('oman', _('Oman')),
+        ('bahrain', _('Bahrain')),
+        ('qatar', _('Qatar')),
+        ('azerbaijan', _('Azerbaijan')),
+        ('uzbekistan', _('Uzbekistan')),
+        ('vietnam', _('Vietnam')),
+        ('cambodia', _('Cambodia')),
+        ('russia', _('Russia')),
+    ]
+    
+    # Applicant Information
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='visa_bookings',
+        verbose_name=_('User')
+    )
+    full_name = models.CharField(_('Full Name'), max_length=100)
+    email = models.EmailField(_('Email'))
+    phone = models.CharField(_('Phone Number'), max_length=20)
+    passport_number = models.CharField(_('Passport Number'), max_length=50)
+    nationality = models.CharField(_('Nationality'), max_length=100, default='Indian')
+    
+    # Visa Details
+    country = models.CharField(_('Destination Country'), max_length=50, choices=COUNTRY_CHOICES)
+    duration = models.CharField(_('Visa Duration'), max_length=50, help_text=_('e.g., 30 Days, 60 Days, 90 Days'))
+    visa_type = models.CharField(_('Visa Type'), max_length=50, default='Tourist', help_text=_('e.g., Tourist, Business'))
+    travel_date = models.DateField(_('Travel Date'), null=True, blank=True)
+    address = models.TextField(_('Address'), blank=True)
+    
+    # Document Uploads
+    passport_front = models.ImageField(
+        _('Passport Front'), 
+        upload_to='visa_documents/passport_front/',
+        blank=True,
+        null=True
+    )
+    passport_back = models.ImageField(
+        _('Passport Back'), 
+        upload_to='visa_documents/passport_back/',
+        blank=True,
+        null=True
+    )
+    passport_size_photo = models.ImageField(
+        _('Passport Size Photo'), 
+        upload_to='visa_documents/passport_size/',
+        blank=True,
+        null=True
+    )
+    
+    # Pricing
+    price = models.DecimalField(_('Price'), max_digits=10, decimal_places=2)
+    currency = models.CharField(_('Currency'), max_length=3, default='INR')
+    
+    # Payment Information
+    payment_status = models.CharField(
+        _('Payment Status'),
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING
+    )
+    payment_id = models.CharField(_('Payment ID'), max_length=100, blank=True, help_text=_('Payment gateway transaction ID'))
+    
+    # Application Status
+    status = models.CharField(
+        _('Application Status'),
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING
+    )
+    
+    # Reference and Notes
+    reference_id = models.CharField(_('Reference ID'), max_length=50, unique=True, blank=True, editable=False)
+    notes = models.TextField(_('Notes'), blank=True, help_text=_('Additional notes or special requests'))
+    admin_notes = models.TextField(_('Admin Notes'), blank=True, help_text=_('Internal notes for admin'))
+    
+    class Meta:
+        verbose_name = _('Visa Booking')
+        verbose_name_plural = _('Visa Bookings')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at'], name='visa_booking_status_idx'),
+            models.Index(fields=['country', 'duration'], name='visa_booking_country_idx'),
+            models.Index(fields=['payment_status'], name='visa_booking_payment_idx'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            # Generate unique reference ID: VB + country code + timestamp + random
+            import random
+            country_code = self.country[:2].upper() if self.country else 'XX'
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            random_str = str(random.randint(1000, 9999))
+            self.reference_id = f'VB{country_code}{timestamp}{random_str}'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Visa {self.reference_id} - {self.full_name} ({self.get_country_display()}, {self.duration})"
+    
+    def get_country_flag(self):
+        """Return emoji flag for the country"""
+        flags = {
+            'dubai': '🇦🇪',
+            'oman': '🇴🇲',
+            'bahrain': '🇧🇭',
+            'qatar': '🇶🇦',
+            'azerbaijan': '🇦🇿',
+            'uzbekistan': '🇺🇿',
+            'vietnam': '🇻🇳',
+            'cambodia': '🇰🇭',
+            'russia': '🇷🇺',
+        }
+        return flags.get(self.country, '🌍')
+
+
+class BookingChangeRequest(TimestampedModel):
+    """Model to handle booking change requests from agents/users"""
+    
+    class RequestType(models.TextChoices):
+        DATE_CHANGE = 'date_change', _('Date Change')
+        NAME_CORRECTION = 'name_correction', _('Name Correction')
+        FLIGHT_CHANGE = 'flight_change', _('Flight Change')
+        SEAT_CHANGE = 'seat_change', _('Seat Change')
+        CANCELLATION = 'cancellation', _('Cancellation Request')
+        REFUND = 'refund', _('Refund Request')
+        OTHER = 'other', _('Other')
+    
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        PROCESSING = 'processing', _('Processing')
+        APPROVED = 'approved', _('Approved')
+        REJECTED = 'rejected', _('Rejected')
+        COMPLETED = 'completed', _('Completed')
+    
+    booking = models.ForeignKey(
+        'Booking',
+        on_delete=models.CASCADE,
+        related_name='change_requests',
+        verbose_name=_('Booking')
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='change_requests',
+        verbose_name=_('Requested By')
+    )
+    
+    request_type = models.CharField(
+        _('Request Type'),
+        max_length=20,
+        choices=RequestType.choices,
+        default=RequestType.OTHER
+    )
+    status = models.CharField(
+        _('Status'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    
+    # Request Details
+    current_value = models.TextField(_('Current Value'), blank=True, help_text=_('Current date/name/details'))
+    requested_value = models.TextField(_('Requested Value'), blank=True, help_text=_('New date/name/details'))
+    reason = models.TextField(_('Reason for Change'), blank=True)
+    
+    # Admin Response
+    admin_notes = models.TextField(_('Admin Notes'), blank=True)
+    processed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_change_requests',
+        verbose_name=_('Processed By')
+    )
+    processed_at = models.DateTimeField(_('Processed At'), null=True, blank=True)
+    
+    # Charges
+    change_fee = models.DecimalField(
+        _('Change Fee'),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+    
+    # Reference
+    reference_number = models.CharField(_('Reference Number'), max_length=50, unique=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('Booking Change Request')
+        verbose_name_plural = _('Booking Change Requests')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at'], name='change_req_status_idx'),
+            models.Index(fields=['booking', 'status'], name='change_req_booking_idx'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_number:
+            # Generate unique reference: CR + booking ref + timestamp
+            import random
+            timestamp = timezone.now().strftime('%m%d%H%M')
+            random_str = str(random.randint(100, 999))
+            booking_ref = self.booking.booking_reference[:6] if self.booking else 'XXXX'
+            self.reference_number = f'CR{booking_ref}{timestamp}{random_str}'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.reference_number} - {self.get_request_type_display()} ({self.get_status_display()})"
 

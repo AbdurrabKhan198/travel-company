@@ -19,6 +19,7 @@ urlpatterns = [
     path('faq/', views.faq, name='faq'),
     path('visit-visa/', views.visit_visa, name='visit_visa'),
     path('apply-visa/', views.apply_visa, name='apply_visa'),
+    path('visa-thanks/<str:booking_id>/', views.visa_thanks, name='visa_thanks'),
     path('umrah/', views.umrah, name='umrah'),
     path('umrah/thanks/<int:umrah_id>/', views.umrah_thanks, name='umrah_thanks'),
     path('apply-package/<str:package_name>/', views.apply_package, name='apply_package'),
@@ -35,6 +36,8 @@ urlpatterns = [
     path('payment/success/', views.payment_success, name='payment_success'),
     path('payment/failed/', views.payment_failed, name='payment_failed'),
     path('booking/confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
+    path('booking/<int:booking_id>/fare-rule/', views.fare_rule, name='fare_rule'),
+    path('booking/<int:booking_id>/change-request/', views.change_request, name='change_request'),
     path('ticket/<int:booking_id>/view/', views.view_ticket, name='view_ticket'),
     path('ticket/<int:booking_id>/pdf/', views.download_ticket_pdf, name='download_ticket_pdf'),
     path('ticket/<int:booking_id>/print/', views.print_ticket_pdf, name='print_ticket_pdf'),
@@ -58,6 +61,8 @@ urlpatterns = [
     # OTP Verification
     path('api/send-otp/', views.send_otp, name='send_otp'),
     path('api/verify-otp/', views.verify_otp, name='verify_otp'),
+    path('api/send-ticket-email/', views.send_ticket_email_api, name='send_ticket_email_api'),
+    path('ticket/<int:booking_id>/pdf/download/', views.download_ticket_pdf_file, name='download_ticket_pdf_file'),
     
     # Wallet
     path('wallet/recharge/', views.wallet_recharge, name='wallet_recharge'),

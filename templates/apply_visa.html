@@ -10,23 +10,24 @@
             opacity: 0;
             transform: translateY(30px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
-    
+
     .animate-fade-in-up {
         animation: fadeInUp 0.6s ease-out;
     }
-    
+
     .form-input {
         transition: all 0.3s ease;
     }
-    
+
     .form-input:focus {
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
 </style>
 {% endblock %}
@@ -45,78 +46,97 @@
             <p class="text-xl text-gray-600">Fill in your details to proceed with the visa application</p>
         </div>
 
+        {% if messages %}
+        <div class="mb-8 animate-fade-in-up">
+            {% for message in messages %}
+            <div
+                class="p-4 mb-4 rounded-xl {% if message.tags == 'error' %}bg-red-100 text-red-700 border-l-4 border-red-500{% else %}bg-green-100 text-green-700 border-l-4 border-green-500{% endif %}">
+                <div class="flex items-center">
+                    <i
+                        class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-3"></i>
+                    <p class="font-bold">{{ message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Visa Application Form -->
-        <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50 animate-fade-in-up">
+        <div
+            class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50 animate-fade-in-up">
             <form method="post" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
-                
+
                 <!-- Personal Information -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-l-4 border-blue-500">
                     <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                         <i class="fas fa-user-circle mr-3 text-blue-500"></i>
                         Personal Information
                     </h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-user mr-2"></i>Full Name <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="name" required
-                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                   placeholder="Enter your full name">
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                placeholder="Enter your full name">
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-envelope mr-2"></i>Email Address <span class="text-red-500">*</span>
                             </label>
                             <input type="email" name="email" required
-                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                   placeholder="your.email@example.com"
-                                   value="{% if user.is_authenticated %}{{ user.email }}{% endif %}">
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                placeholder="your.email@example.com"
+                                value="{% if user.is_authenticated %}{{ user.email }}{% endif %}">
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-phone mr-2"></i>Phone Number <span class="text-red-500">*</span>
                                 <span class="text-sm text-gray-500 font-normal">(10 digits only)</span>
                             </label>
-                            <input type="tel" 
-                                   name="phone" 
-                                   required
-                                   pattern="[0-9]{10}"
-                                   maxlength="10"
-                                   minlength="10"
-                                   inputmode="numeric"
-                                   placeholder="9876543210"
-                                   title="Please enter exactly 10 digits"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
-                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none">
+                            <input type="tel" name="phone" required pattern="[0-9]{10}" maxlength="10" minlength="10"
+                                inputmode="numeric" placeholder="9876543210" title="Please enter exactly 10 digits"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none">
                             <p class="text-xs text-gray-500 mt-1">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 Enter 10-digit mobile number
                             </p>
                         </div>
-                        
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-passport mr-2"></i>Passport Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="passport_number" required
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                placeholder="Enter your passport number">
+                        </div>
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-calendar-alt mr-2"></i>Travel Date <span class="text-red-500">*</span>
                             </label>
                             <input type="date" name="travel_date" required
-                                   class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                   id="travelDate">
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                id="travelDate">
                         </div>
                     </div>
                 </div>
 
                 <!-- Passport Documents Upload Section -->
-                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-l-4 border-purple-500" id="passport-upload-section" data-no-auto-hide="true">
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-l-4 border-purple-500"
+                    id="passport-upload-section" data-no-auto-hide="true">
                     <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                         <i class="fas fa-passport mr-3 text-purple-500"></i>
                         Passport Documents
                     </h3>
-                    
+
                     <!-- Photo Upload Section -->
                     <div class="bg-blue-50 rounded-xl p-5 border-2 border-blue-200 mb-4" data-no-auto-hide="true">
                         <h4 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
@@ -125,50 +145,54 @@
                         </h4>
                         <p class="text-sm text-gray-600 mb-4">
                             <i class="fas fa-info-circle mr-2 text-blue-500"></i>
-                            Please upload clear, high-quality photos. All photos must be in JPG, PNG, or PDF format (Max 5MB each).
+                            Please upload clear, high-quality photos. All photos must be in JPG, PNG, or PDF format (Max
+                            5MB each).
                         </p>
-                        
+
                         <div class="space-y-4">
                             <!-- Front Passport Photo -->
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    <i class="fas fa-id-card mr-2 text-purple-600"></i>Front Passport Photo <span class="text-red-500">*</span>
+                                    <i class="fas fa-id-card mr-2 text-purple-600"></i>Front Passport Photo <span
+                                        class="text-red-500">*</span>
                                 </label>
                                 <input type="file" name="passport_front" accept="image/*,.pdf" required
-                                       class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
+                                    class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
                                 <p class="text-xs text-gray-500 mt-1">
                                     <i class="fas fa-lightbulb mr-1 text-yellow-500"></i>
                                     Upload the front page of your passport (photo page)
                                 </p>
                             </div>
-                            
+
                             <!-- Back Passport Photo -->
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    <i class="fas fa-id-card mr-2 text-purple-600"></i>Back Passport Photo <span class="text-red-500">*</span>
+                                    <i class="fas fa-id-card mr-2 text-purple-600"></i>Back Passport Photo <span
+                                        class="text-red-500">*</span>
                                 </label>
                                 <input type="file" name="passport_back" accept="image/*,.pdf" required
-                                       class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
+                                    class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
                                 <p class="text-xs text-gray-500 mt-1">
                                     <i class="fas fa-lightbulb mr-1 text-yellow-500"></i>
                                     Upload the back page of your passport (address page)
                                 </p>
                             </div>
-                            
+
                             <!-- Passport Size Photo -->
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    <i class="fas fa-user-circle mr-2 text-purple-600"></i>Passport Size Photo (Candidate) <span class="text-red-500">*</span>
+                                    <i class="fas fa-user-circle mr-2 text-purple-600"></i>Passport Size Photo
+                                    (Candidate) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="file" name="passport_size_photo" accept="image/*" required
-                                       class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
+                                    class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none">
                                 <p class="text-xs text-gray-500 mt-1">
                                     <i class="fas fa-lightbulb mr-1 text-yellow-500"></i>
                                     Upload a recent passport-size photo (2x2 inches, white background, clear face)
                                 </p>
                             </div>
                         </div>
-                        
+
                         <!-- Example Section -->
                         <div class="mt-5 bg-white rounded-lg p-4 border-2 border-dashed border-blue-300">
                             <h5 class="font-bold text-gray-800 mb-3 flex items-center">
@@ -181,27 +205,31 @@
                                         <i class="fas fa-id-card text-4xl text-purple-500 mb-2"></i>
                                         <p class="font-semibold text-gray-700">Front Passport</p>
                                     </div>
-                                    <p class="text-xs text-gray-600">Clear photo of passport front page with your photo and details visible</p>
+                                    <p class="text-xs text-gray-600">Clear photo of passport front page with your photo
+                                        and details visible</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="bg-gray-100 rounded-lg p-3 mb-2">
                                         <i class="fas fa-id-card text-4xl text-purple-500 mb-2"></i>
                                         <p class="font-semibold text-gray-700">Back Passport</p>
                                     </div>
-                                    <p class="text-xs text-gray-600">Clear photo of passport back page with address and other details</p>
+                                    <p class="text-xs text-gray-600">Clear photo of passport back page with address and
+                                        other details</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="bg-gray-100 rounded-lg p-3 mb-2">
                                         <i class="fas fa-user-circle text-4xl text-purple-500 mb-2"></i>
                                         <p class="font-semibold text-gray-700">Passport Size Photo</p>
                                     </div>
-                                    <p class="text-xs text-gray-600">2x2 inches, white background, professional photo, face clearly visible</p>
+                                    <p class="text-xs text-gray-600">2x2 inches, white background, professional photo,
+                                        face clearly visible</p>
                                 </div>
                             </div>
                             <div class="mt-4 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
                                 <p class="text-xs text-yellow-800">
                                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                                    <strong>Important:</strong> All photos must be clear, well-lit, and in focus. Blurry or unclear photos may delay your visa processing.
+                                    <strong>Important:</strong> All photos must be clear, well-lit, and in focus. Blurry
+                                    or unclear photos may delay your visa processing.
                                 </p>
                             </div>
                         </div>
@@ -214,24 +242,26 @@
                         <i class="fas fa-plane mr-3 text-green-500"></i>
                         Visa Details
                     </h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-clock mr-2"></i>Duration <span class="text-red-500">*</span>
                             </label>
                             <select name="duration" required
-                                    class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:outline-none"
-                                    onchange="updatePrice(this)">
+                                class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:outline-none"
+                                onchange="updatePrice(this)">
                                 <option value="">Select Duration</option>
                                 {% for dur in visa.durations %}
-                                <option value="{{ dur.days }}" data-price="{{ dur.price }}" {% if duration == dur.days|stringformat:"s" %}selected{% endif %}>
-                                    {{ dur.days }} Days{% if dur.entry %} ({{ dur.entry }}){% endif %} - ₹{{ dur.price|floatformat:0 }}
+                                <option value="{{ dur.days }}" data-price="{{ dur.price }}" {% if
+                                    duration==dur.days|stringformat:"s" %}selected{% endif %}>
+                                    {{ dur.days }} Days{% if dur.entry %} ({{ dur.entry }}){% endif %} - ₹{{
+                                    dur.price|floatformat:0 }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-rupee-sign mr-2"></i>Total Price
@@ -241,7 +271,8 @@
                                     ₹{% if price %}{{ price }}{% else %}0{% endif %}
                                 </p>
                             </div>
-                            <input type="hidden" name="price" id="priceInput" value="{% if price %}{{ price }}{% else %}0{% endif %}">
+                            <input type="hidden" name="price" id="priceInput"
+                                value="{% if price %}{{ price }}{% else %}0{% endif %}">
                         </div>
                     </div>
                 </div>
@@ -252,14 +283,14 @@
                         <i class="fas fa-map-marker-alt mr-3 text-amber-500"></i>
                         Address
                     </h3>
-                    
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-home mr-2"></i>Full Address <span class="text-red-500">*</span>
                         </label>
                         <textarea name="address" required rows="3"
-                                  class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-amber-500 focus:outline-none"
-                                  placeholder="Enter your complete address"></textarea>
+                            class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-amber-500 focus:outline-none"
+                            placeholder="Enter your complete address"></textarea>
                     </div>
                 </div>
 
@@ -269,19 +300,79 @@
                         <i class="fas fa-sticky-note mr-2"></i>Additional Notes (Optional)
                     </label>
                     <textarea name="notes" rows="3"
-                              class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                              placeholder="Any special requirements or notes..."></textarea>
+                        class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                        placeholder="Any special requirements or notes..."></textarea>
+                </div>
+
+                <!-- Payment Method Selection -->
+                <div
+                    class="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-6 border-l-4 border-blue-600 shadow-sm">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-wallet mr-3 text-blue-600"></i>
+                        Select Payment Method
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Cash Balance -->
+                        <label
+                            class="relative flex flex-col p-4 bg-white rounded-xl border-2 border-gray-100 cursor-pointer hover:border-blue-500 transition-all group">
+                            <input type="radio" name="payment_method" value="cash_balance" required
+                                class="absolute top-4 right-4 h-5 w-5 text-blue-600 focus:ring-blue-500">
+                            <div class="flex flex-col h-full">
+                                <span class="text-lg font-bold text-gray-800 mb-1">Cash Balance</span>
+                                <span class="text-sm text-gray-500 mb-2">Pay using your wallet balance</span>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <span class="text-xs font-semibold text-gray-400 uppercase">Available</span>
+                                    <p class="text-lg font-black text-blue-600">₹{{ cash_balance|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- OD Wallet -->
+                        {% if has_od_wallet and has_od_wallet_access %}
+                        <label
+                            class="relative flex flex-col p-4 bg-white rounded-xl border-2 border-gray-100 cursor-pointer hover:border-purple-500 transition-all group">
+                            <input type="radio" name="payment_method" value="od_wallet"
+                                class="absolute top-4 right-4 h-5 w-5 text-purple-600 focus:ring-purple-500">
+                            <div class="flex flex-col h-full">
+                                <span class="text-lg font-bold text-gray-800 mb-1">OD Wallet</span>
+                                <span class="text-sm text-gray-500 mb-2">Pay using overdraft facility</span>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <span class="text-xs font-semibold text-gray-400 uppercase">Available</span>
+                                    <p class="text-lg font-black text-purple-600">₹{{ od_wallet_balance|floatformat:2 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                        {% endif %}
+
+                        <!-- Online Payment -->
+                        <label
+                            class="relative flex flex-col p-4 bg-white rounded-xl border-2 border-gray-100 cursor-pointer hover:border-green-500 transition-all group">
+                            <input type="radio" name="payment_method" value="easebuzz"
+                                class="absolute top-4 right-4 h-5 w-5 text-green-600 focus:ring-green-500">
+                            <div class="flex flex-col h-full">
+                                <span class="text-lg font-bold text-gray-800 mb-1">Online Pay</span>
+                                <span class="text-sm text-gray-500 mb-2">Pay using UPI, Card, Net Banking</span>
+                                <div class="mt-auto pt-3 border-t border-gray-100 flex items-center space-x-2">
+                                    <img src="{% static 'images/payment-icons.png' %}" alt="Payments"
+                                        class="h-6 opacity-70 grayscale group-hover:grayscale-0 transition-all"
+                                        onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/2/24/Easebuzz-logo.png'; this.style.height='15px'">
+                                </div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Submit Button -->
                 <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <button type="submit" 
-                            class="flex-1 px-8 py-4  text-blue-300 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
-                        <i class="fas fa-paper-plane"></i>
-                        <span>Submit Application</span>
+                    <button type="submit"
+                        class="flex-1 px-8 py-4  text-blue-300 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Pay & Submit Application</span>
                     </button>
-                    <a href="{% url 'visit_visa' %}" 
-                       class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                    <a href="{% url 'visit_visa' %}"
+                        class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2">
                         <i class="fas fa-arrow-left"></i>
                         <span>Back</span>
                     </a>
@@ -298,7 +389,7 @@
         document.getElementById('priceDisplay').textContent = '₹' + parseInt(price).toLocaleString('en-IN');
         document.getElementById('priceInput').value = price;
     }
-    
+
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     const travelDateInput = document.querySelector('input[name="travel_date"]');
@@ -307,4 +398,3 @@
     }
 </script>
 {% endblock %}
-

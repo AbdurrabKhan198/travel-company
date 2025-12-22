@@ -167,6 +167,34 @@
         #navbar img:hover {
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
         }
+
+        /* Mobile Navbar Fix - Side by side buttons */
+        @media (max-width: 1023px) {
+            .navbar-right-section {
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+                flex-wrap: nowrap !important;
+            }
+
+            .navbar-right-section>* {
+                flex-shrink: 0;
+            }
+
+            /* Make user button smaller on mobile */
+            .navbar-right-section .relative.group button {
+                padding: 0.35rem 0.5rem;
+            }
+
+            .navbar-right-section .relative.group button .w-8 {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+
+            #mobile-menu-btn {
+                padding: 0.35rem;
+            }
+        }
     </style>
 </head>
 
@@ -235,10 +263,11 @@
                 </div>
 
                 <!-- Right Side Menu - Goibibo Style -->
-                <div class="flex items-center space-x-4 ml-auto">
+                <div class="navbar-right-section flex items-center ml-auto"
+                    style="display: flex !important; flex-wrap: nowrap !important; gap: 8px !important; align-items: center !important;">
                     <!-- Sales Representative -->
                     {% if sales_representatives %}
-                    <div class="relative group hidden md:block">
+                                <div class="relative group hidden md:block">
                         <button
                             class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 flex items-center space-x-2">
                             <i class="fas fa-headset mr-2 text-sky-500"></i>
@@ -284,14 +313,14 @@
                         <i class="fas fa-calendar-check mr-2 text-sky-500"></i>
                         <span>My Trips</span>
                     </a>
-                    <div class="relative group">
+                    <div class="relative group" style="flex-shrink: 0;">
                         <button
-                            class="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            class="flex items-center space-x-1 px-2 py-1 md:px-4 md:py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 transition-all duration-200 shadow-lg">
                             <div
-                                class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-semibold text-sm">
+                                class="w-6 h-6 md:w-8 md:h-8 bg-white/20 rounded-full flex items-center justify-center font-semibold text-xs md:text-sm">
                                 {% if user.profile and user.profile.full_name %}{{ user.profile.full_name|slice:":1"|upper }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}</div>
                             <span class="hidden md:block font-medium">{% if user.profile and user.profile.full_name %}{{ user.profile.full_name }}{% else %}{{ user.username }}{% endif %}</span>
-                            <i class="fas fa-chevron-down text-xs"></i>
+                            <i class="fas fa-chevron-down text-xs hidden md:inline"></i>
                         </button>
                         <div
                             class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50 max-h-[85vh] flex flex-col">
@@ -315,7 +344,7 @@
                                             class="text-xs font-bold {% if od_wallet_balance < 0 %}text-red-600{% else %}text-amber-600{% endif %}">{% if od_wallet_balance < 0 %}-₹{{ od_wallet_balance|floatformat:0|slice:"1:" }}{% else %}₹{{ od_wallet_balance|floatformat:0 }}{% endif %}</span>
                                     </div>
                                     {% if od_wallet_days_remaining is not None and not od_wallet_is_expired %}
-                                    <div class="text-xs text-gray-500 mt-1">{% if od_wallet_days_remaining == 0 %}Expires Today{% elif od_wallet_days_remaining == 1 %}1 Day Left{% else %}{{ od_wallet_days_remaining }} Days Left{% endif %}</div>
+                                <div class="text-xs text-gray-500 mt-1">{% if od_wallet_days_remaining == 0 %}Expires Today{% elif od_wallet_days_remaining == 1 %}1 Day Left{% else %}{{ od_wallet_days_remaining }} Days Left{% endif %}</div>
                                     {% endif %}
                             </div>
                             <a href="{% url 'wallet_history' %}?type=od"
@@ -323,7 +352,7 @@
                                 <i class="fas fa-history mr-2 text-amber-500"></i> OD Wallet History
                             </a>
                             {% endif %}
-                            <div class="px-4 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-400">
+                                <div class="px-4 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-400">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-xs font-semibold text-gray-600">Cash Balance</span>
                                     <span class="text-xs font-bold text-blue-600">₹{{ cash_balance|floatformat:0 }}</span>
@@ -350,27 +379,29 @@
                             </a>
                         </div>
                     </div>
-                    {% else %}
-                    <!-- Login and Signup buttons for unauthenticated users -->
-                    <a href="{% url 'login' %}"
-                        class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
-                        <i class="fas fa-sign-in-alt mr-2"></i>
-                        <span>Login</span>
-                    </a>
-                    <a href="{% url 'signup' %}"
-                        class="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hidden md:flex items-center space-x-2">
-                        <i class="fas fa-user-plus mr-2"></i>
-                        <span>Sign Up</span>
-                    </a>
-                    {% endif %}
-
-                    <!-- Mobile Menu Button -->
-                    <button id="mobile-menu-btn"
-                        class="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
                 </div>
+                {% else %}
+                <!-- Login and Signup buttons for unauthenticated users -->
+                <a href="{% url 'login' %}"
+                    class="px-4 py-2 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all duration-200 hidden md:flex items-center space-x-2">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    <span>Login</span>
+                </a>
+                <a href="{% url 'signup' %}"
+                    class="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hidden md:flex items-center space-x-2">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    <span>Sign Up</span>
+                </a>
+                {% endif %}
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn"
+                    class="lg:hidden p-1 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                    style="flex-shrink: 0;">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
             </div>
+        </div>
         </div>
 
         <!-- Mobile Menu - Visible to everyone -->
@@ -401,12 +432,12 @@
                     <span>Umrah</span>
                 </a>
                 {% if sales_representatives %}
-                <div class="border-t border-gray-200 pt-2 mt-2">
+                                <div class="border-t border-gray-200 pt-2 mt-2">
                     <div class="px-4 py-2">
                         <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Your Sales
                             Representative</h3>
                         {% for sales_rep in sales_representatives %}
-                        <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
+                                <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
                             <p class="font-semibold text-gray-900">{{ sales_rep.name }}</p>
                             <a href="tel:{{ sales_rep.phone }}"
                                 class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
@@ -419,7 +450,7 @@
                 {% endif %}
                 <!-- User menu items - Show based on authentication -->
                 {% if user.is_authenticated and user.is_approved %}
-                <div class="border-t border-gray-200 pt-2 mt-2">
+                                <div class="border-t border-gray-200 pt-2 mt-2">
                     <a href="{% url 'dashboard' %}"
                         class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                         <i class="fas fa-user-circle text-lg"></i>
@@ -437,7 +468,7 @@
                     </a>
                 </div>
                 {% else %}
-                <div class="border-t border-gray-200 pt-2 mt-2">
+                                <div class="border-t border-gray-200 pt-2 mt-2">
                     <a href="{% url 'login' %}"
                         class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-sky-600 hover:bg-sky-50 transition-all">
                         <i class="fas fa-sign-in-alt text-lg"></i>
@@ -456,9 +487,9 @@
 
     <!-- Messages -->
     {% if messages %}
-    <div class="container mx-auto px-4 mt-24">
+                                <div class="container mx-auto px-4 mt-24">
         {% for message in messages %}
-        <div
+                                <div
             class="mb-4 p-4 rounded-xl shadow-lg animate-fade-in-up {% if message.tags == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% elif message.tags == 'success' %}bg-green-50 border-l-4 border-green-500 text-green-700{% elif message.tags == 'warning' %}bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700{% else %}bg-blue-50 border-l-4 border-blue-500 text-blue-700{% endif %}">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">

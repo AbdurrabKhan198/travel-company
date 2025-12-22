@@ -263,13 +263,27 @@
 
     <!-- 3. Traveller Information -->
     <div class="section-box">
-        <div class="section-title">Traveller Information</div>
-        <div style="margin-bottom: 10px;">
-            {% for passenger in booking.passengers.all %}
-            <div>{{ forloop.counter }}. {{ passenger.get_title_display }} {{ passenger.first_name }} {{ passenger.last_name }}</div>
-            {% empty %}
-            <div>TBA TBA</div>
-            {% endfor %}
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div style="flex: 1;">
+                <div class="section-title">Traveller Information</div>
+                <div style="margin-bottom: 10px;">
+                    {% for passenger in booking.passengers.all %}
+                    <div>{{ forloop.counter }}. {{ passenger.get_title_display }} {{ passenger.first_name }} {{ passenger.last_name }}</div>
+                    {% empty %}
+                    <div>TBA TBA</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Airline Logo -->
+            <div style="text-align: right; min-width: 120px;">
+                <img src="{{ booking.schedule.route.carrier_number|airline_logo }}" 
+                     alt="{{ booking.schedule.route.carrier_number|airline_name_from_code }}" 
+                     style="max-height: 50px; max-width: 120px; object-fit: contain;"
+                     onerror="this.style.display='none'">
+                <div style="font-size: 8pt; font-weight: bold; color: #2c3e50; margin-top: 3px;">
+                    {{ booking.schedule.route.carrier_number|airline_name_from_code }}
+                </div>
+            </div>
         </div>
 
         <table class="flight-summary-table">
@@ -289,7 +303,7 @@
                 <td>{{ booking.schedule.route.carrier_number }}</td>
                 <td>{% if booking.schedule.route.departure_terminal %}{{ booking.schedule.route.departure_terminal }}{% else %}-{% endif %}</td>
                 <td>-</td>
-                <td>{{ booking.schedule.route.name|default:"IndiGo" }}</td>
+                <td>{{ booking.schedule.route.carrier_number|airline_name_from_code }}</td>
             </tr>
     </table>
     </div>
@@ -337,11 +351,13 @@
                 </tr>
                 <tr>
                     <td>
-                        {% if booking.schedule.route.airline_name %}
-                            {{ booking.schedule.route.airline_name }}
-                        {% else %}
-                            {{ booking.schedule.route.name|default:"IndiGo" }}
-                        {% endif %}
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <img src="{{ booking.schedule.route.carrier_number|airline_logo }}" 
+                                 alt="" 
+                                 style="height: 20px; width: auto;"
+                                 onerror="this.style.display='none'">
+                            <span>{{ booking.schedule.route.carrier_number|airline_name_from_code }}</span>
+                        </div>
                     </td>
                     <td>{% if booking.schedule.route.arrival_terminal %}{{ booking.schedule.route.arrival_terminal }}{% else %}-{% endif %}</td>
                     <td>{{ booking.schedule.departure_date|date:"d/m/Y" }} {{ booking.schedule.route.departure_time|time:"H:i" }}</td>
@@ -428,16 +444,22 @@
                 <td style="text-align: right; font-weight: bold; color: #10b981;">-₹{{ booking.discount_amount|floatformat:2 }}</td>
             </tr>
             {% endif %}
+            {% if discount_applied and discount_applied > 0 %}
+            <tr>
+                <td>Special Discount:</td>
+                <td style="text-align: right; font-weight: bold; color: #10b981;">-₹{{ discount_applied|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
             {% if convenience_fee and convenience_fee > 0 %}
             <tr>
-                <td>Convenience Fee:</td>
+                <td>Service Charge:</td>
                 <td style="text-align: right; font-weight: bold; color: #f59e0b;">+₹{{ convenience_fee|floatformat:2 }}</td>
             </tr>
             {% endif %}
             <tr style="border-top: 2px solid #2c3e50; margin-top: 5px;">
                 <td style="font-weight: bold; font-size: 11pt; padding-top: 10px;">Total Amount:</td>
                 <td style="text-align: right; font-weight: bold; font-size: 11pt; padding-top: 10px;">
-                    ₹{% if convenience_fee and convenience_fee > 0 %}{{ total_with_fee|floatformat:2 }}{% else %}{{ booking.total_amount|floatformat:2 }}{% endif %}
+                    ₹{% if show_modified_fare %}{{ total_with_fee|floatformat:2 }}{% else %}{{ booking.total_amount|floatformat:2 }}{% endif %}
                 </td>
             </tr>
         </table>
@@ -489,45 +511,129 @@
 
     <!-- Action Buttons Section (Only shown in web view, not in PDF) -->
     {% if is_web_view %}
-    <div class="action-buttons-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center;">
-        <h3 style="color: white; font-size: 14pt; margin-bottom: 20px; font-weight: bold;">
-            <i class="fas fa-tools"></i> Ticket Actions
-        </h3>
-        
-        <!-- Fare Input Section -->
-        <div id="fareInputSection" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto;">
-            <label style="display: block; color: #333; font-weight: bold; margin-bottom: 10px; font-size: 12pt;">
-                <i class="fas fa-rupee-sign"></i> Increase Fare (Convenience Fee)
-            </label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="number" id="convenienceFee" min="0" step="0.01" value="0" 
-                       placeholder="Enter amount" 
-                       style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 6px; font-size: 14pt; font-weight: bold; text-align: center;">
-                <span style="color: #333; font-weight: bold; font-size: 14pt;">₹</span>
-            </div>
-            <p id="totalWithFee" style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 13pt;">
-                Total: ₹{{ booking.total_amount|floatformat:2 }}
-            </p>
+    <style>
+    .ticket-toolbar{margin-top:30px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 50%,#1e3a5f 100%);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.3)}
+    .toolbar-header{background:linear-gradient(90deg,#f97316,#ea580c);padding:15px 20px;display:flex;align-items:center;gap:12px}
+    .toolbar-header h3{color:#fff;font-size:16pt;font-weight:700;margin:0}
+    .toolbar-header i{color:#fff;font-size:18pt}
+    .toolbar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:20px}
+    @media(max-width:900px){.toolbar-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:500px){.toolbar-grid{grid-template-columns:1fr}}
+    .action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 12px;border-radius:12px;border:none;cursor:pointer;font-weight:600;font-size:10pt;transition:all 0.3s;min-height:80px;text-decoration:none}
+    .action-btn i{font-size:20pt}
+    .action-btn:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(0,0,0,0.3)}
+    .btn-print{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff}
+    .btn-print-nf{background:linear-gradient(135deg,#10b981,#047857);color:#fff}
+    .btn-email{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
+    .btn-whatsapp{background:linear-gradient(135deg,#22c55e,#15803d);color:#fff}
+    .btn-email-nf{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff}
+    .btn-pdf{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff}
+    .btn-discount{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff}
+    .btn-fee{background:linear-gradient(135deg,#ec4899,#be185d);color:#fff}
+    .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center}
+    .modal-overlay.active{display:flex}
+    .modal-box{background:#fff;border-radius:16px;padding:30px;max-width:450px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+    .modal-title{font-size:16pt;font-weight:700;color:#1e3a5f;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .modal-input{width:100%;padding:14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14pt;font-weight:600;text-align:center;margin-bottom:15px}
+    .modal-input:focus{border-color:#3b82f6;outline:none}
+    .modal-btns{display:flex;gap:12px;margin-top:20px}
+    .modal-btn{flex:1;padding:12px;border:none;border-radius:10px;font-weight:600;font-size:11pt;cursor:pointer}
+    .modal-btn-primary{background:#3b82f6;color:#fff}
+    .modal-btn-cancel{background:#e5e7eb;color:#374151}
+    .current-value{background:#f0fdf4;border:2px solid #22c55e;border-radius:10px;padding:12px;margin-bottom:15px;text-align:center}
+    .current-value span{font-size:14pt;font-weight:700;color:#15803d}
+    </style>
+
+    <div class="ticket-toolbar no-print">
+        <div class="toolbar-header">
+            <i class="fas fa-ticket-alt"></i>
+            <h3>TICKET ACTIONS</h3>
         </div>
-        
-        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-            <!-- Print with Fare Button -->
-            <button onclick="printWithFare()" 
-                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 11pt; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;"
-                    onmouseover="this.style.transform='scale(1.05)'"
-                    onmouseout="this.style.transform='scale(1)'">
-                <i class="fas fa-print" style="font-size: 14pt;"></i>
-                <span>Print with Fare</span>
+        <div class="toolbar-grid">
+            <button class="action-btn btn-print" onclick="printEticket()">
+                <i class="fas fa-print"></i>
+                <span>Print E-ticket</span>
             </button>
-            
-            <!-- Print without Fare Button -->
-            <button onclick="printWithoutFare()" 
-                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 11pt; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;"
-                    onmouseover="this.style.transform='scale(1.05)'"
-                    onmouseout="this.style.transform='scale(1)'">
-                <i class="fas fa-file-pdf" style="font-size: 14pt;"></i>
-                <span>Print without Fare</span>
+            <button class="action-btn btn-print-nf" onclick="printEticketNoFare()">
+                <i class="fas fa-file-alt"></i>
+                <span>Print E-ticket Without Fare</span>
             </button>
+            <button class="action-btn btn-email" onclick="emailEticket()">
+                <i class="fas fa-envelope"></i>
+                <span>Email E-ticket</span>
+            </button>
+            <button class="action-btn btn-whatsapp" onclick="whatsappEticket()">
+                <i class="fab fa-whatsapp"></i>
+                <span>WhatsApp E-ticket</span>
+            </button>
+            <button class="action-btn btn-email-nf" onclick="emailEticketNoFare()">
+                <i class="fas fa-envelope-open"></i>
+                <span>Email E-ticket Without Fare</span>
+            </button>
+            <button class="action-btn btn-pdf" onclick="generatePDF()">
+                <i class="fas fa-file-pdf"></i>
+                <span>Generate PDF</span>
+            </button>
+            <button class="action-btn btn-discount" onclick="openDiscountModal()">
+                <i class="fas fa-percentage"></i>
+                <span>Add Discount</span>
+            </button>
+            <button class="action-btn btn-fee" onclick="openFeeModal()">
+                <i class="fas fa-edit"></i>
+                <span>Edit Transaction Fee</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Discount Modal -->
+    <div class="modal-overlay" id="discountModal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-percentage" style="color:#f59e0b"></i> Add Discount</div>
+            <div class="current-value">Current Total: <span>₹{{ booking.total_amount|floatformat:2 }}</span></div>
+            <input type="number" class="modal-input" id="discountAmount" placeholder="Enter discount amount (₹)" min="0" step="0.01">
+            <p id="discountResult" style="text-align:center;font-weight:600;color:#15803d"></p>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDiscountModal()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="applyDiscount()">Apply & Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Fee Modal -->
+    <div class="modal-overlay" id="feeModal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-rupee-sign" style="color:#ec4899"></i> Edit Transaction Fee</div>
+            <div class="current-value">Base Total: <span>₹{{ booking.total_amount|floatformat:2 }}</span></div>
+            <input type="number" class="modal-input" id="transactionFee" placeholder="Enter additional fee (₹)" min="0" step="0.01">
+            <p id="feeResult" style="text-align:center;font-weight:600;color:#3b82f6"></p>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeFeeModal()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="applyFee()">Apply & Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-envelope" style="color:#8b5cf6"></i> Email E-ticket</div>
+            <input type="email" class="modal-input" id="emailAddress" placeholder="Enter email address" style="text-align:left">
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEmailModal()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" id="emailSendBtn" onclick="sendEmail()">Send Email</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Modal -->
+    <div class="modal-overlay" id="whatsappModal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fab fa-whatsapp" style="color:#22c55e"></i> WhatsApp E-ticket</div>
+            <input type="tel" class="modal-input" id="whatsappNumber" placeholder="Enter WhatsApp number (with country code)" style="text-align:left">
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeWhatsappModal()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="sendWhatsapp()">Send via WhatsApp</button>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -535,7 +641,7 @@
     <style>
         /* Hide action buttons when printing */
         @media print {
-            .action-buttons-section {
+            .action-buttons-section, .ticket-toolbar, .modal-overlay, .no-print {
                 display: none !important;
             }
         }
@@ -548,31 +654,163 @@
     <script>
         const bookingId = {{ booking.id }};
         const baseTotal = {{ booking.total_amount }};
+        const bookingRef = '{{ booking.booking_reference }}';
+        let hideFareForEmail = false;
         
-        // Update total when fare changes
-        document.getElementById('convenienceFee').addEventListener('input', function() {
-            const fee = parseFloat(this.value) || 0;
-            const newTotal = baseTotal + fee;
-            document.getElementById('totalWithFee').textContent = `Total: ₹${newTotal.toFixed(2)}`;
-        });
-        
-        function printWithFare() {
-            const fee = parseFloat(document.getElementById('convenienceFee').value) || 0;
-            if (fee < 0) {
-                alert('Fare amount cannot be negative!');
-                return;
-            }
-            
-            // Open PDF with convenience fee parameter
-            const url = `/ticket/${bookingId}/pdf/?convenience_fee=${fee}&view=true`;
-            window.open(url, '_blank');
+        // Print E-ticket (with fare)
+        function printEticket() {
+            window.print();
         }
         
-        function printWithoutFare() {
-            // Open PDF without fare
+        // Print E-ticket without fare
+        function printEticketNoFare() {
             const url = `/ticket/${bookingId}/pdf/?hide_fare=true&view=true`;
             window.open(url, '_blank');
         }
+        
+        // Email E-ticket modal
+        function emailEticket() {
+            hideFareForEmail = false;
+            document.getElementById('emailModal').classList.add('active');
+        }
+        
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+            document.getElementById('emailAddress').value = '';
+        }
+        
+        function sendEmail() {
+            const email = document.getElementById('emailAddress').value.trim();
+            if (!email) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            const btn = document.getElementById('emailSendBtn');
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+            
+            const hideFare = hideFareForEmail ? '&hide_fare=true' : '';
+            fetch(`/api/send-ticket-email/?booking_id=${bookingId}&email=${encodeURIComponent(email)}${hideFare}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('E-ticket sent successfully to ' + email);
+                        closeEmailModal();
+                    } else {
+                        alert('Failed to send email: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    alert('Error sending email. Please try again.');
+                })
+                .finally(() => {
+                    btn.textContent = 'Send Email';
+                    btn.disabled = false;
+                });
+        }
+        
+        // Email E-ticket without fare
+        function emailEticketNoFare() {
+            hideFareForEmail = true;
+            document.getElementById('emailModal').classList.add('active');
+        }
+        
+        // WhatsApp E-ticket
+        function whatsappEticket() {
+            document.getElementById('whatsappModal').classList.add('active');
+        }
+        
+        function closeWhatsappModal() {
+            document.getElementById('whatsappModal').classList.remove('active');
+            document.getElementById('whatsappNumber').value = '';
+        }
+        
+        function sendWhatsapp() {
+            const phone = document.getElementById('whatsappNumber').value.trim().replace(/[^0-9]/g, '');
+            if (!phone || phone.length < 10) {
+                alert('Please enter a valid phone number');
+                return;
+            }
+            const ticketUrl = window.location.href;
+            const message = encodeURIComponent(`Your E-Ticket for booking ${bookingRef} is ready!\n\nView/Download: ${ticketUrl}\n\nThank you for choosing us!`);
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+            closeWhatsappModal();
+        }
+        
+        // Generate PDF
+        function generatePDF() {
+            const url = `/ticket/${bookingId}/pdf/download/`;
+            window.open(url, '_blank');
+        }
+        
+        // Discount Modal
+        function openDiscountModal() {
+            document.getElementById('discountModal').classList.add('active');
+            document.getElementById('discountAmount').value = '';
+            document.getElementById('discountResult').textContent = '';
+        }
+        
+        function closeDiscountModal() {
+            document.getElementById('discountModal').classList.remove('active');
+        }
+        
+        document.getElementById('discountAmount').addEventListener('input', function() {
+            const discount = parseFloat(this.value) || 0;
+            const newTotal = Math.max(0, baseTotal - discount);
+            document.getElementById('discountResult').textContent = `New Total: ₹${newTotal.toFixed(2)}`;
+        });
+        
+        function applyDiscount() {
+            const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+            if (discount < 0) {
+                alert('Discount cannot be negative');
+                return;
+            }
+            if (discount > baseTotal) {
+                alert('Discount cannot exceed total amount');
+                return;
+            }
+            const url = `/ticket/${bookingId}/pdf/?discount=${discount}&view=true`;
+            window.open(url, '_blank');
+            closeDiscountModal();
+        }
+        
+        // Transaction Fee Modal
+        function openFeeModal() {
+            document.getElementById('feeModal').classList.add('active');
+            document.getElementById('transactionFee').value = '';
+            document.getElementById('feeResult').textContent = '';
+        }
+        
+        function closeFeeModal() {
+            document.getElementById('feeModal').classList.remove('active');
+        }
+        
+        document.getElementById('transactionFee').addEventListener('input', function() {
+            const fee = parseFloat(this.value) || 0;
+            const newTotal = baseTotal + fee;
+            document.getElementById('feeResult').textContent = `New Total: ₹${newTotal.toFixed(2)}`;
+        });
+        
+        function applyFee() {
+            const fee = parseFloat(document.getElementById('transactionFee').value) || 0;
+            if (fee < 0) {
+                alert('Fee cannot be negative');
+                return;
+            }
+            const url = `/ticket/${bookingId}/pdf/?convenience_fee=${fee}&view=true`;
+            window.open(url, '_blank');
+            closeFeeModal();
+        }
+        
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
     </script>
     {% endif %}
 

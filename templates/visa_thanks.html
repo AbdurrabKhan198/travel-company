@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Application Submitted - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes checkAnimation {
+        0% {
+            transform: scale(0);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    .animate-check {
+        animation: checkAnimation 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    .success-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1.5rem;
+        border-radius: 9999px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fcd34d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 flex items-center justify-center py-12 px-4">
+    <div class="max-w-2xl w-full animate-fade-in-up">
+        <div class="glass-card p-8 md:p-12 text-center">
+            <div class="success-icon animate-check">
+                <i class="fas fa-check text-white text-5xl"></i>
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-black text-gray-900 mb-4">Application Submitted!</h1>
+            <p class="text-lg text-gray-600 mb-8">
+                Thank you, <span class="font-bold text-blue-600">{{ booking.full_name }}</span>. Your visa application
+                for {{ booking.get_country_display }} has been successfully received.
+            </p>
+
+            <div class="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Reference ID</p>
+                        <p class="font-mono text-lg font-bold text-gray-900">{{ booking.reference_id }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Status</p>
+                        <span class="status-badge status-pending">
+                            <i class="fas fa-clock mr-2"></i> {{ booking.get_status_display }}
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Destination</p>
+                        <p class="font-bold text-gray-900">{{ booking.get_country_flag }} {{ booking.get_country_display
+                            }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Visa Duration</p>
+                        <p class="font-bold text-gray-900">{{ booking.duration }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="flex items-start text-left space-x-3 text-sm text-gray-600">
+                    <div class="mt-1 flex-shrink-0 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-envelope text-[10px] text-blue-600"></i>
+                    </div>
+                    <p>A confirmation email has been sent to <span class="font-semibold">{{ booking.email }}</span>.</p>
+                </div>
+                <div class="flex items-start text-left space-x-3 text-sm text-gray-600">
+                    <div class="mt-1 flex-shrink-0 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-phone text-[10px] text-blue-600"></i>
+                    </div>
+                    <p>Our visa expert will contact you on <span class="font-semibold">{{ booking.phone }}</span> within
+                        24 hours.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="{% url 'dashboard' %}"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all duration-200 transform hover:-translate-y-1">
+                    <i class="fas fa-th-large mr-2"></i> My Dashboard
+                </a>
+                <a href="{% url 'homepage' %}"
+                    class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 px-8 rounded-xl border-2 border-gray-100 transition-all duration-200">
+                    <i class="fas fa-home mr-2"></i> Back to Home
+                </a>
+            </div>
+        </div>
+
+        <p class="text-center mt-8 text-gray-500 text-sm">
+            Need help? Contact our support at <a href="mailto:support@safarzone.com"
+                class="text-blue-600 font-semibold">support@safarzone.com</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -316,42 +316,13 @@ class UserRegisterForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         
-        # Generate Custom Client ID based on Company Name (Format: SZ + 2 chars of Company + Number)
-        # Get or create profile
-        profile, created = user.profile if hasattr(user, 'profile') else (None, False)
-        if not profile:
-            from .models import UserProfile
-            profile = UserProfile.objects.create(
-                user=user,
-                full_name=user.get_full_name() or user.email.split('@')[0]
-            )
-        
-        if not profile.client_id:
-            company_name = self.cleaned_data.get('company_name', '').strip()
-            if company_name:
-                # Get first 2 alphanumeric characters
-                prefix_agency = ''.join(c for c in company_name if c.isalnum())[:2].upper()
-                # Pad with 'X' if less than 2 characters
-                if len(prefix_agency) < 2:
-                    prefix_agency = (prefix_agency + 'XX')[:2]
-                
-                # Format: SZ + AgencyPrefix + Random String (no hyphens)
-                # Example: SZSA1A2B3C4D
-                import random
-                import string
-                
-                while True:
-                    # Generate 8 random alphanumeric characters (uppercase)
-                    random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-                    client_id = f'SZ{prefix_agency}{random_part}'
-                    
-                    if not UserProfile.objects.filter(client_id=client_id).exists():
-                        profile.client_id = client_id
-                        profile.save()
-                        break
-        
         if commit:
+            # First save the user
             user.save()
+            
+            # Import UserProfile
+            from .models import UserProfile
+            
             # Get or create user profile (signal might have already created it)
             profile, created = UserProfile.objects.get_or_create(
                 user=user,
@@ -385,6 +356,29 @@ class UserRegisterForm(UserCreationForm):
                 profile.aadhar_card_front = self.cleaned_data.get('aadhar_card_front')
             if self.cleaned_data.get('aadhar_card_back'):
                 profile.aadhar_card_back = self.cleaned_data.get('aadhar_card_back')
+            
+            # Generate Custom Client ID based on Company Name
+            if not profile.client_id:
+                company_name = self.cleaned_data.get('company_name', '').strip()
+                if company_name:
+                    # Get first 2 alphanumeric characters
+                    prefix_agency = ''.join(c for c in company_name if c.isalnum())[:2].upper()
+                    # Pad with 'X' if less than 2 characters
+                    if len(prefix_agency) < 2:
+                        prefix_agency = (prefix_agency + 'XX')[:2]
+                    
+                    # Format: SZ + AgencyPrefix + Random String (no hyphens)
+                    import random
+                    import string
+                    
+                    while True:
+                        # Generate 8 random alphanumeric characters (uppercase)
+                        random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                        client_id = f'SZ{prefix_agency}{random_part}'
+                        
+                        if not UserProfile.objects.filter(client_id=client_id).exists():
+                            profile.client_id = client_id
+                            break
             
             profile.save()
         return user

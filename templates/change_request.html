@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Change Request - {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.change-request-container{min-height:100vh;background:linear-gradient(135deg,#fdf4ff 0%,#fae8ff 100%);padding:2rem 1rem}
+.change-card{background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);overflow:hidden;max-width:800px;margin:0 auto}
+.change-header{background:linear-gradient(135deg,#7c3aed 0%,#a855f7 100%);color:#fff;padding:1.5rem 2rem}
+.change-header h1{font-size:1.5rem;font-weight:700;margin:0}
+.change-header p{margin:0.5rem 0 0;opacity:0.9}
+.change-body{padding:2rem}
+.booking-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:1rem;margin-bottom:1.5rem;display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+@media(max-width:500px){.booking-info{grid-template-columns:1fr}}
+.info-item .label{font-size:0.75rem;color:#6b7280;text-transform:uppercase}
+.info-item .value{font-size:1rem;font-weight:600;color:#1f2937}
+.form-group{margin-bottom:1.5rem}
+.form-group label{display:block;font-weight:600;color:#374151;margin-bottom:0.5rem}
+.form-group select,.form-group input,.form-group textarea{width:100%;padding:0.75rem 1rem;border:2px solid #e5e7eb;border-radius:10px;font-size:1rem}
+.form-group select:focus,.form-group input:focus,.form-group textarea:focus{border-color:#a855f7;outline:none}
+.form-group textarea{resize:vertical;min-height:100px}
+.submit-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.875rem 2rem;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:10px;font-weight:600;font-size:1rem;cursor:pointer;width:100%}
+.submit-btn:hover{background:linear-gradient(135deg,#6d28d9,#9333ea)}
+.back-link{display:inline-flex;align-items:center;gap:0.5rem;color:#7c3aed;text-decoration:none;font-weight:600;margin-top:1rem}
+.existing-requests{margin-top:2rem;border-top:1px solid #e5e7eb;padding-top:2rem}
+.existing-requests h3{font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem}
+.request-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;margin-bottom:0.75rem}
+.request-item .ref{font-weight:700;color:#7c3aed}
+.request-item .type{font-size:0.875rem;color:#374151}
+.request-item .date{font-size:0.75rem;color:#6b7280}
+.status-badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:600}
+.status-pending{background:#fef3c7;color:#92400e}
+.status-processing{background:#dbeafe;color:#1e40af}
+.status-approved{background:#d1fae5;color:#065f46}
+.status-rejected{background:#fee2e2;color:#991b1b}
+.status-completed{background:#e0e7ff;color:#3730a3}
+.note-box{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:1rem;margin-bottom:1.5rem}
+.note-box p{margin:0;font-size:0.875rem;color:#92400e}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="change-request-container">
+<div class="change-card">
+<div class="change-header">
+<h1><i class="fas fa-edit"></i> Submit Change Request</h1>
+<p>Booking: {{ booking.booking_reference }}</p>
+</div>
+<div class="change-body">
+
+<div class="booking-info">
+<div class="info-item">
+<div class="label">Flight</div>
+<div class="value">{{ booking.schedule.route.carrier_number }}</div>
+</div>
+<div class="info-item">
+<div class="label">Route</div>
+<div class="value">{{ booking.schedule.route.from_location }} → {{ booking.schedule.route.to_location }}</div>
+</div>
+<div class="info-item">
+<div class="label">Travel Date</div>
+<div class="value">{{ booking.schedule.departure_date|date:"d M Y" }}</div>
+</div>
+<div class="info-item">
+<div class="label">Passengers</div>
+<div class="value">{{ booking.passengers.count }} pax</div>
+</div>
+</div>
+
+<div class="note-box">
+<p><i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> Change requests are subject to availability and applicable charges. Our team will review and respond within 24-48 hours.</p>
+</div>
+
+<form method="POST">
+{% csrf_token %}
+
+<div class="form-group">
+<label for="request_type"><i class="fas fa-list"></i> Request Type</label>
+<select name="request_type" id="request_type" required>
+<option value="">-- Select Request Type --</option>
+{% for value, label in request_types %}
+<option value="{{ value }}">{{ label }}</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="form-group">
+<label for="current_value"><i class="fas fa-file-alt"></i> Current Details</label>
+<textarea name="current_value" id="current_value" placeholder="Enter current details (e.g., current date, current name, etc.)"></textarea>
+</div>
+
+<div class="form-group">
+<label for="requested_value"><i class="fas fa-exchange-alt"></i> Requested Changes</label>
+<textarea name="requested_value" id="requested_value" placeholder="Enter what you want to change to (e.g., new date, corrected name, etc.)" required></textarea>
+</div>
+
+<div class="form-group">
+<label for="reason"><i class="fas fa-comment-alt"></i> Reason for Change</label>
+<textarea name="reason" id="reason" placeholder="Please explain why you need this change"></textarea>
+</div>
+
+<button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Submit Request</button>
+</form>
+
+<a href="{% url 'my_trips' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back to My Trips</a>
+
+{% if existing_requests %}
+<div class="existing-requests">
+<h3><i class="fas fa-history"></i> Your Previous Requests</h3>
+{% for req in existing_requests %}
+<div class="request-item">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+<div>
+<span class="ref">{{ req.reference_number }}</span>
+<span class="type">- {{ req.get_request_type_display }}</span>
+</div>
+<span class="status-badge status-{{ req.status }}">{{ req.get_status_display }}</span>
+</div>
+<div class="date">Submitted: {{ req.created_at|date:"d M Y, h:i A" }}</div>
+{% if req.requested_value %}
+<p style="font-size:0.875rem;color:#4b5563;margin:0.5rem 0 0">{{ req.requested_value|truncatewords:20 }}</p>
+{% endif %}
+{% if req.admin_notes %}
+<p style="font-size:0.875rem;color:#059669;margin:0.5rem 0 0"><strong>Admin:</strong> {{ req.admin_notes }}</p>
+{% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+{% endblock %}

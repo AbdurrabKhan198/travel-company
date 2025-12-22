@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from functools import wraps
@@ -13,7 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf import settings
 from decimal import Decimal
-from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, PackageApplication
+from .models import Schedule, Route, Booking, Package, UserProfile, BookingPassenger, OTPVerification, Contact, ODWallet, ODWalletTransaction, CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, VisaBooking, Coupon
 from .forms import UserRegisterForm, UserLoginForm, ProfileUpdateForm, ContactForm, WalletRechargeForm, PasswordResetRequestForm, SetNewPasswordForm
 import random
 import string
@@ -38,7 +39,7 @@ try:
     # Try standard import first
     from easebuzz import Easebuzz
     EASEBUZZ_SDK_AVAILABLE = True
-    print("✅ Easebuzz SDK loaded successfully")
+    print("[OK] Easebuzz SDK loaded successfully")
 except ImportError:
     try:
         # Try with capital E (package folder name)
@@ -46,7 +47,7 @@ except ImportError:
         # Create alias for compatibility
         Easebuzz = EasebuzzAPIs
         EASEBUZZ_SDK_AVAILABLE = True
-        print("✅ Easebuzz SDK loaded successfully (using EasebuzzAPIs)")
+        print("[OK] Easebuzz SDK loaded successfully (using EasebuzzAPIs)")
     except ImportError as e:
         EASEBUZZ_SDK_AVAILABLE = False
         # Try to find where easebuzz might be installed
@@ -1300,6 +1301,7 @@ def apply_visa(request):
         selected_price = request.POST.get('price')
         travel_date = request.POST.get('travel_date')
         address = request.POST.get('address')
+        passport_number = request.POST.get('passport_number', 'PENDING')
         notes = request.POST.get('notes', '')
         
         # Handle file uploads
@@ -1353,11 +1355,131 @@ def apply_visa(request):
                 }
                 return render(request, 'apply_visa.html', context)
         
-        # Here you would save to database or send email
-        # Files are available in passport_front, passport_back, passport_size_photo
-        # For now, we'll just show a success message
-        messages.success(request, f'Your visa application for {selected_visa.get("name", country)} has been submitted successfully! We will contact you soon.')
-        return redirect('visit_visa')
+        # Get payment method
+        payment_method = request.POST.get('payment_method')
+        
+        # Save initially as PENDING
+        try:
+            visa_booking = VisaBooking.objects.create(
+                user=request.user,
+                full_name=name,
+                email=email,
+                phone=phone,
+                country=country.lower(),
+                duration=f"{selected_duration} Days",
+                price=Decimal(selected_price),
+                travel_date=travel_date,
+                address=address,
+                notes=notes,
+                passport_front=passport_front,
+                passport_back=passport_back,
+                passport_size_photo=passport_size_photo,
+                passport_number=passport_number,
+                status=VisaBooking.StatusChoices.PENDING,
+                payment_status=VisaBooking.PaymentStatus.PENDING
+            )
+            
+            # 1. Handle Wallet Payments (Cash Balance/OD Wallet)
+            if payment_method in ['cash_balance', 'od_wallet']:
+                try:
+                    if payment_method == 'od_wallet':
+                        wallet = ODWallet.objects.get(user=request.user, is_active=True)
+                        if wallet.is_expired():
+                            messages.error(request, 'OD Wallet has expired and cannot be used.')
+                            visa_booking.delete() # Cleanup
+                            return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+                        wallet_type = 'OD Wallet'
+                    else:
+                        wallet = CashBalanceWallet.objects.get(user=request.user)
+                        wallet_type = 'Cash Balance'
+                    
+                    if wallet.balance >= visa_booking.price:
+                        # Deduct from wallet
+                        wallet.deduct_balance(
+                            amount=visa_booking.price,
+                            transaction_type='payment',
+                            description=f'Visa Application Fee - {visa_booking.reference_id} ({visa_booking.get_country_display()})',
+                            reference_id=visa_booking.reference_id
+                        )
+                        
+                        # Mark as paid
+                        visa_booking.payment_status = VisaBooking.PaymentStatus.PAID
+                        visa_booking.payment_id = f'WALLET_{payment_method}_{visa_booking.reference_id}'
+                        visa_booking.save()
+                        
+                        messages.success(request, f'Payment successful using {wallet_type}! Visa application submitted.')
+                        return redirect('visa_thanks', booking_id=visa_booking.reference_id)
+                    else:
+                        messages.error(request, f'Insufficient {wallet_type} balance. Required: ₹{visa_booking.price}')
+                        visa_booking.delete() # Cleanup
+                        return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+                        
+                except Exception as e:
+                    messages.error(request, f'Wallet payment failed: {str(e)}')
+                    visa_booking.delete()
+                    return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+            
+            # 2. Handle Easebuzz Payment
+            elif payment_method == 'easebuzz':
+                easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+                easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
+                
+                if not easebuzz_merchant_key or not easebuzz_merchant_salt:
+                    messages.error(request, 'Online payment gateway not configured. Please use wallet payment.')
+                    visa_booking.delete()
+                    return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+                
+                try:
+                    import requests
+                    txnid = f"VISATXN_{visa_booking.id}_{int(timezone.now().timestamp())}"
+                    visa_booking.payment_id = txnid
+                    visa_booking.save()
+                    
+                    payment_url = getattr(settings, 'EASEBUZZ_PAYMENT_URL', 'https://pay.easebuzz.in/payment/initiateLink')
+                    
+                    payment_data = {
+                        'key': easebuzz_merchant_key,
+                        'txnid': txnid,
+                        'amount': f"{float(visa_booking.price):.2f}",
+                        'productinfo': f'Visa Application - {visa_booking.reference_id}',
+                        'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
+                        'email': visa_booking.email,
+                        'phone': str(10* '9' if not visa_booking.phone else visa_booking.phone)[-10:],
+                        'surl': request.build_absolute_uri(reverse('payment_success')),
+                        'furl': request.build_absolute_uri(reverse('payment_failed')),
+                        'udf1': 'visa', # Help identify this as a visa payment in callback
+                        'udf2': visa_booking.reference_id,
+                        'udf3': '', 'udf4': '', 'udf5': '', 'udf6': '', 'udf7': '', 'udf8': '', 'udf9': '', 'udf10': '',
+                    }
+                    
+                    # Generate hash (helper should be available in scope)
+                    payment_data['hash'] = generate_easebuzz_hash(payment_data, easebuzz_merchant_salt)
+                    
+                    # Call API
+                    response = requests.post(payment_url, data=payment_data)
+                    response_json = response.json()
+                    
+                    if response_json.get('status') == 1:
+                        return redirect(response_json.get('data'))
+                    else:
+                        error_msg = response_json.get('error_desc', 'Unknown error')
+                        messages.error(request, f'Payment initiation failed: {error_msg}')
+                        visa_booking.delete()
+                        return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+                        
+                except Exception as e:
+                    messages.error(request, f'Easebuzz redirection failed: {str(e)}')
+                    visa_booking.delete()
+                    return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+            
+            else:
+                messages.error(request, 'Invalid payment method selected.')
+                visa_booking.delete()
+                return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
+
+        except Exception as e:
+            messages.error(request, f'Error submitting application: {str(e)}')
+            return render(request, 'apply_visa.html', {**context, 'visa': selected_visa})
     
     context = {
         'country': country,
@@ -1368,6 +1490,12 @@ def apply_visa(request):
     return render(request, 'apply_visa.html', context)
 
 @login_required
+def visa_thanks(request, booking_id):
+    """Thank you page after visa application submission"""
+    booking = get_object_or_404(VisaBooking, reference_id=booking_id, user=request.user)
+    return render(request, 'visa_thanks.html', {'booking': booking})
+
+@login_required
 def about(request):
     return render(request, 'about.html')
 
@@ -1375,7 +1503,6 @@ def about(request):
 def umrah(request):
     """Umrah package inquiry form"""
     from .forms import UmrahForm
-    from .models import Umrah
     
     if request.method == 'POST':
         form = UmrahForm(request.POST)
@@ -1947,87 +2074,104 @@ def payment_success(request):
         return redirect('payment_failed')
     
     try:
-        # Find booking by txnid
-        bookings = Booking.objects.filter(notes__icontains=txnid)
         booking = None
-        for b in bookings:
-            try:
-                notes = json.loads(b.notes) if b.notes else {}
-                if notes.get('easebuzz_txnid') == txnid:
-                    booking = b
-                    break
-            except:
-                continue
+        visa_booking = None
         
-        if not booking:
-            messages.error(request, 'Booking not found.')
-            return redirect('dashboard')
-        
-        # Check if already paid
-        if booking.payment_status == Booking.PaymentStatus.PAID:
-            messages.info(request, 'This booking is already paid.')
-            return redirect('booking_confirmation', booking_id=booking.id)
-        
-        # Verify hash - include all fields from response except 'hash' itself
-        verification_data = {}
-        for key, value in data.items():
-            if key != 'hash' and value:  # Exclude hash and empty values
-                verification_data[key] = value
-        
-        print(f"Verifying hash...")
-        print(f"Verification data keys: {list(verification_data.keys())}")
-        hash_valid = verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value)
-        print(f"Hash verification result: {hash_valid}")
-        
-        if not hash_valid:
-            print("❌ Hash verification failed!")
-            messages.error(request, 'Payment verification failed. Please contact support.')
-            return redirect('payment_failed')
+        # 1. Identify which type of booking this is
+        if txnid.startswith('VISATXN_'):
+            # This is a Visa Booking
+            visa_booking = VisaBooking.objects.filter(payment_id=txnid).first()
+            if not visa_booking:
+                # Try finding by udf2 as backup
+                udf2 = data.get('udf2')
+                if udf2:
+                    visa_booking = VisaBooking.objects.filter(reference_id=udf2).first()
+            
+            if not visa_booking:
+                messages.error(request, 'Visa application not found.')
+                return redirect('dashboard')
+            
+            # Check price/amount
+            booking_amount = visa_booking.price
+            confirmation_url = reverse('visa_thanks', kwargs={'booking_id': visa_booking.reference_id})
+            
         else:
-            print("✅ Hash verification successful!")
-        
-        # Check payment status
-        if status != 'success':
-            messages.error(request, 'Payment was not successful.')
+            # This is a Flight Booking
+            bookings = Booking.objects.filter(notes__icontains=txnid)
+            for b in bookings:
+                try:
+                    notes = json.loads(b.notes) if b.notes else {}
+                    if notes.get('easebuzz_txnid') == txnid:
+                        booking = b
+                        break
+                except:
+                    continue
+            
+            if not booking:
+                messages.error(request, 'Flight booking not found.')
+                return redirect('dashboard')
+                
+            booking_amount = booking.total_amount
+            confirmation_url = reverse('booking_confirmation', kwargs={'booking_id': booking.id})
+
+        # 2. Verify hash
+        verification_data = {k: v for k, v in data.items() if k != 'hash' and v}
+        if not verify_easebuzz_hash(verification_data, easebuzz_merchant_salt, hash_value):
+            messages.error(request, 'Payment verification failed.')
             return redirect('payment_failed')
         
-        # Verify amount matches
-        if Decimal(amount) != booking.total_amount:
+        # 3. Check payment status
+        if status != 'success':
+            messages.error(request, f'Payment failed with status: {status}')
+            return redirect('payment_failed')
+        
+        # 4. Verify amount matches
+        # Easebuzz amount might be slightly different representation (e.g. 500.00 vs 500)
+        if Decimal(amount) != booking_amount:
             messages.error(request, 'Payment amount mismatch.')
             return redirect('payment_failed')
-        
-        # Update booking status
-        booking.payment_status = Booking.PaymentStatus.PAID
-        booking.status = Booking.Status.CONFIRMED
-        
-        # Update notes with payment info
-        try:
-            notes = json.loads(booking.notes) if booking.notes else {}
-        except:
-            notes = {}
-        notes['easebuzz_txnid'] = txnid
-        notes['easebuzz_amount'] = amount
-        notes['easebuzz_status'] = status
-        booking.notes = json.dumps(notes)
-        
-        # Update schedule - reduce available seats
-        seats_booked = booking.passengers.count() or 1
-        if booking.schedule.available_seats >= seats_booked:
-            booking.schedule.available_seats -= seats_booked
-            booking.schedule.save()
-        
-        booking.save()
-        
-        messages.success(request, f'Payment successful! Booking confirmed: {booking.booking_reference}')
-        # Render payment success page with booking details
-        context = {
-            'booking': booking,
-        }
-        return render(request, 'payment_success.html', context)
-        
+            
+        # 5. Handle Payment Success
+        if visa_booking:
+            visa_booking.payment_status = VisaBooking.PaymentStatus.PAID
+            visa_booking.payment_id = txnid
+            visa_booking.save()
+            messages.success(request, f'Payment successful! Visa application {visa_booking.reference_id} submitted.')
+            return redirect(confirmation_url)
+            
+        elif booking:
+            # Already paid check
+            if booking.payment_status == Booking.PaymentStatus.PAID:
+                return redirect(confirmation_url)
+                
+            booking.payment_status = Booking.PaymentStatus.PAID
+            booking.status = Booking.Status.CONFIRMED
+            
+            # Update notes
+            try:
+                notes = json.loads(booking.notes) if booking.notes else {}
+            except:
+                notes = {}
+            notes['easebuzz_txnid'] = txnid
+            notes['easebuzz_amount'] = amount
+            booking.notes = json.dumps(notes)
+            
+            # Update seats
+            seats_booked = booking.passengers.count() or 1
+            if booking.schedule.available_seats >= seats_booked:
+                booking.schedule.available_seats -= seats_booked
+                booking.schedule.save()
+            
+            booking.save()
+            messages.success(request, f'Payment successful! Flight booking {booking.booking_reference} confirmed.')
+            return redirect(confirmation_url)
+
     except Exception as e:
+        import traceback
+        print(f"Error in payment_success: {str(e)}")
+        print(traceback.format_exc())
         messages.error(request, f'Payment processing error: {str(e)}')
-        return redirect('payment_failed')
+        return redirect('dashboard')
 
 
 @login_required
@@ -2568,6 +2712,114 @@ def view_ticket(request, booking_id):
     return render(request, 'print_pdf.html', context)
 
 
+@login_required
+def fare_rule(request, booking_id):
+    """View fare rules for a booking - cancellation, refund policies"""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Get airline info for fare rules
+    airline_name = booking.schedule.route.airline_name or booking.schedule.route.name or 'Airline'
+    
+    # Standard fare rules (can be customized per airline in future)
+    fare_rules = {
+        'airline': airline_name,
+        'cancellation': [
+            {'timeframe': 'More than 72 hours before departure', 'fee': '₹500 per person', 'refund': 'Full refund minus cancellation fee'},
+            {'timeframe': '24-72 hours before departure', 'fee': '₹1000 per person', 'refund': '75% refund'},
+            {'timeframe': '4-24 hours before departure', 'fee': '₹1500 per person', 'refund': '50% refund'},
+            {'timeframe': 'Less than 4 hours before departure', 'fee': 'Non-refundable', 'refund': 'No refund'},
+        ],
+        'date_change': [
+            {'timeframe': 'More than 24 hours before departure', 'fee': '₹750 per person + fare difference'},
+            {'timeframe': 'Less than 24 hours before departure', 'fee': '₹1500 per person + fare difference'},
+        ],
+        'name_change': [
+            {'policy': 'Minor corrections (spelling)', 'fee': '₹250 per person'},
+            {'policy': 'Name change not allowed after 24 hours of booking', 'fee': 'Not applicable'},
+        ],
+        'baggage': {
+            'cabin': '7 kg',
+            'checkin': '15-25 kg (varies by fare type)',
+        },
+        'general': [
+            'All changes subject to availability',
+            'Infant tickets are non-refundable',
+            'Promotional fares may have stricter cancellation policies',
+            'Refunds processed within 7-10 business days',
+        ]
+    }
+    
+    context = {
+        'booking': booking,
+        'fare_rules': fare_rules,
+    }
+    return render(request, 'fare_rule.html', context)
+
+
+@login_required
+def change_request(request, booking_id):
+    """Submit a change request for a booking"""
+    from .models import BookingChangeRequest
+    
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Get existing change requests for this booking
+    existing_requests = BookingChangeRequest.objects.filter(booking=booking).order_by('-created_at')
+    
+    if request.method == 'POST':
+        request_type = request.POST.get('request_type')
+        current_value = request.POST.get('current_value', '')
+        requested_value = request.POST.get('requested_value', '')
+        reason = request.POST.get('reason', '')
+        
+        if not request_type:
+            messages.error(request, 'Please select a request type.')
+            return redirect('change_request', booking_id=booking_id)
+        
+        # Create the change request
+        change_req = BookingChangeRequest.objects.create(
+            booking=booking,
+            user=request.user,
+            request_type=request_type,
+            current_value=current_value,
+            requested_value=requested_value,
+            reason=reason,
+        )
+        
+        # Send email notification to admin
+        try:
+            from django.core.mail import send_mail
+            admin_email = settings.DEFAULT_FROM_EMAIL
+            subject = f'New Change Request - {change_req.reference_number}'
+            message = f'''
+New booking change request received:
+
+Reference: {change_req.reference_number}
+Booking: {booking.booking_reference}
+Request Type: {change_req.get_request_type_display()}
+Requested By: {request.user.email}
+
+Current Value: {current_value}
+Requested Value: {requested_value}
+Reason: {reason}
+
+Please process this request in the admin panel.
+            '''
+            send_mail(subject, message, admin_email, [admin_email], fail_silently=True)
+        except:
+            pass
+        
+        messages.success(request, f'Your change request has been submitted successfully. Reference: {change_req.reference_number}')
+        return redirect('change_request', booking_id=booking_id)
+    
+    context = {
+        'booking': booking,
+        'existing_requests': existing_requests,
+        'request_types': BookingChangeRequest.RequestType.choices,
+    }
+    return render(request, 'change_request.html', context)
+
+
 def link_callback(uri, rel):
     """
     Convert HTML URIs to absolute system paths so xhtml2pdf can access those resources
@@ -2835,13 +3087,25 @@ def _generate_ticket_pdf_old(booking, hide_fare=False, convenience_fee=0):
 @login_required
 @xframe_options_sameorigin
 def download_ticket_pdf(request, booking_id):
-    """View ticket HTML page (same as view_ticket)"""
+    """View ticket HTML page with fare modification options for B2B"""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
     # Only allow view for confirmed and paid bookings
     if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
         messages.error(request, 'Ticket can only be viewed for confirmed and paid bookings.')
         return redirect('dashboard')
+    
+    # Get query parameters for fare modifications
+    hide_fare = request.GET.get('hide_fare', 'false').lower() == 'true'
+    convenience_fee = Decimal(request.GET.get('convenience_fee', '0') or '0')
+    discount = Decimal(request.GET.get('discount', '0') or '0')
+    view_mode = request.GET.get('view', 'false').lower() == 'true'
+    
+    # Calculate modified total
+    base_total = booking.total_amount
+    modified_total = base_total + convenience_fee - discount
+    if modified_total < 0:
+        modified_total = Decimal('0')
     
     # Get comprehensive airport codes
     airport_codes = get_airport_codes()
@@ -2860,9 +3124,120 @@ def download_ticket_pdf(request, booking_id):
         'airport_codes': airport_codes,
         'user_profile': user_profile,
         'user': user,
-        'is_web_view': True,
+        'is_web_view': view_mode,
+        'hide_fare': hide_fare,
+        'convenience_fee': convenience_fee,
+        'discount_applied': discount,
+        'total_with_fee': modified_total,
+        'show_modified_fare': convenience_fee > 0 or discount > 0,
     }
     return render(request, 'print_pdf.html', context)
+
+
+@login_required
+def send_ticket_email_api(request):
+    """API endpoint to send ticket via email"""
+    from django.http import JsonResponse
+    from django.core.mail import EmailMessage
+    from django.template.loader import render_to_string
+    
+    booking_id = request.GET.get('booking_id')
+    email = request.GET.get('email')
+    hide_fare = request.GET.get('hide_fare', 'false') == 'true'
+    
+    if not booking_id or not email:
+        return JsonResponse({'success': False, 'error': 'Missing booking_id or email'})
+    
+    try:
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        
+        if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
+            return JsonResponse({'success': False, 'error': 'Invalid booking status'})
+        
+        # Get airport codes
+        airport_codes = get_airport_codes()
+        
+        # Get user profile
+        try:
+            user_profile = booking.user.profile
+        except:
+            user_profile = None
+        
+        # Render ticket HTML
+        context = {
+            'booking': booking,
+            'airport_codes': airport_codes,
+            'user_profile': user_profile,
+            'user': booking.user,
+            'is_web_view': False,
+            'hide_fare': hide_fare,
+        }
+        html_content = render_to_string('print_pdf.html', context)
+        
+        # Send email
+        subject = f'E-Ticket - {booking.booking_reference}'
+        email_msg = EmailMessage(
+            subject=subject,
+            body=html_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        email_msg.content_subtype = 'html'
+        email_msg.send(fail_silently=False)
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def download_ticket_pdf_file(request, booking_id):
+    """Download ticket as PDF file or redirect to printable view"""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
+        messages.error(request, 'Ticket can only be downloaded for confirmed and paid bookings.')
+        return redirect('dashboard')
+    
+    # Get airport codes
+    airport_codes = get_airport_codes()
+    
+    # Get user profile
+    try:
+        user_profile = booking.user.profile
+    except:
+        user_profile = None
+    
+    context = {
+        'booking': booking,
+        'airport_codes': airport_codes,
+        'user_profile': user_profile,
+        'user': booking.user,
+        'is_web_view': False,
+        'is_download': True,
+    }
+    
+    # Render HTML with print-friendly layout
+    html_content = render_to_string('print_pdf.html', context)
+    
+    # Return HTML page with auto-print script for browser printing
+    auto_print_html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>E-Ticket - {booking.booking_reference}</title>
+        <script>
+            window.onload = function() {{
+                window.print();
+            }};
+        </script>
+    </head>
+    <body>
+    {html_content}
+    </body>
+    </html>
+    '''
+    return HttpResponse(auto_print_html, content_type='text/html')
 
 
 @login_required
@@ -3033,6 +3408,9 @@ def edit_booking_fare(request, booking_id):
     return render(request, 'edit_booking_fare.html', context)
 
 
+from django.views.decorators.cache import never_cache
+
+@never_cache
 @require_http_methods(['GET', 'POST'])
 def user_login(request):
     """Handle user login with email and password"""
