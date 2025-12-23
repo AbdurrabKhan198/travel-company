@@ -95,7 +95,11 @@ class UserProfileAdmin(admin.ModelAdmin):
             'fields': ('address', 'city', 'state', 'country', 'pincode')
         }),
         ('🏛️ Company Information', {
-            'fields': ('company_name', 'gst_number'),
+            'fields': ('company_name', 'gst_number', 'logo'),
+        }),
+        ('📄 Aadhar Card Documents', {
+            'fields': ('aadhar_card_front', 'aadhar_card_back'),
+            'description': 'Aadhar card images uploaded during signup for verification.'
         }),
         ('📄 Identification', {
             'fields': ('id_type', 'id_number'),
@@ -128,10 +132,11 @@ class UserProfileAdmin(admin.ModelAdmin):
     
     def user_email(self, obj):
         if obj.user:
-            return format_html('<a href="/admin/travels/user/{}/change/">{}</a>', obj.user.id, obj.user.email)
+            return format_html('<a href="/admin/travels/userprofile/{}/change/">{}</a>', obj.id, obj.user.email)
         return 'N/A'
     user_email.short_description = 'Email'
     user_email.admin_order_field = 'user__email'
+    
     
     def is_approved_badge(self, obj):
         if obj.is_approved:
@@ -603,10 +608,13 @@ class CashBalanceWalletAdmin(admin.ModelAdmin):
     
     def user_email(self, obj):
         if obj.user:
-            return format_html(
-                '<a href="/admin/travels/user/{}/change/">{}</a>',
-                obj.user.id, obj.user.email
-            )
+            # Link to user profile instead of user
+            if hasattr(obj.user, 'profile'):
+                return format_html(
+                    '<a href="/admin/travels/userprofile/{}/change/">{}</a>',
+                    obj.user.profile.id, obj.user.email
+                )
+            return obj.user.email
         return 'N/A'
     user_email.short_description = 'User Email'
     
@@ -816,10 +824,12 @@ class CashBalanceTransactionAdmin(admin.ModelAdmin):
     def wallet_user(self, obj):
         if obj.cash_balance_wallet and obj.cash_balance_wallet.user:
             user = obj.cash_balance_wallet.user
-            return format_html(
-                '<a href="/admin/travels/user/{}/change/">{}</a>',
-                user.id, user.email
-            )
+            if hasattr(user, 'profile'):
+                return format_html(
+                    '<a href="/admin/travels/userprofile/{}/change/">{}</a>',
+                    user.profile.id, user.email
+                )
+            return user.email
         return 'N/A'
     wallet_user.short_description = 'User Email'
     
@@ -997,8 +1007,8 @@ class SalesRepresentativeAdmin(admin.ModelAdmin):
     actions = ['activate_sales_reps', 'deactivate_sales_reps']
     
     def assigned_users_count(self, obj):
-        return obj.assigned_users.count()
-    assigned_users_count.short_description = 'Assigned Users'
+        return obj.assigned_agencies.count()
+    assigned_users_count.short_description = 'Assigned Agencies'
     
     def activate_sales_reps(self, request, queryset):
         queryset.update(is_active=True)
