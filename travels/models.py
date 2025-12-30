@@ -249,9 +249,9 @@ class UserProfile(TimestampedModel):
             prefix_agency = (prefix_agency + 'XX')[:2]
         
         while True:
-            # Format: SZ + CompanyPrefix + Random String (no hyphens)
-            # Example: SZSA1A2B3C4D
-            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            # Format: SZ + CompanyPrefix(2) + Random(4) = 8 characters total
+            # Example: SZSA1A2B
+            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
             client_id = f'SZ{prefix_agency}{random_part}'
             
             # Check if this ID already exists
@@ -434,6 +434,11 @@ class Route(TimestampedModel):
         ('international', _('International')),
     ]
     
+    FLIGHT_TYPE_CHOICES = [
+        ('direct', _('Direct')),
+        ('via', _('Via/Connecting')),
+    ]
+    
     TRANSPORT_TYPE_CHOICES = [
         ('flight', _('Flight')),
     ]
@@ -449,6 +454,12 @@ class Route(TimestampedModel):
     arrival_time = models.TimeField(_('arrival time'))
     duration = models.DurationField(_('duration'), help_text=_('Format: HH:MM:SS'))
     route_type = models.CharField(_('route type'), max_length=20, choices=ROUTE_TYPE_CHOICES, default='domestic')
+    flight_type = models.CharField(_('flight type'), max_length=20, choices=FLIGHT_TYPE_CHOICES, default='direct',
+                                   help_text=_('Direct flight or connecting flight via layover'))
+    layover_airport = models.CharField(_('layover airport'), max_length=100, blank=True,
+                                      help_text=_('Airport code/name for layover (e.g., DXB, Dubai). Required for via flights.'))
+    layover_duration = models.DurationField(_('layover duration'), blank=True, null=True,
+                                           help_text=_('Duration of layover (e.g., 2:30:00 for 2h 30m). Required for via flights.'))
     is_active = models.BooleanField(_('active'), default=True)
     description = models.TextField(_('description'), blank=True)
     amenities = models.JSONField(_('amenities'), default=dict, blank=True,
@@ -474,6 +485,13 @@ class Route(TimestampedModel):
             raise ValidationError(_('Origin and destination cannot be the same'))
         if self.departure_time and self.arrival_time and self.arrival_time <= self.departure_time:
             raise ValidationError(_('Arrival time must be after departure time'))
+        
+        # Validate via flight requirements
+        if self.flight_type == 'via':
+            if not self.layover_airport:
+                raise ValidationError({'layover_airport': _('Layover airport is required for via/connecting flights')})
+            if not self.layover_duration:
+                raise ValidationError({'layover_duration': _('Layover duration is required for via/connecting flights')})
     
     @property
     def formatted_duration(self):
@@ -1496,7 +1514,7 @@ class CashBalanceWallet(TimestampedModel):
     """Cash Balance Wallet - User can recharge themselves, direct access for everyone"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cash_balance_wallet')
     balance = models.DecimalField(_('balance'), max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-    max_balance = models.DecimalField(_('maximum balance'), max_digits=10, decimal_places=2, default=100000, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit'))
+    max_balance = models.DecimalField(_('maximum balance'), max_digits=12, decimal_places=2, default=999999999, validators=[MinValueValidator(0)], help_text=_('Maximum balance limit - set very high for no limit'))
     
     class Meta:
         verbose_name = _('Cash Balance Wallet')
@@ -1515,9 +1533,7 @@ class CashBalanceWallet(TimestampedModel):
         if amount <= 0:
             raise ValidationError(_('Amount must be greater than zero'))
         
-        if (self.balance + amount) > self.max_balance:
-            raise ValidationError(_(f'Balance cannot exceed maximum limit of ₹{self.max_balance}'))
-        
+        # No max balance limit - users can add unlimited balance
         self.balance += amount
         self.save()
         
@@ -1602,6 +1618,7 @@ class SalesRepresentative(TimestampedModel):
     """Sales Representative model for user assignment and homepage display"""
     name = models.CharField(_('name'), max_length=100)
     phone = models.CharField(_('phone number'), max_length=20, help_text=_('Contact number'))
+    email = models.EmailField(_('email'), max_length=255, blank=True, help_text=_('Email address'))
     is_active = models.BooleanField(_('active'), default=True, help_text=_('Show on homepage'))
     display_order = models.PositiveIntegerField(_('display order'), default=0, help_text=_('Order in which sales representatives are displayed'))
     
@@ -2037,4 +2054,158 @@ class BookingChangeRequest(TimestampedModel):
     
     def __str__(self):
         return f"{self.reference_number} - {self.get_request_type_display()} ({self.get_status_display()})"
+
+
+class BankAccount(TimestampedModel):
+    """Bank Account details for user payments - Admin managed"""
+    
+    class AccountType(models.TextChoices):
+        SAVINGS = 'savings', _('Savings')
+        CURRENT = 'current', _('Current')
+    
+    bank_name = models.CharField(_('bank name'), max_length=100)
+    account_holder_name = models.CharField(_('account holder name'), max_length=200)
+    account_number = models.CharField(_('account number'), max_length=50)
+    ifsc_code = models.CharField(_('IFSC code'), max_length=20)
+    branch_name = models.CharField(_('branch name'), max_length=200, blank=True)
+    account_type = models.CharField(
+        _('account type'),
+        max_length=20,
+        choices=AccountType.choices,
+        default=AccountType.SAVINGS
+    )
+    upi_id = models.CharField(_('UPI ID'), max_length=100, blank=True, null=True, help_text=_('e.g., example@upi'))
+    qr_code_image = models.ImageField(
+        _('QR code image'),
+        upload_to='bank_qr_codes/',
+        blank=True,
+        null=True,
+        help_text=_('Upload UPI/Bank QR code for easy scanning')
+    )
+    is_active = models.BooleanField(_('active'), default=True, help_text=_('Show this bank account to users'))
+    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text=_('Order in which bank accounts are displayed'))
+    
+    class Meta:
+        verbose_name = _('Bank Account')
+        verbose_name_plural = _('Bank Accounts')
+        ordering = ['display_order', 'bank_name']
+        indexes = [
+            models.Index(fields=['is_active', 'display_order'], name='bank_account_active_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.bank_name} - {self.account_number[-4:] if len(self.account_number) >= 4 else self.account_number}"
+
+
+class PaymentUploadRequest(TimestampedModel):
+    """Payment proof upload requests from users for admin verification"""
+    
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        VERIFIED = 'verified', _('Verified')
+        REJECTED = 'rejected', _('Rejected')
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payment_uploads',
+        verbose_name=_('user')
+    )
+    reference_id = models.CharField(_('reference ID'), max_length=50, unique=True, editable=False)
+    
+    # Payment Details
+    amount = models.DecimalField(_('amount'), max_digits=12, decimal_places=2)
+    bank_account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payment_uploads',
+        verbose_name=_('bank account'),
+        help_text=_('Bank account where payment was made')
+    )
+    
+    PAYMENT_METHOD_CHOICES = [
+        ('net_banking', _('Net Banking')),
+        ('upi', _('UPI / QR Code')),
+        ('credit_card', _('Credit Card')),
+        ('debit_card', _('Debit Card')),
+        ('wallet', _('Digital Wallet')),
+        ('neft_rtgs', _('NEFT / RTGS')),
+        ('imps', _('IMPS')),
+        ('cheque', _('Cheque')),
+        ('cash', _('Cash Deposit')),
+        ('other', _('Other')),
+    ]
+    
+    payment_method = models.CharField(
+        _('payment method'),
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='upi',
+        help_text=_('Method used for payment')
+    )
+    transaction_id = models.CharField(_('transaction ID'), max_length=100, blank=True, help_text=_('UTR number or transaction reference'))
+    
+    # Proof Upload
+    proof_image = models.ImageField(
+        _('payment proof'),
+        upload_to='payment_proofs/',
+        help_text=_('Upload screenshot or photo of payment confirmation')
+    )
+    notes = models.TextField(_('notes'), blank=True, help_text=_('Additional information about the payment'))
+    
+    # Status and Admin
+    status = models.CharField(
+        _('status'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    admin_notes = models.TextField(_('admin notes'), blank=True, help_text=_('Internal notes for admin'))
+    verified_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_payment_uploads',
+        verbose_name=_('verified by')
+    )
+    verified_at = models.DateTimeField(_('verified at'), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('Payment Upload Request')
+        verbose_name_plural = _('Payment Upload Requests')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status', 'created_at'], name='payment_upload_user_idx'),
+            models.Index(fields=['status', 'created_at'], name='payment_upload_status_idx'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            # Generate unique reference ID: PU + timestamp + random
+            import random
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            random_str = str(random.randint(1000, 9999))
+            self.reference_id = f'PU{timestamp}{random_str}'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Payment Upload {self.reference_id} - ₹{self.amount} ({self.get_status_display()})"
+    
+    @property
+    def is_pending(self):
+        """Check if request is pending"""
+        return self.status == self.Status.PENDING
+    
+    @property
+    def is_verified(self):
+        """Check if request is verified"""
+        return self.status == self.Status.VERIFIED
+    
+    @property
+    def is_rejected(self):
+        """Check if request is rejected"""
+        return self.status == self.Status.REJECTED
 

@@ -737,10 +737,16 @@
             closeWhatsappModal();
         }
         
-        // Generate PDF
+        // Generate PDF - Auto Download
         function generatePDF() {
             const url = `/ticket/${bookingId}/pdf/download/`;
-            window.open(url, '_blank');
+            // Create a temporary link element and trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `E-Ticket-${bookingRef}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         
         // Discount Modal

@@ -47,6 +47,7 @@ urlpatterns = [
     
     # User pages
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('profile/', views.view_profile, name='view_profile'),
     path('my-trips/', views.my_trips, name='my_trips'),
     # Login path removed - root URL (/) now serves as login page
     path('signup/', views.user_signup, name='signup'),
@@ -83,7 +84,13 @@ urlpatterns = [
     path('admin/packages/', views.admin_packages, name='admin_packages'),
     path('admin/packages/add/', views.add_package, name='add_package'),
     path('admin/packages/delete/<int:package_id>/', views.delete_package, name='delete_package'),
+    
+    # Bank Accounts & Payment Upload
+    path('bank-accounts/', views.bank_accounts, name='bank_accounts'),
+    path('upload-request/', views.upload_payment_request, name='upload_payment_request'),
+    path('upload-request/thanks/<int:request_id>/', views.upload_request_thanks, name='upload_request_thanks'),
 ]
+
 
 # Serve media files in development
 if settings.DEBUG:

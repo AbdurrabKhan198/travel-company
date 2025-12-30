@@ -472,6 +472,17 @@ def homepage(request):
     # Convert to list of date strings for JavaScript
     available_dates_list = [d.isoformat() for d in available_dates]
     
+    # Get URL parameters for pre-filling form (for Modify Search)
+    prefill_from = request.GET.get('from_location', '')
+    prefill_to = request.GET.get('to_location', '')
+    prefill_travel_date = request.GET.get('travel_date', '')
+    prefill_return_date = request.GET.get('return_date', '')
+    prefill_adults = request.GET.get('adults', '1')
+    prefill_children = request.GET.get('children', '0')
+    prefill_infants = request.GET.get('infants', '0')
+    prefill_trip_type = request.GET.get('trip_type', 'one_way')
+    prefill_travel_class = request.GET.get('travel_class', 'economy')
+    
     context = {
         'packages': packages,
         'popular_packages': popular_packages,
@@ -480,6 +491,16 @@ def homepage(request):
         'today': date.today().isoformat(),
         'available_dates': available_dates_list,
         'airport_codes': airport_codes,
+        # Pre-fill values for Modify Search
+        'prefill_from': prefill_from,
+        'prefill_to': prefill_to,
+        'prefill_travel_date': prefill_travel_date,
+        'prefill_return_date': prefill_return_date,
+        'prefill_adults': prefill_adults,
+        'prefill_children': prefill_children,
+        'prefill_infants': prefill_infants,
+        'prefill_trip_type': prefill_trip_type,
+        'prefill_travel_class': prefill_travel_class,
     }
     return render(request, 'index.html', context)
 
@@ -494,6 +515,7 @@ def search_flights(request):
     route_type = request.GET.get('route_type', '').strip()
     trip_type = request.GET.get('trip_type', 'one_way').strip()
     travel_class = request.GET.get('travel_class', 'economy').strip().lower()
+    flight_type = request.GET.get('flight_type', 'any').strip().lower()  # New: flight type filter
     
     # Get passenger counts (adults, children, infants)
     try:
@@ -576,6 +598,10 @@ def search_flights(request):
     
     # Filter flights with enough available seats
     flights = flights.filter(available_seats__gte=passengers)
+    
+    # Filter by flight type if specified (Direct/Via)
+    if flight_type and flight_type != 'any':
+        flights = flights.filter(route__flight_type=flight_type)
     
     # Order by adult fare (or use route base_price) and departure date
     flights = flights.order_by('adult_fare', 'departure_date')
@@ -680,6 +706,7 @@ def search_flights(request):
         'return_date': return_date,
         'trip_type': trip_type,
         'route_type': route_type,
+        'flight_type': flight_type,  # New: pass flight type to template
         'passengers': passengers,  # Total passengers (adults + children) for seat availability
         'adults': adults,
         'children': children,
@@ -1658,6 +1685,27 @@ def dashboard(request):
 
 
 @login_required
+def view_profile(request):
+    """View user profile information only - without trips, wallets, or documents"""
+    # Ensure user has a profile (auto-create if missing)
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={'full_name': request.user.get_full_name() or request.user.email.split('@')[0]}
+    )
+    
+    # Fix any profiles with invalid full_name
+    if not profile.full_name or profile.full_name.strip() == '' or profile.full_name.lower() in ['none none', 'none']:
+        profile.full_name = request.user.get_full_name() or request.user.email.split('@')[0] or request.user.username
+        profile.save()
+    
+    context = {
+        'user': request.user,
+        'profile': profile,
+    }
+    return render(request, 'view_profile.html', context)
+
+
+@login_required
 def my_trips(request):
     today = timezone.now().date()
     
@@ -2238,26 +2286,22 @@ def wallet_recharge(request):
             # Get description from session
             description = request.session.get('wallet_recharge_description', 'Wallet Recharge via Easebuzz')
             
-            # Check if adding this amount would exceed max balance
-            if (wallet.balance + recharge_amount) > wallet.max_balance:
-                messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
-            else:
-                # Add balance to wallet
-                wallet.add_balance(
-                    amount=recharge_amount,
-                    transaction_type='recharge',
-                    description=description,
-                    reference_id=txnid
-                )
-                messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
-                
-                # Clear session
-                if 'wallet_recharge_amount' in request.session:
-                    del request.session['wallet_recharge_amount']
-                if 'wallet_recharge_description' in request.session:
-                    del request.session['wallet_recharge_description']
-                
-                return redirect('wallet_history')
+            # Add balance to wallet (no limit)
+            wallet.add_balance(
+                amount=recharge_amount,
+                transaction_type='recharge',
+                description=description,
+                reference_id=txnid
+            )
+            messages.success(request, f'Wallet recharged successfully! New balance: ₹{wallet.balance}')
+            
+            # Clear session
+            if 'wallet_recharge_amount' in request.session:
+                del request.session['wallet_recharge_amount']
+            if 'wallet_recharge_description' in request.session:
+                del request.session['wallet_recharge_description']
+            
+            return redirect('wallet_history')
                 
         except Exception as e:
             messages.error(request, f'Recharge failed: {str(e)}')
@@ -2270,155 +2314,102 @@ def wallet_recharge(request):
             amount = form.cleaned_data['amount']
             description = form.cleaned_data.get('description', 'Wallet Recharge')
             
-            # Check if adding this amount would exceed max balance
-            if (wallet.balance + amount) > wallet.max_balance:
-                messages.error(request, f'Recharge would exceed maximum balance limit of ₹{wallet.max_balance}')
+            # No balance limit - proceed with recharge
+            # Store in session for after payment
+            request.session['wallet_recharge_amount'] = str(amount)
+            request.session['wallet_recharge_description'] = description
+            request.session.modified = True  # Ensure session is saved
+            
+            # Initialize Easebuzz payment using SDK
+            easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
+            easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
+            easebuzz_env = getattr(settings, 'EASEBUZZ_ENV', 'prod')
+            
+            if not easebuzz_merchant_key or not easebuzz_merchant_salt:
+                messages.error(request, 'Payment gateway not configured. Please contact support.')
+                form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+            elif not EASEBUZZ_SDK_AVAILABLE:
+                messages.error(request, 'Easebuzz SDK not installed. Please contact support.')
                 form = WalletRechargeForm(initial={'amount': amount, 'description': description})
             else:
-                # Store in session for after payment
-                request.session['wallet_recharge_amount'] = str(amount)
-                request.session['wallet_recharge_description'] = description
-                request.session.modified = True  # Ensure session is saved
-                
-                # Initialize Easebuzz payment using SDK
-                easebuzz_merchant_key = getattr(settings, 'EASEBUZZ_MERCHANT_KEY', '')
-                easebuzz_merchant_salt = getattr(settings, 'EASEBUZZ_MERCHANT_SALT', '')
-                easebuzz_env = getattr(settings, 'EASEBUZZ_ENV', 'prod')
-                
-                if not easebuzz_merchant_key or not easebuzz_merchant_salt:
-                    messages.error(request, 'Payment gateway not configured. Please contact support.')
-                    form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-                elif not EASEBUZZ_SDK_AVAILABLE:
-                    messages.error(request, 'Easebuzz SDK not installed. Please contact support.')
-                    form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-                else:
-                    try:
-                        # Initialize Easebuzz SDK
-                        easebuzz_obj = Easebuzz(
-                            key=easebuzz_merchant_key,
-                            salt=easebuzz_merchant_salt,
-                            env=easebuzz_env
-                        )
+                try:
+                    # Initialize Easebuzz SDK
+                    easebuzz_obj = Easebuzz(
+                        key=easebuzz_merchant_key,
+                        salt=easebuzz_merchant_salt,
+                        env=easebuzz_env
+                    )
+                    
+                    # Generate unique transaction ID
+                    txnid = f"WALLET_{request.user.id}_{int(timezone.now().timestamp())}"
+                    
+                    # Prepare payment data for Easebuzz SDK
+                    payment_data_dict = {
+                        'txnid': txnid,
+                        'amount': f"{float(amount):.2f}",  # Easebuzz requires decimal format: "500.00"
+                        'productinfo': f'Wallet Recharge - {description}',
+                        'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
+                        'email': request.user.email,
+                        'phone': str(getattr(request.user.profile, 'phone', '9999999999') if hasattr(request.user, 'profile') else '9999999999')[:10],
+                        'surl': request.build_absolute_uri(reverse('wallet_recharge')),
+                        'furl': request.build_absolute_uri(reverse('wallet_recharge')),
+                        'udf1': '',
+                        'udf2': '',
+                        'udf3': '',
+                        'udf4': '',
+                        'udf5': '',
+                    }
+                    
+                    # Convert dict to QueryDict
+                    query_dict = QueryDict('', mutable=True)
+                    query_dict.update(payment_data_dict)
+                    
+                    # Call Easebuzz API to get payment URL
+                    response = easebuzz_obj.initiate_payment_api(query_dict)
+                    
+                    # Handle different response formats
+                    payment_redirect_url = None
+                    response_dict = None
+                    
+                    if response:
+                        if isinstance(response, str):
+                            try:
+                                response_dict = json.loads(response)
+                            except json.JSONDecodeError:
+                                if response.startswith('http'):
+                                    payment_redirect_url = response
+                        elif isinstance(response, dict):
+                            response_dict = response
                         
-                        # Generate unique transaction ID
-                        txnid = f"WALLET_{request.user.id}_{int(timezone.now().timestamp())}"
+                        if response_dict:
+                            if response_dict.get('status') == 1:
+                                payment_redirect_url = (
+                                    response_dict.get('data') or
+                                    response_dict.get('url') or
+                                    response_dict.get('payment_url') or
+                                    response_dict.get('redirect_url') or
+                                    response_dict.get('payment_link') or
+                                    response_dict.get('link')
+                                )
                         
-                        # Prepare payment data for Easebuzz SDK
-                        payment_data_dict = {
-                            'txnid': txnid,
-                            'amount': f"{float(amount):.2f}",  # Easebuzz requires decimal format: "500.00"
-                            'productinfo': f'Wallet Recharge - {description}',
-                            'firstname': request.user.profile.full_name if hasattr(request.user, 'profile') and request.user.profile.full_name else request.user.email.split('@')[0],
-                            'email': request.user.email,
-                            'phone': str(getattr(request.user.profile, 'phone', '9999999999') if hasattr(request.user, 'profile') else '9999999999')[:10],  # Easebuzz requires 10 digit phone number
-                            'surl': request.build_absolute_uri(reverse('wallet_recharge')),
-                            'furl': request.build_absolute_uri(reverse('wallet_recharge')),
-                            # Optional fields
-                            'udf1': '',
-                            'udf2': '',
-                            'udf3': '',
-                            'udf4': '',
-                            'udf5': '',
-                        }
-                        
-                        # Debug: Print payment data
-                        print("=" * 50)
-                        print("EASEBUZZ WALLET RECHARGE INITIATION:")
-                        print(f"Merchant Key: {easebuzz_merchant_key}")
-                        print(f"Environment: {easebuzz_env}")
-                        print("Payment Parameters:")
-                        for key, value in payment_data_dict.items():
-                            print(f"  {key}: {value}")
-                        print("=" * 50)
-                        
-                        # Convert dict to QueryDict (Easebuzz SDK expects Django QueryDict with _mutable attribute)
-                        query_dict = QueryDict('', mutable=True)
-                        query_dict.update(payment_data_dict)
-                        
-                        # Call Easebuzz API to get payment URL
-                        response = easebuzz_obj.initiate_payment_api(query_dict)
-                        
-                        print("=" * 50)
-                        print("EASEBUZZ API RAW RESPONSE (Wallet):")
-                        print(f"Response: {response}")
-                        print(f"Response Type: {type(response)}")
-                        print("=" * 50)
-                        
-                        # Handle different response formats
-                        payment_redirect_url = None
-                        response_dict = None
-                        
-                        if response:
-                            # SDK returns JSON string, so parse it
-                            if isinstance(response, str):
-                                try:
-                                    response_dict = json.loads(response)
-                                    print(f"✅ Parsed JSON response: {response_dict}")
-                                except json.JSONDecodeError as e:
-                                    print(f"❌ JSON Parse Error: {e}")
-                                    # Check if it's a direct URL
-                                    if response.startswith('http'):
-                                        payment_redirect_url = response
-                                        print(f"✅ Direct URL found: {payment_redirect_url}")
-                                    else:
-                                        print(f"❌ Unknown response format: {response}")
-                            elif isinstance(response, dict):
-                                response_dict = response
-                            
-                            # Process parsed response
-                            if response_dict:
-                                print(f"Response Status: {response_dict.get('status')}")
-                                print(f"Response Keys: {list(response_dict.keys())}")
-                                
-                                # Check status (1 = success, 0 = error)
-                                if response_dict.get('status') == 1:
-                                    # Try different possible keys for payment URL
-                                    payment_redirect_url = (
-                                        response_dict.get('data') or
-                                        response_dict.get('url') or
-                                        response_dict.get('payment_url') or
-                                        response_dict.get('redirect_url') or
-                                        response_dict.get('payment_link') or
-                                        response_dict.get('link')
-                                    )
-                                    
-                                    if payment_redirect_url:
-                                        print(f"✅ Payment URL found: {payment_redirect_url}")
-                                    else:
-                                        print(f"❌ No payment URL in response. Available keys: {list(response_dict.keys())}")
-                                        print(f"Full response: {response_dict}")
-                                else:
-                                    error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'Unknown error'
-                                    print(f"❌ Easebuzz API Error (status={response_dict.get('status')}): {error_msg}")
-                                    print(f"Full error response: {response_dict}")
-                            
-                            # If we got a payment URL, redirect
-                            if payment_redirect_url:
-                                print(f"✅ Payment URL received: {payment_redirect_url}")
-                                return redirect(payment_redirect_url)
-                            else:
-                                error_msg = "No payment URL received"
-                                if response_dict:
-                                    error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'No payment URL received'
-                                    print(f"❌ Easebuzz API Error: {error_msg}")
-                                    print(f"Full response: {response_dict}")
-                                else:
-                                    print(f"❌ Easebuzz API Error - Could not parse response: {response}")
-                                messages.error(request, f'Payment gateway error: {error_msg}. Please try again.')
-                                form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                        if payment_redirect_url:
+                            return redirect(payment_redirect_url)
                         else:
-                            print(f"❌ Easebuzz API Error - Empty response")
-                            messages.error(request, 'Payment gateway error: Empty response. Please try again.')
+                            error_msg = "No payment URL received"
+                            if response_dict:
+                                error_msg = response_dict.get('message') or response_dict.get('error') or response_dict.get('msg') or 'No payment URL received'
+                            messages.error(request, f'Payment gateway error: {error_msg}. Please try again.')
                             form = WalletRechargeForm(initial={'amount': amount, 'description': description})
-                        
-                        print("=" * 50)
-                        
-                    except Exception as e:
-                        import traceback
-                        print(f"Easebuzz error: {str(e)}")
-                        print(traceback.format_exc())
-                        messages.error(request, f'Payment gateway error: {str(e)}. Please try again.')
+                    else:
+                        messages.error(request, 'Payment gateway error: Empty response. Please try again.')
                         form = WalletRechargeForm(initial={'amount': amount, 'description': description})
+                    
+                except Exception as e:
+                    import traceback
+                    print(f"Easebuzz error: {str(e)}")
+                    print(traceback.format_exc())
+                    messages.error(request, f'Payment gateway error: {str(e)}. Please try again.')
+                    form = WalletRechargeForm(initial={'amount': amount, 'description': description})
         else:
             # Form is invalid - show errors
             for field, errors in form.errors.items():
@@ -2428,11 +2419,15 @@ def wallet_recharge(request):
     else:
         form = WalletRechargeForm()
     
+    # Get recent transactions for history section
+    transactions = wallet.transactions.all().order_by('-created_at')[:10]  # Last 10 transactions
+    
     context = {
         'form': form,
         'wallet': wallet,
         'wallet_balance': wallet.balance,
         'max_balance': wallet.max_balance,
+        'transactions': transactions,
     }
     return render(request, 'wallet_recharge.html', context)
 
@@ -3192,7 +3187,7 @@ def send_ticket_email_api(request):
 
 @login_required
 def download_ticket_pdf_file(request, booking_id):
-    """Download ticket as PDF file or redirect to printable view"""
+    """Download ticket as PDF file - automatic download"""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
     if booking.status != Booking.Status.CONFIRMED or booking.payment_status != Booking.PaymentStatus.PAID:
@@ -3217,10 +3212,30 @@ def download_ticket_pdf_file(request, booking_id):
         'is_download': True,
     }
     
-    # Render HTML with print-friendly layout
-    html_content = render_to_string('print_pdf.html', context)
+    # Try to generate PDF using xhtml2pdf
+    try:
+        from xhtml2pdf import pisa
+        from io import BytesIO
+        
+        # Render HTML template
+        html_content = render_to_string('print_pdf.html', context)
+        
+        # Create PDF
+        result = BytesIO()
+        pdf = pisa.CreatePDF(BytesIO(html_content.encode('utf-8')), dest=result)
+        
+        if not pdf.err:
+            # Set up response with PDF
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f'E-Ticket-{booking.booking_reference}.pdf'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+    except ImportError:
+        # If xhtml2pdf not available, fall back to browser printing
+        pass
     
-    # Return HTML page with auto-print script for browser printing
+    # Fallback: Return HTML page with auto-print script
+    html_content = render_to_string('print_pdf.html', context)
     auto_print_html = f'''
     <!DOCTYPE html>
     <html>
@@ -4145,3 +4160,120 @@ def delete_package(request, package_id):
         messages.success(request, 'Package deleted successfully!')
     
     return redirect('admin_packages')
+
+
+@login_required
+@approved_required
+def bank_accounts(request):
+    """Display all active bank accounts for users to make payments"""
+    from .models import BankAccount
+    
+    # Get all active bank accounts ordered by display_order
+    accounts = BankAccount.objects.filter(is_active=True).order_by('display_order', 'bank_name')
+    
+    context = {
+        'bank_accounts': accounts,
+        'page_title': 'Bank Accounts',
+    }
+    return render(request, 'bank_accounts.html', context)
+
+
+@login_required
+@approved_required
+def upload_payment_request(request):
+    """Upload payment proof for admin verification"""
+    from .models import BankAccount, PaymentUploadRequest
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            amount = request.POST.get('amount', '').strip()
+            bank_account_id = request.POST.get('bank_account', '').strip()
+            transaction_id = request.POST.get('transaction_id', '').strip()
+            notes = request.POST.get('notes', '').strip()
+            proof_image = request.FILES.get('proof_image')
+            
+            # Validate required fields
+            if not amount:
+                messages.error(request, 'Please enter the payment amount.')
+                return redirect('upload_payment_request')
+            
+            if not proof_image:
+                messages.error(request, 'Please upload a payment proof image.')
+                return redirect('upload_payment_request')
+            
+            # Validate amount
+            try:
+                amount_decimal = Decimal(amount)
+                if amount_decimal <= 0:
+                    messages.error(request, 'Amount must be greater than zero.')
+                    return redirect('upload_payment_request')
+            except:
+                messages.error(request, 'Please enter a valid amount.')
+                return redirect('upload_payment_request')
+            
+            # Get bank account if selected
+            bank_account = None
+            if bank_account_id:
+                try:
+                    bank_account = BankAccount.objects.get(id=bank_account_id, is_active=True)
+                except BankAccount.DoesNotExist:
+                    pass
+            
+            # Validate file type
+            allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf']
+            file_extension = proof_image.name.split('.')[-1].lower()
+            if file_extension not in allowed_extensions:
+                messages.error(request, f'Invalid file type. Allowed: {", ".join(allowed_extensions)}')
+                return redirect('upload_payment_request')
+            
+            # Validate file size (max 10MB)
+            if proof_image.size > 10 * 1024 * 1024:
+                messages.error(request, 'File size must be less than 10MB.')
+                return redirect('upload_payment_request')
+            
+            # Create payment upload request
+            upload_request = PaymentUploadRequest.objects.create(
+                user=request.user,
+                amount=amount_decimal,
+                bank_account=bank_account,
+                transaction_id=transaction_id,
+                notes=notes,
+                proof_image=proof_image
+            )
+            
+            messages.success(request, f'Payment proof uploaded successfully! Reference: {upload_request.reference_id}')
+            return redirect('upload_request_thanks', request_id=upload_request.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error uploading payment proof: {str(e)}')
+            return redirect('upload_payment_request')
+    
+    # GET request - show form
+    bank_accounts = BankAccount.objects.filter(is_active=True).order_by('display_order', 'bank_name')
+    
+    # Get user's previous upload requests
+    user_requests = PaymentUploadRequest.objects.filter(user=request.user).order_by('-created_at')[:5]
+    
+    context = {
+        'bank_accounts': bank_accounts,
+        'user_requests': user_requests,
+        'page_title': 'Upload Payment Request',
+    }
+    return render(request, 'upload_payment_request.html', context)
+
+
+@login_required
+@approved_required
+def upload_request_thanks(request, request_id):
+    """Thank you page after successful payment upload"""
+    from .models import PaymentUploadRequest
+    
+    upload_request = get_object_or_404(PaymentUploadRequest, id=request_id, user=request.user)
+    
+    context = {
+        'upload_request': upload_request,
+        'page_title': 'Upload Request Submitted',
+    }
+    return render(request, 'upload_request_thanks.html', context)
+

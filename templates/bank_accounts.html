@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bank Accounts - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.6s ease-out;
+    }
+    
+    .bank-card {
+        transition: all 0.3s ease;
+    }
+    
+    .bank-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .copy-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .copy-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .copy-btn.copied {
+        background: #10b981 !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-12">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8 animate-fade-in-up">
+                <div class="inline-block p-4 bg-gradient-to-br from-emerald-400 to-green-600 rounded-2xl mb-4 shadow-lg">
+                    <i class="fas fa-university text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                    Bank <span class="gradient-text">Accounts</span>
+                </h1>
+                <p class="text-xl text-gray-600">Transfer payments directly to our bank accounts</p>
+            </div>
+
+            <!-- Info Banner -->
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400 rounded-xl p-5 mb-8 animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="flex items-start space-x-4">
+                    <i class="fas fa-info-circle text-amber-500 text-xl mt-0.5"></i>
+                    <div>
+                        <h3 class="font-bold text-gray-900 mb-1">How to make a payment</h3>
+                        <ol class="text-gray-700 text-sm space-y-1 list-decimal list-inside">
+                            <li>Copy the bank details or scan the QR code</li>
+                            <li>Make the payment through your bank or UPI app</li>
+                            <li>Take a screenshot of the payment confirmation</li>
+                            <li><a href="{% url 'upload_payment_request' %}" class="text-sky-600 hover:underline font-semibold">Upload your payment proof here</a></li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Accounts List -->
+            {% if bank_accounts %}
+            <div class="space-y-6">
+                {% for account in bank_accounts %}
+                <div class="bank-card bg-white rounded-2xl shadow-lg p-6 md:p-8 animate-fade-in-up" style="animation-delay: {{ forloop.counter0|add:0.2 }}s;">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                        <!-- Bank Details -->
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-building-columns text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900">{{ account.bank_name }}</h3>
+                                    {% if account.branch_name %}
+                                    <p class="text-sm text-gray-500">{{ account.branch_name }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Account Holder -->
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Account Holder</p>
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-gray-900">{{ account.account_holder_name }}</p>
+                                        <button onclick="copyToClipboard('{{ account.account_holder_name }}', this)" 
+                                                class="copy-btn p-2 text-gray-400 hover:text-sky-600 rounded-lg">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Account Number -->
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Account Number</p>
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-gray-900 font-mono">{{ account.account_number }}</p>
+                                        <button onclick="copyToClipboard('{{ account.account_number }}', this)" 
+                                                class="copy-btn p-2 text-gray-400 hover:text-sky-600 rounded-lg">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- IFSC Code -->
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">IFSC Code</p>
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-gray-900 font-mono">{{ account.ifsc_code }}</p>
+                                        <button onclick="copyToClipboard('{{ account.ifsc_code }}', this)" 
+                                                class="copy-btn p-2 text-gray-400 hover:text-sky-600 rounded-lg">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Account Type -->
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Account Type</p>
+                                    <p class="font-semibold text-gray-900">{{ account.get_account_type_display }}</p>
+                                </div>
+                                
+                                {% if account.upi_id %}
+                                <!-- UPI ID -->
+                                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 md:col-span-2">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">UPI ID</p>
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-purple-700 font-mono">{{ account.upi_id }}</p>
+                                        <button onclick="copyToClipboard('{{ account.upi_id }}', this)" 
+                                                class="copy-btn p-2 text-gray-400 hover:text-purple-600 rounded-lg">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- QR Code -->
+                        {% if account.qr_code_image %}
+                        <div class="flex-shrink-0">
+                            <div class="bg-white p-3 rounded-xl border-2 border-gray-200 shadow-sm">
+                                <p class="text-xs text-gray-500 text-center mb-2 uppercase tracking-wider">Scan to Pay</p>
+                                <img src="{{ account.qr_code_image.url }}" alt="QR Code for {{ account.bank_name }}" 
+                                     class="w-40 h-40 object-contain mx-auto">
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- No Bank Accounts -->
+            <div class="bg-white rounded-2xl shadow-lg p-12 text-center animate-fade-in-up">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-university text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">No Bank Accounts Available</h3>
+                <p class="text-gray-600 mb-6">Bank account details will be added soon.</p>
+                <a href="{% url 'homepage' %}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold rounded-xl hover:from-sky-600 hover:to-blue-700 transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Home
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Upload Payment CTA -->
+            <div class="mt-8 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl p-6 md:p-8 text-white text-center animate-fade-in-up" style="animation-delay: 0.4s;">
+                <i class="fas fa-cloud-upload-alt text-4xl mb-4 opacity-90"></i>
+                <h3 class="text-2xl font-bold mb-2">Already Made a Payment?</h3>
+                <p class="text-emerald-100 mb-6">Upload your payment proof for quick verification</p>
+                <a href="{% url 'upload_payment_request' %}" class="inline-flex items-center px-8 py-3 bg-white text-emerald-600 font-bold rounded-xl hover:bg-emerald-50 transition-all shadow-lg transform hover:scale-105">
+                    <i class="fas fa-upload mr-2"></i>
+                    Upload Payment Proof
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(text, button) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Show success
+            const icon = button.querySelector('i');
+            const originalClass = icon.className;
+            icon.className = 'fas fa-check';
+            button.classList.add('copied');
+            
+            setTimeout(function() {
+                icon.className = originalClass;
+                button.classList.remove('copied');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy. Please copy manually.');
+        });
+    }
+</script>
+{% endblock %}

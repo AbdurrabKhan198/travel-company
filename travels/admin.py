@@ -12,7 +12,8 @@ from django.db.models import Sum, Count
 from .models import (
     User, UserProfile, Route, Schedule, Booking, BookingPassenger,
     Package, Contact, ODWallet, ODWalletTransaction, 
-    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, Coupon, VisaBooking, BookingChangeRequest
+    CashBalanceWallet, CashBalanceTransaction, GroupRequest, PackageApplication, SalesRepresentative, Umrah, Coupon, VisaBooking, BookingChangeRequest,
+    BankAccount, PaymentUploadRequest
 )
 
 # Custom Admin Filter for Agency ID
@@ -221,18 +222,23 @@ class ScheduleInline(admin.TabularInline):
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'airline_name', 'from_location', 'to_location', 'transport_type', 'duration_formatted', 'is_non_refundable', 'is_active')
-    list_filter = ('transport_type', 'route_type', 'is_active', 'is_non_refundable', 'airline_name')
-    search_fields = ('name', 'from_location', 'to_location', 'carrier_number', 'airline_name')
+    list_display = ('name', 'airline_name', 'from_location', 'to_location', 'transport_type', 'flight_type', 'duration_formatted', 'is_non_refundable', 'is_active')
+    list_filter = ('transport_type', 'route_type', 'flight_type', 'is_active', 'is_non_refundable', 'airline_name')
+    search_fields = ('name', 'from_location', 'to_location', 'carrier_number', 'airline_name', 'layover_airport')
     inlines = [ScheduleInline]
-    readonly_fields = ('created_at', 'updated_at', 'duration_formatted')
+    readonly_fields = ('created_at', 'updated_at', 'duration_formatted', 'layover_duration_formatted')
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'from_location', 'to_location', 'transport_type', 'airline_name', 'carrier_number', 'route_type')
+            'fields': ('name', 'from_location', 'to_location', 'transport_type', 'airline_name', 'carrier_number', 'route_type', 'flight_type')
         }),
         ('Schedule', {
             'fields': ('departure_time', 'arrival_time', 'duration')
+        }),
+        ('Via Flight Information', {
+            'fields': ('layover_airport', 'layover_duration', 'layover_duration_formatted'),
+            'description': 'For connecting/via flights only. Leave blank for direct flights.',
+            'classes': ('collapse',)
         }),
         ('Terminal Information', {
             'fields': ('departure_terminal', 'arrival_terminal')
@@ -253,6 +259,15 @@ class RouteAdmin(admin.ModelAdmin):
     def duration_formatted(self, obj):
         return obj.formatted_duration
     duration_formatted.short_description = 'Duration'
+    
+    def layover_duration_formatted(self, obj):
+        if obj.layover_duration:
+            total_seconds = int(obj.layover_duration.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            return f"{hours}h {minutes}m" if hours else f"{minutes}m"
+        return '-'
+    layover_duration_formatted.short_description = 'Layover Duration'
 
 # ScheduleAdmin removed - Schedules are now managed only through Route inline
 # This prevents confusion - all schedule management happens within Route edit page
@@ -984,13 +999,13 @@ class PackageApplicationAdmin(admin.ModelAdmin):
 @admin.register(SalesRepresentative)
 class SalesRepresentativeAdmin(admin.ModelAdmin):
     """Admin interface for Sales Representatives"""
-    list_display = ('name', 'phone', 'is_active', 'display_order', 'assigned_users_count', 'created_at')
+    list_display = ('name', 'phone', 'email', 'is_active', 'display_order', 'assigned_users_count', 'created_at')
     list_filter = ('is_active', 'created_at')
-    search_fields = ('name', 'phone')
-    list_editable = ('is_active', 'display_order', 'phone')
+    search_fields = ('name', 'phone', 'email')
+    list_editable = ('is_active', 'display_order', 'phone', 'email')
     fieldsets = (
         ('Sales Representative Information', {
-            'fields': ('name', 'phone')
+            'fields': ('name', 'phone', 'email')
         }),
         ('Display Settings', {
             'fields': ('is_active', 'display_order'),
@@ -1304,4 +1319,201 @@ class BookingChangeRequestAdmin(admin.ModelAdmin):
         updated = queryset.update(status='completed', processed_by=request.user, processed_at=timezone.now())
         self.message_user(request, f"{updated} request(s) marked as Completed.")
     mark_as_completed.short_description = "Mark as Completed"
+
+
+@admin.register(BankAccount)
+class BankAccountAdmin(admin.ModelAdmin):
+    """Admin interface for managing bank accounts displayed to users"""
+    list_display = ('bank_name', 'account_holder_name', 'account_number_masked', 'ifsc_code', 'account_type', 'upi_id', 'is_active', 'display_order')
+    list_filter = ('is_active', 'account_type', 'bank_name')
+    search_fields = ('bank_name', 'account_holder_name', 'account_number', 'ifsc_code', 'upi_id')
+    ordering = ('display_order', 'bank_name')
+    list_editable = ('is_active', 'display_order')
+    readonly_fields = ('created_at', 'updated_at', 'qr_code_preview')
+    
+    fieldsets = (
+        ('Bank Information', {
+            'fields': ('bank_name', 'branch_name', 'account_type'),
+            'description': 'Enter bank details that will be shown to users for direct money transfer.'
+        }),
+        ('Account Details', {
+            'fields': ('account_holder_name', 'account_number', 'ifsc_code')
+        }),
+        ('UPI Payment', {
+            'fields': ('upi_id', 'qr_code_image', 'qr_code_preview'),
+            'description': 'Optional UPI payment details for quick transfers.'
+        }),
+        ('Display Settings', {
+            'fields': ('is_active', 'display_order'),
+            'description': 'Control visibility and ordering of this bank account.'
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def account_number_masked(self, obj):
+        """Show masked account number for security"""
+        if obj.account_number and len(obj.account_number) >= 4:
+            return f"****{obj.account_number[-4:]}"
+        return obj.account_number
+    account_number_masked.short_description = 'Account Number'
+    
+    def qr_code_preview(self, obj):
+        """Show QR code preview"""
+        if obj.qr_code_image:
+            return format_html(
+                '<img src="{}" style="max-height: 200px; max-width: 200px; border: 1px solid #ddd; border-radius: 8px;" />',
+                obj.qr_code_image.url
+            )
+        return "No QR code uploaded"
+    qr_code_preview.short_description = 'QR Code Preview'
+    
+    actions = ['activate_accounts', 'deactivate_accounts']
+    
+    def activate_accounts(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"{updated} bank account(s) activated.")
+    activate_accounts.short_description = "Activate selected bank accounts"
+    
+    def deactivate_accounts(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"{updated} bank account(s) deactivated.")
+    deactivate_accounts.short_description = "Deactivate selected bank accounts"
+
+
+@admin.register(PaymentUploadRequest)
+class PaymentUploadRequestAdmin(admin.ModelAdmin):
+    """Admin interface for managing payment upload requests from users"""
+    list_display = ('reference_id', 'user_email', 'agency_id', 'amount_display', 'payment_method_display', 'bank_account_display', 'status_badge', 'created_at', 'verified_by_display')
+    list_filter = ('status', 'payment_method', 'created_at', 'bank_account')
+    search_fields = ('reference_id', 'user__email', 'user__profile__client_id', 'transaction_id', 'notes')
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    readonly_fields = ('reference_id', 'user', 'amount', 'bank_account', 'payment_method', 'transaction_id', 'proof_image', 'notes', 'created_at', 'updated_at', 'proof_image_preview', 'user_info')
+    
+    fieldsets = (
+        ('Request Information', {
+            'fields': ('reference_id', 'user_info', 'created_at'),
+            'description': 'Payment upload request details from the user.'
+        }),
+        ('Payment Details', {
+            'fields': ('amount', 'payment_method', 'bank_account', 'transaction_id', 'notes')
+        }),
+        ('Payment Proof', {
+            'fields': ('proof_image_preview',),
+            'description': 'Screenshot or photo uploaded by user as payment proof.'
+        }),
+        ('Verification', {
+            'fields': ('status', 'admin_notes', 'verified_by', 'verified_at'),
+            'description': 'Verify or reject this payment request.'
+        }),
+        ('System Information', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def user_email(self, obj):
+        return obj.user.email if obj.user else 'N/A'
+    user_email.short_description = 'User Email'
+    
+    def agency_id(self, obj):
+        if obj.user and hasattr(obj.user, 'profile'):
+            return obj.user.profile.client_id or 'N/A'
+        return 'N/A'
+    agency_id.short_description = 'Agency ID'
+    
+    def amount_display(self, obj):
+        return format_html('<span style="font-weight: bold; color: #059669;">₹{}</span>', f'{float(obj.amount):.2f}')
+    amount_display.short_description = 'Amount'
+    
+    def bank_account_display(self, obj):
+        if obj.bank_account:
+            return f"{obj.bank_account.bank_name} (****{obj.bank_account.account_number[-4:]})"
+        return 'Not specified'
+    bank_account_display.short_description = 'Bank Account'
+    
+    def payment_method_display(self, obj):
+        emojis = {
+            'net_banking': '🏦',
+            'upi': '📱',
+            'credit_card': '💳',
+            'debit_card': '💳',
+            'wallet': '👛',
+            'neft_rtgs': '🏧',
+            'imps': '⚡',
+            'cheque': '📝',
+            'cash': '💵',
+            'other': '🔄',
+        }
+        emoji = emojis.get(obj.payment_method, '💰')
+        return f"{emoji} {obj.get_payment_method_display()}"
+    payment_method_display.short_description = 'Payment Method'
+    
+    def status_badge(self, obj):
+        colors = {
+            'pending': '#f59e0b',
+            'verified': '#10b981',
+            'rejected': '#ef4444'
+        }
+        color = colors.get(obj.status, '#6b7280')
+        return format_html(
+            '<span style="background: {}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">{}</span>',
+            color, obj.get_status_display().upper()
+        )
+    status_badge.short_description = 'Status'
+    
+    def verified_by_display(self, obj):
+        if obj.verified_by:
+            return obj.verified_by.email
+        return '-'
+    verified_by_display.short_description = 'Verified By'
+    
+    def user_info(self, obj):
+        if obj.user:
+            profile = getattr(obj.user, 'profile', None)
+            info = f"""
+            <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <p><strong>Email:</strong> {obj.user.email}</p>
+                <p><strong>Agency ID:</strong> {profile.client_id if profile else 'N/A'}</p>
+                <p><strong>Name:</strong> {profile.full_name if profile else 'N/A'}</p>
+                <p><strong>Company:</strong> {profile.company_name if profile and profile.company_name else 'N/A'}</p>
+            </div>
+            """
+            return format_html(info)
+        return 'N/A'
+    user_info.short_description = 'User Information'
+    
+    def proof_image_preview(self, obj):
+        if obj.proof_image:
+            return format_html(
+                '<a href="{}" target="_blank"><img src="{}" style="max-height: 400px; max-width: 100%; border: 1px solid #ddd; border-radius: 8px;" /></a><br><a href="{}" target="_blank" style="color: #3b82f6;">Open in new tab ↗</a>',
+                obj.proof_image.url, obj.proof_image.url, obj.proof_image.url
+            )
+        return "No proof image uploaded"
+    proof_image_preview.short_description = 'Payment Proof Image'
+    
+    actions = ['mark_as_verified', 'mark_as_rejected']
+    
+    def mark_as_verified(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.filter(status='pending').update(
+            status='verified',
+            verified_by=request.user,
+            verified_at=timezone.now()
+        )
+        self.message_user(request, f"{updated} payment request(s) marked as Verified.")
+    mark_as_verified.short_description = "✅ Verify selected payments"
+    
+    def mark_as_rejected(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.filter(status='pending').update(
+            status='rejected',
+            verified_by=request.user,
+            verified_at=timezone.now()
+        )
+        self.message_user(request, f"{updated} payment request(s) marked as Rejected.")
+    mark_as_rejected.short_description = "❌ Reject selected payments"
 

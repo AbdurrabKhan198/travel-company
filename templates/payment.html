@@ -26,73 +26,73 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-12">
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 py-4">
     <div class="container mx-auto px-4">
         <div class="max-w-5xl mx-auto">
             <!-- Header -->
-            <div class="text-center mb-12 animate-fade-in-up">
-                <div class="inline-block p-4 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl mb-4 shadow-lg">
-                    <i class="fas fa-lock text-white text-3xl"></i>
+            <div class="text-center mb-3 animate-fade-in-up">
+                <div class="inline-block p-2 bg-gradient-to-br from-sky-400 to-blue-600 rounded-lg mb-2 shadow-lg">
+                    <i class="fas fa-lock text-white text-lg"></i>
                 </div>
-                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                <h1 class="text-xl md:text-2xl font-bold text-gray-900 mb-1">
                     Complete Your <span class="gradient-text">Payment</span>
                 </h1>
-                <p class="text-xl text-gray-600">Choose your payment method</p>
+                <p class="text-xs text-gray-600">Choose your payment method</p>
             </div>
 
-            <div class="grid lg:grid-cols-3 gap-8">
+            <div class="grid lg:grid-cols-3 gap-3">
                 <!-- Left: Booking Summary -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="lg:col-span-2 space-y-3">
                     <!-- Flight Details Card -->
-                    <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-gray-900 flex items-center">
-                                <i class="fas fa-plane text-sky-500 mr-3"></i>
+                    <div class="bg-white rounded-lg shadow-md p-4 animate-fade-in-up">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-base font-bold text-gray-900 flex items-center">
+                                <i class="fas fa-plane text-sky-500 mr-2 text-sm"></i>
                                 Flight Details
                             </h2>
-                            <span class="px-4 py-2 bg-sky-100 text-sky-700 rounded-full text-sm font-semibold">
+                            <span class="px-2 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-semibold">
                                 {{ booking.booking_reference }}
                             </span>
                         </div>
                         
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div class="p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl">
-                                <p class="text-sm text-gray-600 mb-1">Route</p>
-                                <p class="text-lg font-bold text-gray-900">
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <div class="p-3 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg">
+                                <p class="text-xs text-gray-600 mb-1">Route</p>
+                                <p class="text-sm font-bold text-gray-900">
                                     {{ booking.schedule.route.from_location }}
-                                    <i class="fas fa-arrow-right mx-2 text-sky-500"></i>
+                                    <i class="fas fa-arrow-right mx-1 text-sky-500 text-xs"></i>
                                     {{ booking.schedule.route.to_location }}
                                 </p>
                             </div>
                             
-                            <div class="p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl">
+                            <div class="p-3 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg">
                                 {% if booking.schedule.route.airline_name %}
                                 {% if booking.schedule.route.get_airline_logo_url %}
-                                <div class="flex justify-center mb-2">
+                                <div class="flex justify-center mb-1">
                                     <img src="{{ booking.schedule.route.get_airline_logo_url }}" 
                                          alt="{{ booking.schedule.route.airline_name }} Logo" 
-                                         class="h-5 w-auto object-contain"
-                                         style="max-height: 24px; max-width: 80px;">
+                                         class="h-4 w-auto object-contain"
+                                         style="max-height: 18px; max-width: 60px;">
                                 </div>
                                 {% endif %}
-                                <p class="text-sm text-gray-600 mb-1">Airline</p>
-                                <p class="text-lg font-bold text-gray-900">{{ booking.schedule.route.airline_name }}</p>
+                                <p class="text-xs text-gray-600 mb-1">Airline</p>
+                                <p class="text-sm font-bold text-gray-900">{{ booking.schedule.route.airline_name }}</p>
                                 <p class="text-xs text-gray-500">Flight: {{ booking.schedule.route.carrier_number }}</p>
                                 {% else %}
-                                <p class="text-sm text-gray-600 mb-1">Flight Number</p>
-                                <p class="text-lg font-bold text-gray-900">{{ booking.schedule.route.carrier_number }}</p>
+                                <p class="text-xs text-gray-600 mb-1">Flight Number</p>
+                                <p class="text-sm font-bold text-gray-900">{{ booking.schedule.route.carrier_number }}</p>
                                 {% endif %}
                             </div>
                             
-                            <div class="p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl">
-                                <p class="text-sm text-gray-600 mb-1">Departure Date</p>
-                                <p class="text-lg font-bold text-gray-900">{{ booking.schedule.departure_date|date:"d F Y" }}</p>
+                            <div class="p-3 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg">
+                                <p class="text-xs text-gray-600 mb-1">Departure Date</p>
+                                <p class="text-sm font-bold text-gray-900">{{ booking.schedule.departure_date|date:"d F Y" }}</p>
                             </div>
                             
-                            <div class="p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl">
-                                <p class="text-sm text-gray-600 mb-1">Passengers</p>
-                                <p class="text-lg font-bold text-gray-900">
-                                    <i class="fas fa-users text-sky-500 mr-2"></i>
+                            <div class="p-3 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg">
+                                <p class="text-xs text-gray-600 mb-1">Passengers</p>
+                                <p class="text-sm font-bold text-gray-900">
+                                    <i class="fas fa-users text-sky-500 mr-1 text-xs"></i>
                                     {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
                                 </p>
                             </div>
@@ -100,32 +100,32 @@
                     </div>
 
                     <!-- Payment Summary Card -->
-                    <div class="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.1s;">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                            <i class="fas fa-receipt text-sky-500 mr-3"></i>
+                    <div class="bg-white rounded-lg shadow-md p-4 animate-fade-in-up" style="animation-delay: 0.1s;">
+                        <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-receipt text-sky-500 mr-2 text-sm"></i>
                             Payment Summary
                         </h2>
                         
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                <span class="text-gray-700 font-medium">Base Fare</span>
-                                <span class="text-lg font-bold text-gray-900">₹{{ booking.base_fare|floatformat:2 }}</span>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <span class="text-gray-700 font-medium text-xs">Base Fare</span>
+                                <span class="text-sm font-bold text-gray-900">₹{{ booking.base_fare|floatformat:2 }}</span>
                             </div>
                             
                             
                             {% if booking.discount_amount > 0 %}
-                            <div class="flex justify-between items-center p-4 bg-green-50 rounded-xl border-2 border-green-200">
-                                <span class="text-green-700 font-medium">
-                                    <i class="fas fa-tag mr-2"></i>Discount
+                            <div class="flex justify-between items-center p-2 bg-green-50 rounded-lg border-2 border-green-200">
+                                <span class="text-green-700 font-medium text-xs">
+                                    <i class="fas fa-tag mr-1 text-xs"></i>Discount
                                 </span>
-                                <span class="text-lg font-bold text-green-700">-₹{{ booking.discount_amount|floatformat:2 }}</span>
+                                <span class="text-sm font-bold text-green-700">-₹{{ booking.discount_amount|floatformat:2 }}</span>
                             </div>
                             {% endif %}
                             
-                            <div class="border-t-2 border-gray-200 pt-4 mt-4">
-                                <div class="flex justify-between items-center p-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl">
-                                    <span class="text-white text-xl font-bold">Total Amount</span>
-                                    <span class="text-3xl font-bold text-white">₹{{ booking.total_amount|floatformat:2 }}</span>
+                            <div class="border-t-2 border-gray-200 pt-2 mt-2">
+                                <div class="flex justify-between items-center p-3 bg-gradient-to-r from-sky-500 to-blue-600 rounded-lg">
+                                    <span class="text-white text-sm font-bold">Total Amount</span>
+                                    <span class="text-xl font-bold text-white">₹{{ booking.total_amount|floatformat:2 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -134,44 +134,44 @@
 
                 <!-- Right: Payment Gateway -->
                 <div class="lg:col-span-1">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 sticky top-24 animate-fade-in-up" style="animation-delay: 0.2s;">
-                        <div class="text-center mb-6">
-                            <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                <i class="fas fa-shield-alt text-white text-3xl"></i>
+                    <div class="bg-white rounded-lg shadow-md p-4 sticky top-20 animate-fade-in-up" style="animation-delay: 0.2s;">
+                        <div class="text-center mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-lg">
+                                <i class="fas fa-shield-alt text-white text-base"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-900 mb-2">Payment Options</h3>
-                            <p class="text-sm text-gray-600">Select your preferred payment method</p>
+                            <h3 class="text-base font-bold text-gray-900 mb-1">Payment Options</h3>
+                            <p class="text-xs text-gray-600">Select your preferred payment method</p>
                         </div>
                         
                         <!-- OD Wallet Payment Option -->
                         {% if can_use_od_wallet %}
-                        <div class="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-wallet text-amber-600 text-xl"></i>
-                                    <span class="font-bold text-gray-900">Pay with OD Wallet</span>
+                        <div class="mb-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border-2 border-amber-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-wallet text-amber-600 text-sm"></i>
+                                    <span class="font-bold text-gray-900 text-xs">OD Wallet</span>
                                     {% if od_wallet_days_remaining is not None %}
-                                    <span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                    <span class="bg-yellow-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
                                         {% if od_wallet_days_remaining == 0 %}
                                         Expires Today
                                         {% elif od_wallet_days_remaining == 1 %}
-                                        1 Day Left
+                                        1 Day
                                         {% else %}
-                                        {{ od_wallet_days_remaining }} Days Left
+                                        {{ od_wallet_days_remaining }}d
                                         {% endif %}
                                     </span>
                                     {% endif %}
                                 </div>
-                                <span class="text-sm font-semibold text-amber-700">
-                                    Balance: {% if od_wallet_balance < 0 %}-₹{{ od_wallet_balance|floatformat:2|slice:"1:" }}{% else %}₹{{ od_wallet_balance|floatformat:2 }}{% endif %}
+                                <span class="text-xs font-semibold text-amber-700">
+                                    {% if od_wallet_balance < 0 %}-₹{{ od_wallet_balance|floatformat:2|slice:"1:" }}{% else %}₹{{ od_wallet_balance|floatformat:2 }}{% endif %}
                                 </span>
                             </div>
                             <form method="POST" action="{% url 'payment' booking.id %}" class="mb-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="payment_method" value="od_wallet">
-                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
-                                    <i class="fas fa-wallet"></i>
-                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }} from OD Wallet</span>
+                                <button type="submit" class="w-full py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-1">
+                                    <i class="fas fa-wallet text-xs"></i>
+                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }}</span>
                                 </button>
                             </form>
                         </div>
@@ -213,43 +213,43 @@
                         
                         <!-- Cash Balance Payment Option -->
                         {% if can_use_cash_balance %}
-                        <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-wallet text-blue-600 text-xl"></i>
-                                    <span class="font-bold text-gray-900">Pay with Cash Balance</span>
+                        <div class="mb-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border-2 border-blue-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-wallet text-blue-600 text-sm"></i>
+                                    <span class="font-bold text-gray-900 text-xs">Cash Balance</span>
                                 </div>
-                                <span class="text-sm font-semibold text-blue-700">Balance: ₹{{ cash_balance|floatformat:2 }}</span>
+                                <span class="text-xs font-semibold text-blue-700">₹{{ cash_balance|floatformat:2 }}</span>
                             </div>
                             <form method="POST" action="{% url 'payment' booking.id %}" class="mb-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="payment_method" value="cash_balance">
-                                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
-                                    <i class="fas fa-wallet"></i>
-                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }} from Cash Balance</span>
+                                <button type="submit" class="w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold text-xs shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-1">
+                                    <i class="fas fa-wallet text-xs"></i>
+                                    <span>Pay ₹{{ booking.total_amount|floatformat:2 }}</span>
                                 </button>
                             </form>
                         </div>
                         {% elif cash_balance_wallet %}
-                        <div class="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                        <div class="mb-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-wallet text-gray-400 text-xl"></i>
-                                    <span class="font-medium text-gray-600">Cash Balance</span>
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-wallet text-gray-400 text-sm"></i>
+                                    <span class="font-medium text-gray-600 text-xs">Cash Balance</span>
                                 </div>
-                                <span class="text-sm text-gray-500">Balance: ₹{{ cash_balance|floatformat:2 }}</span>
+                                <span class="text-xs text-gray-500">₹{{ cash_balance|floatformat:2 }}</span>
                             </div>
-                            <p class="text-xs text-red-600 mt-2">Insufficient balance. <a href="{% url 'wallet_recharge' %}" class="underline">Recharge now</a></p>
+                            <p class="text-xs text-red-600 mt-1">Insufficient balance. <a href="{% url 'wallet_recharge' %}" class="underline">Recharge now</a></p>
                         </div>
                         {% endif %}
                         
                         {% if can_use_od_wallet or can_use_cash_balance %}
-                        <div class="mb-6 text-center">
+                        <div class="mb-3 text-center">
                             <div class="relative">
                                 <div class="absolute inset-0 flex items-center">
                                     <div class="w-full border-t border-gray-300"></div>
                                 </div>
-                                <div class="relative flex justify-center text-sm">
+                                <div class="relative flex justify-center text-xs">
                                     <span class="px-2 bg-white text-gray-500">OR</span>
                                 </div>
                             </div>
@@ -257,13 +257,13 @@
                         {% endif %}
                         
                         {# Easebuzz Payment Gateway Button #}
-                        <div class="mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-center">Or Pay via Payment Gateway</h3>
+                        <div class="mb-3">
+                            <h3 class="text-sm font-semibold mb-2 text-center">Pay via Payment Gateway</h3>
                             <form method="POST" action="{% url 'payment' booking.id %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="payment_method" value="easebuzz">
-                                <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-3">
-                                    <i class="fas fa-credit-card"></i>
+                                <button type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-sm shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                    <i class="fas fa-credit-card text-sm"></i>
                                     <span>Pay ₹{{ booking.total_amount|floatformat:2 }} via Easebuzz</span>
                                 </button>
                             </form>
@@ -283,20 +283,20 @@
                         {% endif %}
                         
                         <!-- Payment Methods -->
-                        <div class="mt-6 pt-6 border-t border-gray-200">
-                            <p class="text-sm text-gray-600 mb-3 text-center">Accepted Payment Methods</p>
-                            <div class="flex justify-center space-x-3">
-                                <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <i class="fab fa-cc-visa text-blue-600 text-xl"></i>
+                        <div class="mt-4 pt-3 border-t border-gray-200">
+                            <p class="text-xs text-gray-600 mb-2 text-center">Accepted Payment Methods</p>
+                            <div class="flex justify-center space-x-2">
+                                <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                    <i class="fab fa-cc-visa text-blue-600 text-sm"></i>
                                 </div>
-                                <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <i class="fab fa-cc-mastercard text-red-600 text-xl"></i>
+                                <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                    <i class="fab fa-cc-mastercard text-red-600 text-sm"></i>
                                 </div>
-                                <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <i class="fab fa-cc-paypal text-blue-500 text-xl"></i>
+                                <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                    <i class="fab fa-cc-paypal text-blue-500 text-sm"></i>
                                 </div>
-                                <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <i class="fas fa-university text-gray-600 text-sm"></i>
+                                <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                    <i class="fas fa-university text-gray-600 text-xs"></i>
                                 </div>
                             </div>
                         </div>

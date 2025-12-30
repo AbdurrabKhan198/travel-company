@@ -89,12 +89,12 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-600 mb-1">Departure Date</p>
-                            <p class="text-lg font-semibold text-gray-900">{{ group_request.departure_date|date:"F d, Y" }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ group_request.departure_date|date:"d/m/Y" }}</p>
                         </div>
                         {% if group_request.return_date %}
                         <div>
                             <p class="text-sm text-gray-600 mb-1">Return Date</p>
-                            <p class="text-lg font-semibold text-gray-900">{{ group_request.return_date|date:"F d, Y" }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ group_request.return_date|date:"d/m/Y" }}</p>
                         </div>
                         {% endif %}
                         <div>

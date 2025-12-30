@@ -265,6 +265,21 @@
                 <!-- Right Side Menu - Goibibo Style -->
                 <div class="navbar-right-section flex items-center ml-auto"
                     style="display: flex !important; flex-wrap: nowrap !important; gap: 8px !important; align-items: center !important;">
+                    
+                    {% if user.is_authenticated and user.is_approved %}
+                    <!-- Balance & Recharge - Desktop Only -->
+                    <div class="hidden lg:flex flex-col items-center border-ra">
+                        <div class="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-50 to-sky-50 rounded-t-lg border border-b-0 border-sky-200">
+                            <span class="text-xs font-bold text-black-500 font-medium">Cash Bal:</span>
+                            <span class="text-xs font-bold text-black-600">₹{{ cash_balance|floatformat:0|default:"0" }}</span>
+                        </div>
+                        <a href="{% url 'wallet_recharge' %}" 
+                           class="w-full px-4 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-b-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg text-center">
+                            Recharge
+                        </a>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Sales Representative -->
                     {% if sales_representatives %}
                                 <div class="relative group hidden md:block">
@@ -285,11 +300,17 @@
                                 <div class="px-4 py-3 hover:bg-sky-50 transition-colors">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
-                                            <p class="font-semibold text-gray-900">{{ sales_rep.name }}</p>
+                                            <p class="font-semibold text-gray-900">Name : {{ sales_rep.name }}</p>
                                             <a href="tel:{{ sales_rep.phone }}"
                                                 class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
-                                                <i class="fas fa-phone mr-2"></i>{{ sales_rep.phone }}
+                                                <i class="fas fa-phone mr-2"></i>Phone No : {{ sales_rep.phone }}
                                             </a>
+                                            {% if sales_rep.email %}
+                                            <a href="mailto:{{ sales_rep.email }}"
+                                                class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                                <i class="fas fa-envelope mr-2"></i>Email : {{ sales_rep.email }}
+                                            </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -318,8 +339,8 @@
                             class="flex items-center space-x-1 px-2 py-1 md:px-4 md:py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700 transition-all duration-200 shadow-lg">
                             <div
                                 class="w-6 h-6 md:w-8 md:h-8 bg-white/20 rounded-full flex items-center justify-center font-semibold text-xs md:text-sm">
-                                {% if user.profile and user.profile.full_name %}{{ user.profile.full_name|slice:":1"|upper }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}</div>
-                            <span class="hidden md:block font-medium">{% if user.profile and user.profile.full_name %}{{ user.profile.full_name }}{% else %}{{ user.username }}{% endif %}</span>
+                                {% if user.profile and user.profile.company_name %}{{ user.profile.company_name|slice:":1"|upper }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}</div>
+                            <span class="hidden md:block font-medium">{% if user.profile and user.profile.company_name %}{{ user.profile.company_name }}{% else %}{{ user.username }}{% endif %}</span>
                             <i class="fas fa-chevron-down text-xs hidden md:inline"></i>
                         </button>
                         <div
@@ -362,16 +383,22 @@
                                 class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                 <i class="fas fa-wallet mr-2 text-blue-500"></i> Recharge Cash Balance
                             </a>
-                            <a href="{% url 'wallet_history' %}"
-                                class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                                <i class="fas fa-history mr-2"></i> Cash Balance History
-                            </a>
                             <hr class="my-1">
                             <a href="{% url 'group_request' %}"
                                 class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
                                 <i class="fas fa-users mr-2 text-purple-500"></i> Group Request
                             </a>
+                            <hr class="my-1">
+                            <a href="{% url 'bank_accounts' %}"
+                                class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
+                                <i class="fas fa-university mr-2 text-green-500"></i> Bank Accounts
+                            </a>
+                            <a href="{% url 'upload_payment_request' %}"
+                                class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition-colors">
+                                <i class="fas fa-cloud-upload-alt mr-2 text-indigo-500"></i> Upload Request
+                            </a>
                         </div>
+
                         <div class="border-t border-gray-200 pt-2 pb-2 bg-gray-50 rounded-b-xl">
                             <a href="{% url 'logout' %}"
                                 class="block px-4 py-2 text-red-600 hover:bg-red-50 transition-colors font-semibold">
@@ -438,11 +465,17 @@
                             Representative</h3>
                         {% for sales_rep in sales_representatives %}
                                 <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
-                            <p class="font-semibold text-gray-900">{{ sales_rep.name }}</p>
+                            <p class="font-semibold text-gray-900">Name : {{ sales_rep.name }}</p>
                             <a href="tel:{{ sales_rep.phone }}"
                                 class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
-                                <i class="fas fa-phone mr-2"></i>{{ sales_rep.phone }}
+                                <i class="fas fa-phone mr-2"></i>Phone No : {{ sales_rep.phone }}
                             </a>
+                            {% if sales_rep.email %}
+                            <a href="mailto:{{ sales_rep.email }}"
+                                class="text-sky-600 hover:text-sky-700 font-medium text-sm mt-1 flex items-center">
+                                <i class="fas fa-envelope mr-2"></i>Email : {{ sales_rep.email }}
+                            </a>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

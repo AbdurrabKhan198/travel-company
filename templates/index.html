@@ -5,21 +5,25 @@
 {% block title %}Safar Zone - Book Flights Online{% endblock %}
 
 {% block extra_css %}
+<!-- Flatpickr Date Picker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
-    /* Professional Static Background */
+    /* Professional Static Background - Light Blue Gradient */
     .hero-section {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        background: linear-gradient(135deg, #598caf 0%, #336681 50%, #306279 100%);
         min-height: 600px;
         position: relative;
     }
 
-    /* Professional Form Styling */
+    /* Professional Form Styling - Goibibo Style */
     .search-form-container {
         background: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 24px;
         margin-top: 40px;
+        max-width: 100%;
+        margin-right: auto;
     }
 
     .form-field-wrapper {
@@ -56,18 +60,20 @@
 
     .form-field-display {
         padding: 12px 16px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: #f9fafb;
         min-height: 48px;
         cursor: pointer;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        transition: all 0.2s;
     }
 
     .form-field-display:hover {
-        border-color: #3b82f6;
+        border-color: #d1d5db;
+        background: #ffffff;
     }
 
     .form-field-value {
@@ -90,35 +96,51 @@
 
     .trip-type-container {
         display: flex;
-        gap: 10px;
+        gap: 24px;
         margin-bottom: 20px;
     }
 
     .trip-type-btn {
-        flex: 1;
-        padding: 12px 20px;
-        border: 2px solid #e5e7eb;
-        border-radius: 6px;
-        background: #ffffff;
+        padding: 0;
+        border: none;
+        background: transparent;
         font-weight: 600;
-        font-size: 14px;
-        color: #374151;
+        font-size: 16px;
+        color: #333;
         cursor: pointer;
         transition: all 0.2s;
-        text-align: center;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+    }
+
+    .trip-type-btn::before {
+        content: '';
+        width: 18px;
+        height: 18px;
+        border: 2px solid #d1d5db;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: all 0.2s;
     }
 
     .trip-type-btn.active {
-        background: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .trip-type-btn.active::before {
         border-color: #3b82f6;
-        color: #ffffff;
+        background: #3b82f6;
+        box-shadow: inset 0 0 0 4px #ffffff;
     }
 
     .swap-btn {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        border: 1px solid #d1d5db;
+        border: 2px solid #d1d5db;
         background: #ffffff;
         display: flex;
         align-items: center;
@@ -126,20 +148,22 @@
         cursor: pointer;
         margin-top: 28px;
         transition: all 0.2s;
+        flex-shrink: 0;
     }
 
     .swap-btn:hover {
         background: #f3f4f6;
-        border-color: #3b82f6;
+        border-color: #ff6b35;
+        color: #ff6b35;
     }
 
     .search-btn {
         width: 100%;
         padding: 16px;
-        background: #f97316;
+        background: #ff6b35;
         color: #ffffff;
         border: none;
-        border-radius: 6px;
+        border-radius: 30px;
         font-size: 16px;
         font-weight: 700;
         text-transform: uppercase;
@@ -149,7 +173,7 @@
     }
 
     .search-btn:hover {
-        background: #ea580c;
+        background: #e55a2b;
     }
 
     .hidden-input-overlay {
@@ -309,10 +333,10 @@
     .modal-apply-btn {
         width: 100%;
         padding: 14px;
-        background: #f97316;
+        background: #ff6b35;
         color: #ffffff;
         border: none;
-        border-radius: 6px;
+        border-radius: 30px;
         font-size: 16px;
         font-weight: 700;
         text-transform: uppercase;
@@ -323,135 +347,372 @@
     }
 
     .modal-apply-btn:hover {
-        background: #ea580c;
+        background: #e55a2b;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-section py-16">
-    <div class="container mx-auto px-4">
-        <div class="max-w-6xl mx-auto">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+<section class="hero-section py-12">
+    <div class="max-w-7xl mx-auto px-2 lg:px-4">
+        <!-- Two Column Layout: Left for form, Right for ads -->
+        <div class="flex flex-col lg:flex-row gap-8 justify-center">
+            <!-- Mobile Header -->
+            <div class="lg:hidden text-center mb-4">
+                <h1 class="text-2xl font-bold text-white mb-2">
                     Book Flights Online
                 </h1>
-                <p class="text-xl text-white/90 mb-6">
+                <p class="text-sm text-white/90">
                     Find the best deals for your journey
                 </p>
             </div>
-
-            <!-- Search Form -->
-            <div class="search-form-container">
+            
+            <!-- Search Form Container - 60% width on desktop, centered -->
+            <div class="w-full lg:w-[60%] order-2 lg:order-1">
+                <!-- Search Form -->
+                <div class="search-form-container" style="padding: 30px;">
                 <form method="GET" action="{% url 'search_flights' %}" id="searchForm">
-                    <!-- Trip Type -->
-                    <div class="trip-type-container">
-                        <button type="button" class="trip-type-btn active" id="trip_one_way_btn">
-                            One Way
-                        </button>
-                        <button type="button" class="trip-type-btn" id="trip_return_btn">
-                            Round Trip
-                        </button>
-                        <input type="radio" name="trip_type" value="one_way" checked id="trip_one_way"
-                            style="display: none;">
-                        <input type="radio" name="trip_type" value="return" id="trip_return" style="display: none;">
-                    </div>
-
-                    <!-- Form Fields -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <!-- From -->
-                        <div class="lg:col-span-2 form-field-wrapper">
-                            <label class="form-field-label">From</label>
-                            <div class="form-field-display" id="from_display_card">
-                                <div class="form-field-value" id="from_display">Enter city</div>
-                                <div class="form-field-subtext" id="from_subtext" style="display: none;"></div>
+                    <!-- Hidden radio inputs for trip type -->
+                    <input type="radio" name="trip_type" value="one_way" checked id="trip_one_way" style="display: none;">
+                    <input type="radio" name="trip_type" value="return" id="trip_return" style="display: none;">
+                    
+                    <!-- Desktop Layout - Single Horizontal Row -->
+                    <div class="hidden lg:block">
+                        <!-- Trip Type Buttons - Horizontal on Top -->
+                        <div class="flex gap-3 mb-4 max-w-sm">
+                            <button type="button" class="trip-type-btn active flex-1 py-2.5 text-sm font-semibold" id="trip_one_way_btn">
+                                One Way
+                            </button>
+                            <button type="button" class="trip-type-btn flex-1 py-2.5 text-sm font-semibold" id="trip_return_btn">
+                                Round Trip
+                            </button>
+                        </div>
+                        
+                        <!-- Flight Type Filter -->
+                        <div class="mb-4">
+                            <label class="text-xs font-semibold text-gray-600 mb-2 block">FLIGHT TYPE</label>
+                            <div class="flex gap-2 max-w-sm">
+                                <input type="radio" name="flight_type" value="any" checked class="hidden" id="flight_any">
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_any" onclick="selectFlightType('any')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-plane text-xs mr-1"></i> Any
+                                </button>
+                                
+                                <input type="radio" name="flight_type" value="direct" class="hidden" id="flight_direct">
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_direct" onclick="selectFlightType('direct')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-plane-departure text-xs mr-1"></i> Direct
+                                </button>
+                                
+                                <input type="radio" name="flight_type" value="via" class="hidden" id="flight_via">
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_via" onclick="selectFlightType('via')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-route text-xs mr-1"></i> Via
+                                </button>
                             </div>
-                            <input type="text" name="from_location" id="from_location" list="origin-suggestions"
-                                class="form-field-input hidden-input-overlay" required>
-                            <datalist id="origin-suggestions">
-                                {% for origin in origins %}
-                                <option
-                                    value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}"
-                                    data-value="{{ origin }}" data-city="{{ origin|lower }}"
-                                    data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
+                        </div>
+                        
+                        <!-- All Fields in One Horizontal Row -->
+                        <div class="flex gap-3 items-end">
+                            <!-- From -->
+                            <div class="flex-1 form-field-wrapper">
+                                <label class="form-field-label text-xs font-bold mb-1.5 block">FROM</label>
+                                <div class="form-field-display h-12" id="from_display_card">
+                                    <div class="form-field-value text-sm" id="from_display">Enter city</div>
+                                    <div class="form-field-subtext text-xs" id="from_subtext" style="display: none;"></div>
+                                </div>
+                                <input type="text" name="from_location" id="from_location" list="origin-suggestions"
+                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_from }}">
+                                <datalist id="origin-suggestions">
+                                    {% for origin in origins %}
+                                    <option value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}" data-value="{{ origin }}" data-city="{{ origin|lower }}" data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
                                     {% endfor %}
-                            </datalist>
-                        </div>
-
-                        <!-- Swap Button -->
-
-
-                        <!-- To -->
-                        <div class="lg:col-span-2 form-field-wrapper">
-                            <label class="form-field-label">To</label>
-                            <div class="form-field-display" id="to_display_card">
-                                <div class="form-field-value" id="to_display">Enter city</div>
-                                <div class="form-field-subtext" id="to_subtext" style="display: none;"></div>
+                                </datalist>
                             </div>
-                            <input type="text" name="to_location" id="to_location" list="destination-suggestions"
-                                class="form-field-input hidden-input-overlay" required>
-                            <datalist id="destination-suggestions">
-                                {% for destination in destinations %}
-                                <option
-                                    value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}"
-                                    data-value="{{ destination }}" data-city="{{ destination|lower }}"
-                                    data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
+
+                            <!-- Swap Button -->
+                            <div class="swap-btn" onclick="swapLocations()" title="Swap cities">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 16V4M7 4L3 8M7 4L11 8"></path>
+                                    <path d="M17 8V20M17 20L21 16M17 20L13 16"></path>
+                                </svg>
+                            </div>
+
+                            <!-- To -->
+                            <div class="flex-1 form-field-wrapper">
+                                <label class="form-field-label text-xs font-bold mb-1.5 block">TO</label>
+                                <div class="form-field-display h-12" id="to_display_card">
+                                    <div class="form-field-value text-sm" id="to_display">Enter city</div>
+                                    <div class="form-field-subtext text-xs" id="to_subtext" style="display: none;"></div>
+                                </div>
+                                <input type="text" name="to_location" id="to_location" list="destination-suggestions"
+                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_to }}">
+                                <datalist id="destination-suggestions">
+                                    {% for destination in destinations %}
+                                    <option value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}" data-value="{{ destination }}" data-city="{{ destination|lower }}" data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
                                     {% endfor %}
-                            </datalist>
-                        </div>
-
-                        <!-- Departure Date -->
-                        <div class="lg:col-span-2 form-field-wrapper">
-                            <label class="form-field-label">Departure</label>
-                            <div class="form-field-display" id="departure_display_card">
-                                <div class="form-field-value" id="departure_display">Select date</div>
-                                <div class="form-field-subtext" id="departure_subtext" style="display: none;"></div>
+                                </datalist>
                             </div>
-                            <input type="date" name="travel_date" id="travel_date" min="{{ today }}"
-                                class="form-field-input hidden-input-overlay" required>
-                        </div>
 
-                        <!-- Return Date -->
-                        <div class="lg:col-span-2 form-field-wrapper" id="return_date_wrapper" style="display: none;">
-                            <label class="form-field-label">Return</label>
-                            <div class="form-field-display" id="return_display_card"
-                                style="background: #f9fafb; border-color: #e5e7eb;">
-                                <div class="form-field-placeholder" id="return_display">Add return date</div>
-                                <div class="form-field-subtext" id="return_subtext" style="display: none;"></div>
+                            <!-- Departure Date -->
+                            <div class="flex-1 form-field-wrapper">
+                                <label class="form-field-label text-xs font-bold mb-1.5 block">DEPARTURE</label>
+                                <div class="form-field-display h-12" id="departure_display_card">
+                                    <div class="form-field-value text-sm" id="departure_display">Select date</div>
+                                    <div class="form-field-subtext text-xs" id="departure_subtext" style="display: none;"></div>
+                                </div>
+                                <input type="text" name="travel_date" id="travel_date" placeholder="Select date"
+                                    class="form-field-input hidden-input-overlay" required readonly value="{{ prefill_travel_date }}">
                             </div>
-                            <input type="date" name="return_date" id="return_date" min="{{ today }}"
-                                class="form-field-input hidden-input-overlay" disabled>
-                        </div>
 
-                        <!-- Passengers -->
-                        <div class="lg:col-span-1 form-field-wrapper">
-                            <label class="form-field-label">Travellers & Class</label>
-                            <div class="form-field-display" id="passenger_display_card" onclick="openPassengerModal()">
-                                <div class="form-field-value" id="passenger_display">1 Traveller</div>
-                                <div class="form-field-subtext" id="passenger_subtext">Economy</div>
+                            <!-- Return Date -->
+                            <div class="flex-1 form-field-wrapper" id="return_date_wrapper" style="display: none;">
+                                <label class="form-field-label text-xs font-bold mb-1.5 block">RETURN</label>
+                                <div class="form-field-display h-12" id="return_display_card"
+                                    style="background: #f9fafb; border-color: #e5e7eb;">
+                                    <div class="form-field-placeholder text-sm" id="return_display">Add return date</div>
+                                    <div class="form-field-subtext text-xs" id="return_subtext" style="display: none;"></div>
+                                </div>
+                                <input type="text" name="return_date" id="return_date" placeholder="Select date"
+                                    class="form-field-input hidden-input-overlay" disabled readonly value="{{ prefill_return_date }}">
                             </div>
-                            <!-- Hidden inputs for form submission -->
-                            <input type="hidden" name="adults" id="adults_input"
-                                value="{{ request.GET.adults|default:'1' }}" required>
-                            <input type="hidden" name="children" id="children_input"
-                                value="{{ request.GET.children|default:'0' }}">
-                            <input type="hidden" name="infants" id="infants_input"
-                                value="{{ request.GET.infants|default:'0' }}">
-                            <input type="hidden" name="travel_class" id="travel_class_input"
-                                value="{{ request.GET.travel_class|default:'economy' }}">
+
+                            <!-- Passengers -->
+                            <div class="flex-1 form-field-wrapper">
+                                <label class="form-field-label text-xs font-bold mb-1.5 block">TRAVELLERS</label>
+                                <div class="form-field-display h-12 cursor-pointer" id="passenger_display_card" onclick="openPassengerModal()">
+                                    <div class="form-field-value text-sm" id="passenger_display">1 Traveller</div>
+                                    <div class="form-field-subtext text-xs" id="passenger_subtext">Economy</div>
+                                </div>
+                                <input type="hidden" name="adults" id="adults_input" value="{{ request.GET.adults|default:'1' }}" required>
+                                <input type="hidden" name="children" id="children_input" value="{{ request.GET.children|default:'0' }}">
+                                <input type="hidden" name="infants" id="infants_input" value="{{ request.GET.infants|default:'0' }}">
+                                <input type="hidden" name="travel_class" id="travel_class_input" value="{{ request.GET.travel_class|default:'economy' }}">
+                            </div>
+                            
+                            <!-- Search Button -->
+                            <div class="w-40">
+                                <button type="submit" class="search-btn w-full h-12 text-sm font-bold">
+                                    <i class="fas fa-search mr-1"></i>
+                                    SEARCH
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Mobile/Tablet Layout (Original Vertical) -->
+                    <div class="lg:hidden">
+                        <!-- Trip Type -->
+                        <div class="trip-type-container mb-4">
+                            <button type="button" class="trip-type-btn active" id="trip_one_way_btn_mobile">One Way</button>
+                            <button type="button" class="trip-type-btn" id="trip_return_btn_mobile">Round Trip</button>
+                        </div>
+                        
+                        <!-- Flight Type Filter - Mobile -->
+                        <div class="mb-4">
+                            <label class="text-xs font-semibold text-gray-600 mb-2 block">FLIGHT TYPE</label>
+                            <div class="flex gap-2">
+                                <label class="flex-1">
+                                    <input type="radio" name="flight_type_mobile" value="any" checked class="hidden" id="flight_any_mobile">
+                                    <div class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('any')">
+                                        <i class="fas fa-plane text-xs mr-1"></i> Any
+                                    </div>
+                                </label>
+                                <label class="flex-1">
+                                    <input type="radio" name="flight_type_mobile" value="direct" class="hidden" id="flight_direct_mobile">
+                                    <div class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('direct')">
+                                        <i class="fas fa-plane-departure text-xs mr-1"></i> Direct
+                                    </div>
+                                </label>
+                                <label class="flex-1">
+                                    <input type="radio" name="flight_type_mobile" value="via" class="hidden" id="flight_via_mobile">
+                                    <div class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('via')">
+                                        <i class="fas fa-route text-xs mr-1"></i> Via
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Fields - Vertical on Mobile -->
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- From -->
+                            <div class="form-field-wrapper">
+                                <label class="form-field-label">FROM</label>
+                                <div class="form-field-display" id="from_display_card_mobile">
+                                    <div class="form-field-value" id="from_display_mobile">Enter city</div>
+                                </div>
+                            </div>
 
-                    <!-- Search Button -->
-                    <div class="mt-6">
-                        <button type="submit" class="search-btn">
-                            <i class="fas fa-search mr-2"></i>
-                            Search Flights
-                        </button>
+                            <!-- To -->
+                            <div class="form-field-wrapper">
+                                <label class="form-field-label">TO</label>
+                                <div class="form-field-display" id="to_display_card_mobile">
+                                    <div class="form-field-value" id="to_display_mobile">Enter city</div>
+                                </div>
+                            </div>
+
+                            <!-- Departure Date -->
+                            <div class="form-field-wrapper">
+                                <label class="form-field-label">DEPARTURE</label>
+                                <div class="form-field-display" id="departure_display_card_mobile">
+                                    <div class="form-field-value" id="departure_display_mobile">Select date</div>
+                                </div>
+                            </div>
+
+                            <!-- Return Date -->
+                            <div class="form-field-wrapper" id="return_date_wrapper_mobile" style="display: none;">
+                                <label class="form-field-label">RETURN</label>
+                                <div class="form-field-display" id="return_display_card_mobile">
+                                    <div class="form-field-placeholder" id="return_display_mobile">Add return date</div>
+                                </div>
+                            </div>
+
+                            <!-- Passengers -->
+                            <div class="form-field-wrapper">
+                                <label class="form-field-label">TRAVELLERS</label>
+                                <div class="form-field-display" id="passenger_display_card_mobile" onclick="openPassengerModal()">
+                                    <div class="form-field-value" id="passenger_display_mobile">1 Traveller</div>
+                                    <div class="form-field-subtext" id="passenger_subtext_mobile">Economy</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search Button -->
+                        <div class="mt-6">
+                            <button type="submit" class="search-btn">
+                                <i class="fas fa-search mr-2"></i>
+                                Search Flights
+                            </button>
+                        </div>
                     </div>
                 </form>
+            </div>
+            </div><!-- End Left Column (Form) -->
+            
+            <!-- Right Column - For Ads (Hidden for now to give more space to form) -->
+            <div class="hidden order-3 lg:order-2">
+                <!-- Ads space - can be filled later -->
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+                        Book Flights Online
+                    </h1>
+                    <p class="text-lg text-white/90">
+                        Find the best deals for your journey
+                    </p>
+                </div>
+                <!-- Ad placeholder -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center text-white/60 min-h-[300px] flex items-center justify-center">
+                    <div>
+                        <i class="fas fa-ad text-4xl mb-3 opacity-50"></i>
+                        <p class="text-sm">Advertisement Space</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Flex Container -->
+        
+        <!-- Promotional Banners - Below Search Form -->
+        <div class="max-w-7xl mx-auto px-4 mt-24 pb-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Special Offer Banner -->
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 cursor-pointer">
+                    <div class="absolute inset-0 bg-gradient-to-br from-orange-600/90 to-red-700/90"></div>
+                    <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&h=300&fit=crop" alt="Flight Offer" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-500">
+                    <div class="relative p-6 h-full flex flex-col justify-between min-h-[200px]">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="inline-block text-xs font-bold bg-yellow-400 text-orange-900 px-3 py-1 rounded-full shadow-lg">LIMITED TIME</span>
+                                <i class="fas fa-bolt text-3xl text-yellow-300 animate-pulse drop-shadow-lg"></i>
+                            </div>
+                            <h3 class="text-2xl font-black mb-2 text-white drop-shadow-lg">Flat ₹2000 OFF</h3>
+                            <p class="text-sm text-white/95 font-medium mb-3 drop-shadow">On International Flights</p>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-white font-semibold border border-white/30">Code: INTFLY2K</span>
+                            <i class="fas fa-arrow-right text-white text-lg group-hover:translate-x-2 transition-transform duration-300"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Umrah Package Banner -->
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 cursor-pointer">
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-700/90 to-emerald-800/90"></div>
+                    <img src="https://images.unsplash.com/photo-1592326871020-04f58c1a52f3?q=80&w=465&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Umrah" class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500">
+                    <div class="relative p-6 h-full flex flex-col justify-between min-h-[200px]">
+                        <div>
+                            <div class="flex items-center mb-3">
+                                <i class="fas fa-kaaba text-4xl mr-3 text-yellow-200 drop-shadow-xl"></i>
+                                <div>
+                                    <h3 class="text-xl font-black text-white drop-shadow-lg">Umrah Packages</h3>
+                                    <p class="text-xs text-yellow-200/90 font-semibold">Special Ramadan Offers</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-white/95 font-medium mb-3 drop-shadow">Premium packages with 5-star hotels</p>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white drop-shadow-lg">From ₹89,999</span>
+                            <a href="{% url 'umrah' %}" class="inline-flex items-center text-sm font-semibold text-white bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white/30 transition-all border border-white/30">
+                                View <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform duration-300"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hot Deals Banner -->
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 cursor-pointer">
+                    <div class="absolute inset-0 bg-white/95"></div>
+                    <img src="https://plus.unsplash.com/premium_photo-1729029731689-16e7989704b8?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Hot Deals" class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500">
+                    <div class="relative p-6 h-full flex flex-col justify-between min-h-[200px]">
+                        <div>
+                            <div class="flex items-center mb-4">
+                                <div class="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-xl mr-3 shadow-lg">
+                                    <i class="fas fa-fire text-white text-2xl"></i>
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800">Hot Deals</h3>
+                            </div>
+                            <div class="space-y-2.5">
+                                <div class="flex items-center justify-between p-2.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-plane-departure text-blue-600 mr-2 text-sm"></i>
+                                        <span class="text-sm font-semibold text-gray-700">Delhi → Dubai</span>
+                                    </div>
+                                    <span class="text-base font-bold text-blue-600">₹12,999</span>
+                                </div>
+                                <div class="flex items-center justify-between p-2.5 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-plane-departure text-green-600 mr-2 text-sm"></i>
+                                        <span class="text-sm font-semibold text-gray-700">Mumbai → Singapore</span>
+                                    </div>
+                                    <span class="text-base font-bold text-green-600">₹18,499</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support Banner -->
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 cursor-pointer">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/90 to-indigo-800/90"></div>
+                    <img src="https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=400&h=300&fit=crop" alt="Support" class="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-500">
+                    <div class="relative p-6 h-full flex flex-col justify-between min-h-[200px]">
+                        <div>
+                            <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl inline-block mb-4 shadow-lg">
+                                <i class="fas fa-headset text-4xl text-white drop-shadow-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-black mb-2 text-white drop-shadow-lg">24/7 Support</h3>
+                            <p class="text-sm text-white/95 font-medium mb-4 drop-shadow">Expert travel assistance anytime</p>
+                        </div>
+                        <a href="tel:+919839049767" class="flex items-center text-white hover:text-yellow-300 transition-colors group">
+                            <div class="bg-white/20 backdrop-blur-sm p-2 rounded-lg mr-3 border border-white/30">
+                                <i class="fas fa-phone text-lg"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-white/80 block">Call Now</span>
+                                <span class="font-bold text-base">+91 98390 49767</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -558,14 +819,14 @@
                     </div>
                 </div>
                 <div class="p-6">
-                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description }}</p>
+                    <p class="text-gray-600 mb-4 min-h-[3rem]">{{ package.description|default:"Explore amazing destinations" }}</p>
                     <div class="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div>
                             <span class="text-sm text-gray-500 block">Starting from</span>
                             <span class="text-2xl font-bold text-blue-600">Custom Pricing</span>
                         </div>
                         <div
-                            class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-blue-700 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-3">
+                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-blue-300 rounded-lg font-semibold group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-200 shadow-lg">
                             <i class="fas fa-paper-plane mr-2"></i>Apply Now
                         </div>
                     </div>
@@ -654,6 +915,84 @@
     </div>
 </section>
 
+<!-- Flatpickr Date Picker JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    // Initialize Flatpickr for date inputs with DD/MM/YYYY format
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        
+        // Departure date picker
+        const departurePicker = flatpickr("#travel_date", {
+            dateFormat: "Y-m-d",  // Value format for server
+            altInput: true,
+            altFormat: "d/m/Y",  // Display format for user
+            minDate: "today",
+            disableMobile: true,
+            onChange: function(selectedDates, dateStr) {
+                if (selectedDates.length > 0) {
+                    const d = selectedDates[0];
+                    
+                    // Update display card
+                    const display = document.getElementById('departure_display');
+                    const subtext = document.getElementById('departure_subtext');
+                    if (display) {
+                        const displayDate = String(d.getDate()).padStart(2, '0') + '/' + 
+                            String(d.getMonth() + 1).padStart(2, '0') + '/' + 
+                            d.getFullYear();
+                        display.textContent = displayDate;
+                        display.className = 'form-field-value';
+                    }
+                    if (subtext) {
+                        const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+                        subtext.textContent = dayName;
+                        subtext.style.display = 'block';
+                    }
+                    
+                    // Update return date minimum
+                    if (window.returnPicker) {
+                        window.returnPicker.set('minDate', d);
+                    }
+                }
+            }
+        });
+        
+        // Return date picker
+        const returnPicker = flatpickr("#return_date", {
+            dateFormat: "Y-m-d",  // Value format for server
+            altInput: true,
+            altFormat: "d/m/Y",  // Display format for user
+            minDate: "today",
+            disableMobile: true,
+            onChange: function(selectedDates, dateStr) {
+                if (selectedDates.length > 0) {
+                    const d = selectedDates[0];
+                    
+                    // Update display card
+                    const display = document.getElementById('return_display');
+                    const subtext = document.getElementById('return_subtext');
+                    if (display) {
+                        const displayDate = String(d.getDate()).padStart(2, '0') + '/' + 
+                            String(d.getMonth() + 1).padStart(2, '0') + '/' + 
+                            d.getFullYear();
+                        display.textContent = displayDate;
+                        display.className = 'form-field-value';
+                    }
+                    if (subtext) {
+                        const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+                        subtext.textContent = dayName;
+                        subtext.style.display = 'block';
+                    }
+                }
+            }
+        });
+        
+        // Make pickers available globally
+        window.departurePicker = departurePicker;
+        window.returnPicker = returnPicker;
+    });
+</script>
+
 <script>
     (function () {
         'use strict';
@@ -680,7 +1019,7 @@
                         returnDisplayCard.style.background = '#f9fafb';
                         document.getElementById('return_display').textContent = 'Add return date';
                         document.getElementById('return_display').className = 'form-field-placeholder';
-                        // Client Req: Hide return date column on One Way (remove space too)
+                        // Client Req: Hide return date column on One Way
                         if (returnDateWrapper) returnDateWrapper.style.display = 'none';
                     }
                 });
@@ -700,7 +1039,6 @@
                             document.getElementById('return_display').textContent = 'Select date';
                             document.getElementById('return_display').className = 'form-field-value';
                         }
-                        // Show return date field with space when round trip is selected
                         if (returnDateWrapper) returnDateWrapper.style.display = 'block';
                     }
                 });
@@ -952,6 +1290,9 @@
                 updateLocationDisplay('to_location', 'to_display', 'to_subtext');
             }
         }
+
+        // Make swapLocations globally accessible
+        window.swapLocations = swapLocations;
 
         // Show Error
         function showError(message) {
@@ -1228,5 +1569,92 @@
             }
         });
     })();
+    
+    // Flight Type Selection Function with Direct Style Changes
+    function selectFlightType(type) {
+        // Update radio inputs
+        document.getElementById('flight_any').checked = (type === 'any');
+        document.getElementById('flight_direct').checked = (type === 'direct');
+        document.getElementById('flight_via').checked = (type === 'via');
+        
+        // Get all button IDs
+        const btnAny = document.getElementById('btn_flight_any');
+        const btnDirect = document.getElementById('btn_flight_direct');
+        const btnVia = document.getElementById('btn_flight_via');
+        
+        // Reset all buttons to default style (gray)
+        if (btnAny) {
+            btnAny.style.backgroundColor = 'white';
+            btnAny.style.borderColor = '#d1d5db';
+            btnAny.style.color = '#374151';
+        }
+        if (btnDirect) {
+            btnDirect.style.backgroundColor = 'white';
+            btnDirect.style.borderColor = '#d1d5db';
+            btnDirect.style.color = '#374151';
+        }
+        if (btnVia) {
+            btnVia.style.backgroundColor = 'white';
+            btnVia.style.borderColor = '#d1d5db';
+            btnVia.style.color = '#374151';
+        }
+        
+        // Apply active style to selected button (blue)
+        if (type === 'any' && btnAny) {
+            btnAny.style.backgroundColor = '#2563eb';
+            btnAny.style.borderColor = '#2563eb';
+            btnAny.style.color = 'white';
+        } else if (type === 'direct' && btnDirect) {
+            btnDirect.style.backgroundColor = '#2563eb';
+            btnDirect.style.borderColor = '#2563eb';
+            btnDirect.style.color = 'white';
+        } else if (type === 'via' && btnVia) {
+            btnVia.style.backgroundColor = '#2563eb';
+            btnVia.style.borderColor = '#2563eb';
+            btnVia.style.color = 'white';
+        }
+        
+        // Mobile buttons (if they exist)
+        const btnAnyMobile = document.getElementById('btn_flight_any_mobile');
+        const btnDirectMobile = document.getElementById('btn_flight_direct_mobile');
+        const btnViaMobile = document.getElementById('btn_flight_via_mobile');
+        
+        if (btnAnyMobile && btnDirectMobile && btnViaMobile) {
+            // Reset mobile buttons
+            btnAnyMobile.style.backgroundColor = 'white';
+            btnAnyMobile.style.borderColor = '#d1d5db';
+            btnAnyMobile.style.color = '#374151';
+            
+            btnDirectMobile.style.backgroundColor = 'white';
+            btnDirectMobile.style.borderColor = '#d1d5db';
+            btnDirectMobile.style.color = '#374151';
+            
+            btnViaMobile.style.backgroundColor = 'white';
+            btnViaMobile.style.borderColor = '#d1d5db';
+            btnViaMobile.style.color = '#374151';
+            
+            // Apply active style to selected mobile button
+            if (type === 'any') {
+                btnAnyMobile.style.backgroundColor = '#2563eb';
+                btnAnyMobile.style.borderColor = '#2563eb';
+                btnAnyMobile.style.color = 'white';
+            } else if (type === 'direct') {
+                btnDirectMobile.style.backgroundColor = '#2563eb';
+                btnDirectMobile.style.borderColor = '#2563eb';
+                btnDirectMobile.style.color = 'white';
+            } else if (type === 'via') {
+                btnViaMobile.style.backgroundColor = '#2563eb';
+                btnViaMobile.style.borderColor = '#2563eb';
+                btnViaMobile.style.color = 'white';
+            }
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            selectFlightType('any'); // Default to 'any'
+        }, 100);
+    });
 </script>
 {% endblock %}

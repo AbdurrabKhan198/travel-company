@@ -901,18 +901,16 @@ class WalletRechargeForm(forms.Form):
     """Form for recharging wallet balance"""
     amount = forms.DecimalField(
         label=_('Recharge Amount'),
-        max_digits=10,
+        max_digits=12,
         decimal_places=2,
         min_value=Decimal('100.00'),
-        max_value=Decimal('100000.00'),
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Enter amount (min ₹100, max ₹1,00,000)'),
+            'placeholder': _('Enter amount'),
             'step': '0.01',
             'min': '100',
-            'max': '100000',
         }),
-        help_text=_('Minimum recharge: ₹100, Maximum: ₹1,00,000')
+        help_text=_('Minimum recharge: ₹100')
     )
     
     description = forms.CharField(
@@ -929,8 +927,6 @@ class WalletRechargeForm(forms.Form):
         amount = self.cleaned_data.get('amount')
         if amount < Decimal('100.00'):
             raise ValidationError(_('Minimum recharge amount is ₹100'))
-        if amount > Decimal('100000.00'):
-            raise ValidationError(_('Maximum recharge amount is ₹1,00,000'))
         return amount
 
 

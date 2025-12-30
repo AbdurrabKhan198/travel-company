@@ -74,7 +74,7 @@
 <div class="trip-header">
 <div>
 <div class="trip-name">{% with booking.passengers.first as p %}{{ p.first_name|upper }} {{ p.last_name|upper }}{% endwith %}</div>
-<div class="trip-date">{{ booking.schedule.departure_date|date:"l, d F Y" }}</div>
+<div class="trip-date">{{ booking.schedule.departure_date|date:"l, d/m/Y" }}</div>
 </div>
 <div>
 {% if booking.status == 'cancelled' %}

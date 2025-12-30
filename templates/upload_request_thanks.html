@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Request Submitted - Safar Zone Travels{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes bounce-in {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.6s ease-out;
+    }
+    
+    .animate-bounce-in {
+        animation: bounce-in 0.6s ease-out;
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-12">
+    <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto">
+            <!-- Success Card -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center animate-fade-in-up">
+                <!-- Success Icon -->
+                <div class="w-24 h-24 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-in shadow-lg">
+                    <i class="fas fa-check text-white text-4xl"></i>
+                </div>
+                
+                <!-- Success Message -->
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    Request <span class="text-emerald-600">Submitted!</span>
+                </h1>
+                <p class="text-lg text-gray-600 mb-8">
+                    Your payment proof has been uploaded successfully.
+                </p>
+                
+                <!-- Reference Details -->
+                <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 mb-8 text-left">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">Request Details</h3>
+                        <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold">
+                            <i class="fas fa-clock mr-1"></i> Pending Verification
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-0">
+                        <div class="detail-row">
+                            <span class="text-gray-600">Reference ID</span>
+                            <span class="font-bold text-gray-900 font-mono">{{ upload_request.reference_id }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="text-gray-600">Amount</span>
+                            <span class="font-bold text-emerald-600 text-xl">₹{{ upload_request.amount|floatformat:2 }}</span>
+                        </div>
+                        {% if upload_request.bank_account %}
+                        <div class="detail-row">
+                            <span class="text-gray-600">Bank Account</span>
+                            <span class="font-semibold text-gray-900">{{ upload_request.bank_account.bank_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if upload_request.transaction_id %}
+                        <div class="detail-row">
+                            <span class="text-gray-600">Transaction ID</span>
+                            <span class="font-semibold text-gray-900 font-mono">{{ upload_request.transaction_id }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="detail-row">
+                            <span class="text-gray-600">Submitted On</span>
+                            <span class="font-semibold text-gray-900">{{ upload_request.created_at|date:"d M Y, H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- What's Next -->
+                <div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-5 mb-8 text-left">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-info-circle text-blue-500 text-lg mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-2">What happens next?</h4>
+                            <ul class="text-gray-700 text-sm space-y-2">
+                                <li class="flex items-center">
+                                    <span class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-600">1</span>
+                                    Our team will review your payment proof
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-600">2</span>
+                                    Verification usually takes a few hours
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-600">3</span>
+                                    Once verified, your wallet will be credited
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{% url 'upload_payment_request' %}" class="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold transition-all flex items-center justify-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        Upload Another
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all flex items-center justify-center">
+                        <i class="fas fa-home mr-2"></i>
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Contact Support -->
+            <div class="mt-8 text-center animate-fade-in-up" style="animation-delay: 0.2s;">
+                <p class="text-gray-600">
+                    <i class="fas fa-question-circle mr-1"></i>
+                    Need help? <a href="{% url 'contact' %}" class="text-sky-600 hover:underline font-semibold">Contact Support</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

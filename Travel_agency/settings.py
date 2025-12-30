@@ -160,6 +160,13 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Date Format Settings (DD/MM/YY format for India)
+DATE_FORMAT = 'd/m/Y'
+SHORT_DATE_FORMAT = 'd/m/y'
+DATETIME_FORMAT = 'd/m/Y H:i'
+SHORT_DATETIME_FORMAT = 'd/m/y H:i'
+USE_L10N = False  # Use consistent DATE_FORMAT instead of locale-based
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

@@ -2,13 +2,13 @@
 
 <input type="hidden" name="passenger_type[]" value="{{ passenger_type }}">
 
-<div class="grid grid-cols-3 gap-4 mb-4">
+<div class="grid grid-cols-3 gap-3 mb-3">
     <div class="form-group">
-        <label for="passenger_title_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="passenger_title_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Title <span class="text-red-500">*</span>
         </label>
         <select name="passenger_title[]" id="passenger_title_{{ passenger_index }}" required
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
             onchange="updateTitleOptions({{ passenger_index }})">
             <option value="">Select Title</option>
             {% if passenger_type == 'adult' %}
@@ -22,11 +22,11 @@
         </select>
     </div>
     <div class="form-group">
-        <label for="passenger_gender_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="passenger_gender_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Gender <span class="text-red-500">*</span>
         </label>
         <select name="passenger_gender[]" id="passenger_gender_{{ passenger_index }}" required
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
             onchange="updateTitleOptions({{ passenger_index }})">
             <option value="">Select Gender</option>
             <option value="M" {% if passenger.gender == 'M' %}selected{% endif %}>Male</option>
@@ -57,36 +57,36 @@
     </div>
 </div>
 
-<div class="mb-4">
+<div class="mb-3">
     <div class="form-group">
-        <label for="passenger_dob_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="passenger_dob_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Date of Birth <span class="text-red-500">*</span>
         </label>
         <input type="date" name="passenger_dob[]" id="passenger_dob_{{ passenger_index }}" required max="{{ today }}"
             value="{{ passenger.dob|default:'' }}"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm">
     </div>
 </div>
 
 {# Passport Fields - Only for International Flights #}
 {% if schedule.route.route_type == 'international' or return_schedule.route.route_type == 'international' %}
-<div class="grid grid-cols-2 gap-4 mb-4">
+<div class="grid grid-cols-2 gap-3 mb-3">
     <div class="form-group">
-        <label for="passport_number_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="passport_number_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Passport Number <span class="text-red-500">*</span>
         </label>
         <input type="text" name="passport_number[]" id="passport_number_{{ passenger_index }}" required
             value="{{ passenger.passport_number|default:'' }}"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
             placeholder="Passport Number">
     </div>
     <div class="form-group">
-        <label for="passport_expiry_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="passport_expiry_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Passport Expiry Date <span class="text-red-500">*</span>
         </label>
         <input type="date" name="passport_expiry[]" id="passport_expiry_{{ passenger_index }}" required
             min="{{ today }}" value="{{ passenger.passport_expiry|default:'' }}"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm">
     </div>
 </div>
 {% else %}
@@ -95,14 +95,14 @@
 <input type="hidden" name="passport_expiry[]" value="">
 {% endif %}
 
-<div class="mb-4">
+<div class="mb-3">
     <div class="form-group">
-        <label for="nationality_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-2">
+        <label for="nationality_{{ passenger_index }}" class="block text-gray-700 font-semibold mb-1 text-sm">
             Nationality <span class="text-red-500">*</span>
         </label>
         <input type="text" name="nationality[]" id="nationality_{{ passenger_index }}" required
             value="{{ passenger.nationality|default:'Indian' }}"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
             placeholder="Nationality">
     </div>
 </div>

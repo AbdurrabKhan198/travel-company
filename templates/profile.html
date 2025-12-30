@@ -306,7 +306,7 @@
               <div class="col-md-6">
                 <div class="info-item">
                   <label class="text-muted small mb-1">Date of Birth</label>
-                  <p class="mb-0">{{ profile.date_of_birth|date:"F d, Y"|default:"Not provided" }}</p>
+                  <p class="mb-0">{{ profile.date_of_birth|date:"d/m/Y"|default:"Not provided" }}</p>
                 </div>
               </div>
               <div class="col-md-6">
@@ -370,7 +370,7 @@
                         </div>
                       </div>
                     </td>
-                    <td>{{ booking.inventory.travel_date|date:"M d, Y" }}</td>
+                    <td>{{ booking.inventory.travel_date|date:"d/m/Y" }}</td>
                     <td>
                       <span class="badge rounded-pill bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'cancelled' %}danger{% else %}warning{% endif %} bg-opacity-10 text-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'cancelled' %}danger{% else %}warning{% endif %} py-2 px-3">
                         {{ booking.get_status_display }}

@@ -93,7 +93,7 @@
                     </div>
                     <div>
                         <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #111827 !important;">
-                            Welcome back, <span class="gradient-text">{% if user.profile %}{{ user.profile.full_name|default:user.email }}{% else %}{{ user.email }}{% endif %}!</span> 👋
+                            Welcome back, <span class="gradient-text">{% if user.profile %}{{ user.profile.company_name|default:user.email }}{% else %}{{ user.email }}{% endif %}!</span> 👋
                         </h1>
                         <p class="text-xl mb-2" style="color: #4b5563 !important;">Here's what's happening with your
                             travel plans</p>

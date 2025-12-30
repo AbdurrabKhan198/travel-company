@@ -26,8 +26,7 @@
     }
 
     .form-input:focus {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     }
 </style>
 {% endblock %}
@@ -253,10 +252,8 @@
                                 onchange="updatePrice(this)">
                                 <option value="">Select Duration</option>
                                 {% for dur in visa.durations %}
-                                <option value="{{ dur.days }}" data-price="{{ dur.price }}" {% if
-                                    duration==dur.days|stringformat:"s" %}selected{% endif %}>
-                                    {{ dur.days }} Days{% if dur.entry %} ({{ dur.entry }}){% endif %} - ₹{{
-                                    dur.price|floatformat:0 }}
+                                <option value="{{ dur.days }}" data-price="{{ dur.price }}" {% if duration == dur.days|stringformat:"s" %}selected{% endif %}>
+                                    {{ dur.days }} Days{% if dur.entry %} ({{ dur.entry }}){% endif %} - ₹{{ dur.price|floatformat:0 }}
                                 </option>
                                 {% endfor %}
                             </select>

@@ -975,41 +975,13 @@
                     <i class="bi bi-arrow-repeat"></i>Round
                 </span>
                 {% endif %}
-                <a href="{% url 'homepage' %}" class="modify-btn">
+                <a href="{% url 'homepage' %}?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ travel_date|date:'Y-m-d' }}&return_date={{ return_date|date:'Y-m-d'|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&travel_class={{ travel_class|default:'economy' }}" class="modify-btn">
                     <i class="bi bi-pencil"></i>Modify
                 </a>
             </div>
         </div>
 
-        <!-- Date Navigation - Compact -->
-        {% if travel_date %}
-        <div class="mb-3 animate-in" style="animation-delay: .1s;">
-            <div class="date-nav">
-                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ previous_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}"
-                    class="date-nav-arrow">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
-                <div class="date-nav-current">
-                    <i class="bi bi-calendar-check me-1"></i>{{ travel_date|date:"D, d M Y" }}
-                </div>
-                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ next_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}"
-                    class="date-nav-arrow">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
-            </div>
-            {% if date_range %}
-            <div class="quick-dates">
-                {% for date in date_range %}
-                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}"
-                    class="quick-date {% if date == travel_date|date:'Y-m-d' %}active{% endif %}">
-                    {{ date|date:"d M" }}
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-
+        
         <!-- Results Header -->
         {% if flights %}
         <div class="results-header animate-in" style="animation-delay: .15s;">
@@ -1024,10 +996,38 @@
         </p>
         {% endif %}
 
+
         <!-- Flight Results -->
         {% if flights %}
         <div class="flight-results">
             {% for flight in flights %}
+
+ {% if travel_date %}
+        <div class="mb-3 animate-in" style="animation-delay: .1s;">
+            <div class="date-nav">
+                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ previous_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}"
+                    class="date-nav-arrow">
+                    <i class="bi bi-chevron-left"></i>
+                    
+                </a>
+                <span>Previous date</span>
+                <div class="date-nav-current">
+                    <i class="bi bi-calendar-check me-1"></i>{{ travel_date|date:"D, d M Y" }}
+                </div>
+                <span>Next date</span>
+                <a href="?from_location={{ from_location }}&to_location={{ to_location }}&travel_date={{ next_date }}&return_date={{ return_date|default:'' }}&adults={{ adults|default:1 }}&children={{ children|default:0 }}&infants={{ infants|default:0 }}&trip_type={{ trip_type|default:'one_way' }}&route_type={{ route_type|default:'' }}"
+                    class="date-nav-arrow">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            
+        </div>
+        {% endif %}
+
+
+
+
+
             <div class="flight-card animate-in" style="animation-delay: {{ forloop.counter0|multiply:0.05 }}s;">
                 <!-- Header -->
                 <div class="fc-header">
