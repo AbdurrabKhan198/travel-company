@@ -51,6 +51,7 @@ class User(AbstractUser):
     )
     phone = models.CharField(_('phone number'), validators=[phone_regex], max_length=17, blank=True)
     user_type = models.CharField(_('user type'), max_length=20, choices=UserType.choices, default=UserType.STAFF)
+    is_verified = models.BooleanField(_('verified'), default=True, help_text=_('Designates whether this user account is verified'))
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
