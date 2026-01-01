@@ -1000,27 +1000,39 @@
         // Trip Type Toggle
         const tripOneWayBtn = document.getElementById('trip_one_way_btn');
         const tripReturnBtn = document.getElementById('trip_return_btn');
+        const tripOneWayBtnMobile = document.getElementById('trip_one_way_btn_mobile');
+        const tripReturnBtnMobile = document.getElementById('trip_return_btn_mobile');
         const tripOneWayRadio = document.getElementById('trip_one_way');
         const tripReturnRadio = document.getElementById('trip_return');
         const returnDateInput = document.getElementById('return_date');
         const returnDisplayCard = document.getElementById('return_display_card');
         const returnDateWrapper = document.getElementById('return_date_wrapper');
+        const returnDateWrapperMobile = document.getElementById('return_date_wrapper_mobile');
 
         function toggleTripType() {
+            // Desktop buttons
             if (tripOneWayBtn && tripReturnBtn) {
                 tripOneWayBtn.addEventListener('click', function () {
                     tripOneWayRadio.checked = true;
                     tripOneWayBtn.classList.add('active');
                     tripReturnBtn.classList.remove('active');
+                    // Sync mobile buttons
+                    if (tripOneWayBtnMobile) tripOneWayBtnMobile.classList.add('active');
+                    if (tripReturnBtnMobile) tripReturnBtnMobile.classList.remove('active');
+                    
                     if (returnDateInput) {
                         returnDateInput.disabled = true;
                         returnDateInput.required = false;
                         returnDateInput.value = '';
-                        returnDisplayCard.style.background = '#f9fafb';
-                        document.getElementById('return_display').textContent = 'Add return date';
-                        document.getElementById('return_display').className = 'form-field-placeholder';
+                        if (returnDisplayCard) returnDisplayCard.style.background = '#f9fafb';
+                        const returnDisplay = document.getElementById('return_display');
+                        if (returnDisplay) {
+                            returnDisplay.textContent = 'Add return date';
+                            returnDisplay.className = 'form-field-placeholder';
+                        }
                         // Client Req: Hide return date column on One Way
                         if (returnDateWrapper) returnDateWrapper.style.display = 'none';
+                        if (returnDateWrapperMobile) returnDateWrapperMobile.style.display = 'none';
                     }
                 });
 
@@ -1028,17 +1040,71 @@
                     tripReturnRadio.checked = true;
                     tripReturnBtn.classList.add('active');
                     tripOneWayBtn.classList.remove('active');
+                    // Sync mobile buttons
+                    if (tripReturnBtnMobile) tripReturnBtnMobile.classList.add('active');
+                    if (tripOneWayBtnMobile) tripOneWayBtnMobile.classList.remove('active');
+                    
                     if (returnDateInput) {
                         returnDateInput.disabled = false;
                         returnDateInput.required = true;
-                        returnDisplayCard.style.background = '#ffffff';
+                        if (returnDisplayCard) returnDisplayCard.style.background = '#ffffff';
                         // Determine if we have a value or need placeholder
+                        const returnDisplay = document.getElementById('return_display');
                         if (returnDateInput.value) {
                             updateDateDisplay('return_date', 'return_display', 'return_subtext');
-                        } else {
-                            document.getElementById('return_display').textContent = 'Select date';
-                            document.getElementById('return_display').className = 'form-field-value';
+                        } else if (returnDisplay) {
+                            returnDisplay.textContent = 'Select date';
+                            returnDisplay.className = 'form-field-value';
                         }
+                        if (returnDateWrapper) returnDateWrapper.style.display = 'block';
+                        if (returnDateWrapperMobile) returnDateWrapperMobile.style.display = 'block';
+                    }
+                });
+            }
+            
+            // Mobile buttons
+            if (tripOneWayBtnMobile && tripReturnBtnMobile) {
+                tripOneWayBtnMobile.addEventListener('click', function () {
+                    tripOneWayRadio.checked = true;
+                    tripOneWayBtnMobile.classList.add('active');
+                    tripReturnBtnMobile.classList.remove('active');
+                    // Sync desktop buttons
+                    if (tripOneWayBtn) tripOneWayBtn.classList.add('active');
+                    if (tripReturnBtn) tripReturnBtn.classList.remove('active');
+                    
+                    if (returnDateInput) {
+                        returnDateInput.disabled = true;
+                        returnDateInput.required = false;
+                        returnDateInput.value = '';
+                        const returnDisplayMobile = document.getElementById('return_display_mobile');
+                        if (returnDisplayMobile) {
+                            returnDisplayMobile.textContent = 'Add return date';
+                            returnDisplayMobile.className = 'form-field-placeholder';
+                        }
+                        // Hide return date on mobile
+                        if (returnDateWrapperMobile) returnDateWrapperMobile.style.display = 'none';
+                        if (returnDateWrapper) returnDateWrapper.style.display = 'none';
+                    }
+                });
+
+                tripReturnBtnMobile.addEventListener('click', function () {
+                    tripReturnRadio.checked = true;
+                    tripReturnBtnMobile.classList.add('active');
+                    tripOneWayBtnMobile.classList.remove('active');
+                    // Sync desktop buttons
+                    if (tripReturnBtn) tripReturnBtn.classList.add('active');
+                    if (tripOneWayBtn) tripOneWayBtn.classList.remove('active');
+                    
+                    if (returnDateInput) {
+                        returnDateInput.disabled = false;
+                        returnDateInput.required = true;
+                        const returnDisplayMobile = document.getElementById('return_display_mobile');
+                        if (returnDisplayMobile) {
+                            returnDisplayMobile.textContent = 'Select date';
+                            returnDisplayMobile.className = 'form-field-value';
+                        }
+                        // Show return date on mobile
+                        if (returnDateWrapperMobile) returnDateWrapperMobile.style.display = 'block';
                         if (returnDateWrapper) returnDateWrapper.style.display = 'block';
                     }
                 });
