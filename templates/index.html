@@ -422,8 +422,8 @@
                                     <div class="form-field-value text-sm" id="from_display">Enter city</div>
                                     <div class="form-field-subtext text-xs" id="from_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="from_location" id="from_location" list="origin-suggestions"
-                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_from }}">
+                                <input type="text" name="from_location" id="from_location_desktop" list="origin-suggestions"
+                                    class="form-field-input hidden-input-overlay hidden lg:block" required value="{{ prefill_from }}">
                                 <datalist id="origin-suggestions">
                                     {% for origin in origins %}
                                     <option value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}" data-value="{{ origin }}" data-city="{{ origin|lower }}" data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
@@ -446,8 +446,8 @@
                                     <div class="form-field-value text-sm" id="to_display">Enter city</div>
                                     <div class="form-field-subtext text-xs" id="to_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="to_location" id="to_location" list="destination-suggestions"
-                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_to }}">
+                                <input type="text" name="to_location" id="to_location_desktop" list="destination-suggestions"
+                                    class="form-field-input hidden-input-overlay hidden lg:block" required value="{{ prefill_to }}">
                                 <datalist id="destination-suggestions">
                                     {% for destination in destinations %}
                                     <option value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}" data-value="{{ destination }}" data-city="{{ destination|lower }}" data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
@@ -542,6 +542,8 @@
                                 <div class="form-field-display" id="from_display_card_mobile">
                                     <div class="form-field-value" id="from_display_mobile">Enter city</div>
                                 </div>
+                                <input type="text" name="from_location" id="from_location" list="origin-suggestions"
+                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_from }}">
                             </div>
 
                             <!-- To -->
@@ -550,6 +552,8 @@
                                 <div class="form-field-display" id="to_display_card_mobile">
                                     <div class="form-field-value" id="to_display_mobile">Enter city</div>
                                 </div>
+                                <input type="text" name="to_location" id="to_location" list="destination-suggestions"
+                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_to }}">
                             </div>
 
                             <!-- Departure Date -->
@@ -558,6 +562,8 @@
                                 <div class="form-field-display" id="departure_display_card_mobile">
                                     <div class="form-field-value" id="departure_display_mobile">Select date</div>
                                 </div>
+                                <input type="date" name="travel_date" id="travel_date_mobile"
+                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_travel_date }}">
                             </div>
 
                             <!-- Return Date -->
@@ -566,6 +572,8 @@
                                 <div class="form-field-display" id="return_display_card_mobile">
                                     <div class="form-field-placeholder" id="return_display_mobile">Add return date</div>
                                 </div>
+                                <input type="date" name="return_date" id="return_date_mobile"
+                                    class="form-field-input hidden-input-overlay lg:hidden" value="{{ prefill_return_date }}">
                             </div>
 
                             <!-- Passengers -->
@@ -1507,10 +1515,11 @@
 
             toggleTripType();
 
+            // Get currently active input (desktop or mobile based on visibility)
             const fromInput = document.getElementById('from_location');
             const toInput = document.getElementById('to_location');
-            const travelDateInput = document.getElementById('travel_date');
-            const returnDateInput = document.getElementById('return_date');
+            const travelDateInput = document.getElementById('travel_date') || document.getElementById('travel_date_mobile');
+            const returnDateInput = document.getElementById('return_date') || document.getElementById('return_date_mobile');
             const passengersSelect = document.getElementById('passengers');
 
             // Initialize Persistence (Client Req 6)
@@ -1625,13 +1634,32 @@
             const returnDisplayCardMobile = document.getElementById('return_display_card_mobile');
             
             if (fromDisplayCardMobile) {
-                fromDisplayCardMobile.addEventListener('click', () => fromInput.focus());
+                fromDisplayCardMobile.addEventListener('click', () => {
+                    if (fromInput) {
+                        fromInput.click();
+                        fromInput.focus();
+                    }
+                });
             }
             if (toDisplayCardMobile) {
-                toDisplayCardMobile.addEventListener('click', () => toInput.focus());
+                toDisplayCardMobile.addEventListener('click', () => {
+                    if (toInput) {
+                        toInput.click();
+                        toInput.focus();
+                    }
+                });
             }
             if (departureDisplayCardMobile) {
-                departureDisplayCardMobile.addEventListener('click', () => travelDateInput.focus());
+                departureDisplayCardMobile.addEventListener('click', () => {
+                    if (travelDateInput) {
+                        travelDateInput.click();
+                        travelDateInput.focus();
+                        // Trigger flatpickr
+                        if (window.departurePicker) {
+                            window.departurePicker.open();
+                        }
+                    }
+                });
             }
             if (returnDisplayCardMobile) {
                 returnDisplayCardMobile.addEventListener('click', () => {
@@ -1639,7 +1667,16 @@
                     if (tripReturnBtnMobile && !tripReturnBtnMobile.classList.contains('active')) {
                         tripReturnBtnMobile.click();
                     }
-                    setTimeout(() => { if (returnDateInput) returnDateInput.focus(); }, 100);
+                    setTimeout(() => {
+                        if (returnDateInput) {
+                            returnDateInput.click();
+                            returnDateInput.focus();
+                            // Trigger flatpickr
+                            if (window.returnPicker) {
+                                window.returnPicker.open();
+                            }
+                        }
+                    }, 100);
                 });
             }
 
