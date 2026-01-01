@@ -1606,7 +1606,7 @@
             }
 
 
-            // Make display cards clickable
+            // Make display cards clickable (Desktop)
             document.getElementById('from_display_card').addEventListener('click', () => fromInput.focus());
             document.getElementById('to_display_card').addEventListener('click', () => toInput.focus());
             document.getElementById('departure_display_card').addEventListener('click', () => travelDateInput.focus());
@@ -1618,10 +1618,41 @@
                 setTimeout(() => { if (returnDateInput) returnDateInput.focus(); }, 100);
             });
 
-            // Passenger display card - open modal
+            // Make display cards clickable (Mobile)
+            const fromDisplayCardMobile = document.getElementById('from_display_card_mobile');
+            const toDisplayCardMobile = document.getElementById('to_display_card_mobile');
+            const departureDisplayCardMobile = document.getElementById('departure_display_card_mobile');
+            const returnDisplayCardMobile = document.getElementById('return_display_card_mobile');
+            
+            if (fromDisplayCardMobile) {
+                fromDisplayCardMobile.addEventListener('click', () => fromInput.focus());
+            }
+            if (toDisplayCardMobile) {
+                toDisplayCardMobile.addEventListener('click', () => toInput.focus());
+            }
+            if (departureDisplayCardMobile) {
+                departureDisplayCardMobile.addEventListener('click', () => travelDateInput.focus());
+            }
+            if (returnDisplayCardMobile) {
+                returnDisplayCardMobile.addEventListener('click', () => {
+                    // Auto Switch to Round Trip on mobile
+                    if (tripReturnBtnMobile && !tripReturnBtnMobile.classList.contains('active')) {
+                        tripReturnBtnMobile.click();
+                    }
+                    setTimeout(() => { if (returnDateInput) returnDateInput.focus(); }, 100);
+                });
+            }
+
+            // Passenger display card - open modal (Desktop)
             const passengerDisplayCard = document.getElementById('passenger_display_card');
             if (passengerDisplayCard) {
                 passengerDisplayCard.addEventListener('click', openPassengerModal);
+            }
+            
+            // Passenger display card - open modal (Mobile)
+            const passengerDisplayCardMobile = document.getElementById('passenger_display_card_mobile');
+            if (passengerDisplayCardMobile) {
+                passengerDisplayCardMobile.addEventListener('click', openPassengerModal);
             }
 
             // Apply button - apply passenger selection
