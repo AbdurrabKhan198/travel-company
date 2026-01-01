@@ -335,7 +335,9 @@ class UserRegisterForm(UserCreationForm):
                     'city': self.cleaned_data.get('city', ''),
                     'state': self.cleaned_data.get('state', ''),
                     'country': self.cleaned_data.get('country', 'India'),
-                    'pincode': self.cleaned_data.get('pincode', '')
+                    'pincode': self.cleaned_data.get('pincode', ''),
+                    'is_verified': False,
+                    'is_approved': False
                 }
             )
             
