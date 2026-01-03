@@ -422,13 +422,6 @@
                                     <div class="form-field-value text-sm" id="from_display">Enter city</div>
                                     <div class="form-field-subtext text-xs" id="from_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="from_location" id="from_location_desktop" list="origin-suggestions"
-                                    class="form-field-input hidden-input-overlay hidden lg:block" required value="{{ prefill_from }}">
-                                <datalist id="origin-suggestions">
-                                    {% for origin in origins %}
-                                    <option value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}" data-value="{{ origin }}" data-city="{{ origin|lower }}" data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
-                                    {% endfor %}
-                                </datalist>
                             </div>
 
                             <!-- Swap Button -->
@@ -446,13 +439,6 @@
                                     <div class="form-field-value text-sm" id="to_display">Enter city</div>
                                     <div class="form-field-subtext text-xs" id="to_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="to_location" id="to_location_desktop" list="destination-suggestions"
-                                    class="form-field-input hidden-input-overlay hidden lg:block" required value="{{ prefill_to }}">
-                                <datalist id="destination-suggestions">
-                                    {% for destination in destinations %}
-                                    <option value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}" data-value="{{ destination }}" data-city="{{ destination|lower }}" data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
-                                    {% endfor %}
-                                </datalist>
                             </div>
 
                             <!-- Departure Date -->
@@ -462,8 +448,6 @@
                                     <div class="form-field-value text-sm" id="departure_display">Select date</div>
                                     <div class="form-field-subtext text-xs" id="departure_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="travel_date" id="travel_date" placeholder="Select date"
-                                    class="form-field-input hidden-input-overlay" required readonly value="{{ prefill_travel_date }}">
                             </div>
 
                             <!-- Return Date -->
@@ -474,8 +458,6 @@
                                     <div class="form-field-placeholder text-sm" id="return_display">Add return date</div>
                                     <div class="form-field-subtext text-xs" id="return_subtext" style="display: none;"></div>
                                 </div>
-                                <input type="text" name="return_date" id="return_date" placeholder="Select date"
-                                    class="form-field-input hidden-input-overlay" disabled readonly value="{{ prefill_return_date }}">
                             </div>
 
                             <!-- Passengers -->
@@ -485,10 +467,6 @@
                                     <div class="form-field-value text-sm" id="passenger_display">1 Traveller</div>
                                     <div class="form-field-subtext text-xs" id="passenger_subtext">Economy</div>
                                 </div>
-                                <input type="hidden" name="adults" id="adults_input" value="{{ request.GET.adults|default:'1' }}" required>
-                                <input type="hidden" name="children" id="children_input" value="{{ request.GET.children|default:'0' }}">
-                                <input type="hidden" name="infants" id="infants_input" value="{{ request.GET.infants|default:'0' }}">
-                                <input type="hidden" name="travel_class" id="travel_class_input" value="{{ request.GET.travel_class|default:'economy' }}">
                             </div>
                             
                             <!-- Search Button -->
@@ -501,49 +479,44 @@
                         </div>
                     </div>
                     
-                    <!-- Mobile/Tablet Layout (Original Vertical) -->
+                    <!-- Mobile/Tablet Layout (Vertical) -->
                     <div class="lg:hidden">
-                        <!-- Trip Type -->
+                        <!-- Trip Type Buttons -->
                         <div class="trip-type-container mb-4">
                             <button type="button" class="trip-type-btn active" id="trip_one_way_btn_mobile">One Way</button>
                             <button type="button" class="trip-type-btn" id="trip_return_btn_mobile">Round Trip</button>
                         </div>
                         
-                        <!-- Flight Type Filter - Mobile -->
+                        <!-- Flight Type Filter -->
                         <div class="mb-4">
                             <label class="text-xs font-semibold text-gray-600 mb-2 block">FLIGHT TYPE</label>
                             <div class="flex gap-2">
-                                <label class="flex-1">
-                                    <input type="radio" name="flight_type_mobile" value="any" checked class="hidden" id="flight_any_mobile">
-                                    <div id="btn_flight_any_mobile" class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('any')">
-                                        <i class="fas fa-plane text-xs mr-1"></i> Any
-                                    </div>
-                                </label>
-                                <label class="flex-1">
-                                    <input type="radio" name="flight_type_mobile" value="direct" class="hidden" id="flight_direct_mobile">
-                                    <div id="btn_flight_direct_mobile" class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('direct')">
-                                        <i class="fas fa-plane-departure text-xs mr-1"></i> Direct
-                                    </div>
-                                </label>
-                                <label class="flex-1">
-                                    <input type="radio" name="flight_type_mobile" value="via" class="hidden" id="flight_via_mobile">
-                                    <div id="btn_flight_via_mobile" class="flight-type-btn text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2 border-gray-300 bg-white hover:border-blue-500 transition-all" onclick="selectFlightType('via')">
-                                        <i class="fas fa-route text-xs mr-1"></i> Via
-                                    </div>
-                                </label>
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_any_mobile" onclick="selectFlightType('any')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-plane text-xs mr-1"></i> Any
+                                </button>
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_direct_mobile" onclick="selectFlightType('direct')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-plane-departure text-xs mr-1"></i> Direct
+                                </button>
+                                <button type="button" class="flight-type-btn flex-1 text-center py-2 px-3 text-xs font-semibold cursor-pointer rounded-lg border-2" 
+                                        id="btn_flight_via_mobile" onclick="selectFlightType('via')" style="border-color: #d1d5db; background: white; color: #374151;">
+                                    <i class="fas fa-route text-xs mr-1"></i> Via
+                                </button>
                             </div>
                         </div>
                         
-                        <!-- Form Fields - Vertical on Mobile -->
+                        <!-- Form Fields - Vertical Layout -->
                         <div class="grid grid-cols-1 gap-4">
                             <!-- From -->
                             <div class="form-field-wrapper">
                                 <label class="form-field-label">FROM</label>
                                 <div class="form-field-display" id="from_display_card_mobile">
                                     <div class="form-field-value" id="from_display_mobile">Enter city</div>
+                                    <div class="form-field-subtext" id="from_subtext_mobile" style="display: none;"></div>
                                 </div>
                                 <input type="text" name="from_location" id="from_location" list="origin-suggestions"
-                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_from }}">
+                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_from }}">
                             </div>
 
                             <!-- To -->
@@ -551,9 +524,10 @@
                                 <label class="form-field-label">TO</label>
                                 <div class="form-field-display" id="to_display_card_mobile">
                                     <div class="form-field-value" id="to_display_mobile">Enter city</div>
+                                    <div class="form-field-subtext" id="to_subtext_mobile" style="display: none;"></div>
                                 </div>
                                 <input type="text" name="to_location" id="to_location" list="destination-suggestions"
-                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_to }}">
+                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_to }}">
                             </div>
 
                             <!-- Departure Date -->
@@ -561,28 +535,34 @@
                                 <label class="form-field-label">DEPARTURE</label>
                                 <div class="form-field-display" id="departure_display_card_mobile">
                                     <div class="form-field-value" id="departure_display_mobile">Select date</div>
+                                    <div class="form-field-subtext" id="departure_subtext_mobile" style="display: none;"></div>
                                 </div>
-                                <input type="date" name="travel_date" id="travel_date_mobile"
-                                    class="form-field-input hidden-input-overlay lg:hidden" required value="{{ prefill_travel_date }}">
+                                <input type="text" name="travel_date" id="travel_date" placeholder="Select date"
+                                    class="form-field-input hidden-input-overlay" required readonly value="{{ prefill_travel_date }}">
                             </div>
 
                             <!-- Return Date -->
                             <div class="form-field-wrapper" id="return_date_wrapper_mobile" style="display: none;">
                                 <label class="form-field-label">RETURN</label>
-                                <div class="form-field-display" id="return_display_card_mobile">
+                                <div class="form-field-display" id="return_display_card_mobile" style="background: #f9fafb; border-color: #e5e7eb;">
                                     <div class="form-field-placeholder" id="return_display_mobile">Add return date</div>
+                                    <div class="form-field-subtext" id="return_subtext_mobile" style="display: none;"></div>
                                 </div>
-                                <input type="date" name="return_date" id="return_date_mobile"
-                                    class="form-field-input hidden-input-overlay lg:hidden" value="{{ prefill_return_date }}">
+                                <input type="text" name="return_date" id="return_date" placeholder="Select date"
+                                    class="form-field-input hidden-input-overlay" disabled readonly value="{{ prefill_return_date }}">
                             </div>
 
                             <!-- Passengers -->
                             <div class="form-field-wrapper">
                                 <label class="form-field-label">TRAVELLERS</label>
-                                <div class="form-field-display" id="passenger_display_card_mobile" onclick="openPassengerModal()">
+                                <div class="form-field-display cursor-pointer" id="passenger_display_card_mobile" onclick="openPassengerModal()">
                                     <div class="form-field-value" id="passenger_display_mobile">1 Traveller</div>
                                     <div class="form-field-subtext" id="passenger_subtext_mobile">Economy</div>
                                 </div>
+                                <input type="hidden" name="adults" id="adults_input" value="{{ request.GET.adults|default:'1' }}" required>
+                                <input type="hidden" name="children" id="children_input" value="{{ request.GET.children|default:'0' }}">
+                                <input type="hidden" name="infants" id="infants_input" value="{{ request.GET.infants|default:'0' }}">
+                                <input type="hidden" name="travel_class" id="travel_class_input" value="{{ request.GET.travel_class|default:'economy' }}">
                             </div>
                         </div>
 
@@ -594,6 +574,18 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Datalists (shared between desktop and mobile) -->
+                    <datalist id="origin-suggestions">
+                        {% for origin in origins %}
+                        <option value="{{ origin }}{% if origin in airport_codes %} ({{ airport_codes|get_item:origin }}){% endif %}" data-value="{{ origin }}" data-city="{{ origin|lower }}" data-code="{% if origin in airport_codes %}{{ airport_codes|get_item:origin|lower }}{% endif %}">
+                        {% endfor %}
+                    </datalist>
+                    <datalist id="destination-suggestions">
+                        {% for destination in destinations %}
+                        <option value="{{ destination }}{% if destination in airport_codes %} ({{ airport_codes|get_item:destination }}){% endif %}" data-value="{{ destination }}" data-city="{{ destination|lower }}" data-code="{% if destination in airport_codes %}{{ airport_codes|get_item:destination|lower }}{% endif %}">
+                        {% endfor %}
+                    </datalist>
                 </form>
             </div>
             </div><!-- End Left Column (Form) -->
@@ -1138,6 +1130,10 @@
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
             const subtext = document.getElementById(subtextId);
+            
+            // Also get mobile versions
+            const displayMobile = document.getElementById(displayId + '_mobile');
+            const subtextMobile = document.getElementById(subtextId + '_mobile');
 
             if (input && display) {
                 const value = input.value.trim();
@@ -1148,6 +1144,10 @@
 
                     display.textContent = cityName;
                     display.className = 'form-field-value';
+                    if (displayMobile) {
+                        displayMobile.textContent = cityName;
+                        displayMobile.className = 'form-field-value';
+                    }
 
                     if (subtext && code) {
                         subtext.textContent = code.toUpperCase() + ', ' + cityName;
@@ -1156,11 +1156,26 @@
                         subtext.textContent = cityName;
                         subtext.style.display = 'block';
                     }
+                    
+                    if (subtextMobile && code) {
+                        subtextMobile.textContent = code.toUpperCase() + ', ' + cityName;
+                        subtextMobile.style.display = 'block';
+                    } else if (subtextMobile) {
+                        subtextMobile.textContent = cityName;
+                        subtextMobile.style.display = 'block';
+                    }
                 } else {
                     display.textContent = 'Enter city';
                     display.className = 'form-field-placeholder';
+                    if (displayMobile) {
+                        displayMobile.textContent = 'Enter city';
+                        displayMobile.className = 'form-field-placeholder';
+                    }
                     if (subtext) {
                         subtext.style.display = 'none';
+                    }
+                    if (subtextMobile) {
+                        subtextMobile.style.display = 'none';
                     }
                 }
             }
@@ -1171,6 +1186,10 @@
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
             const subtext = document.getElementById(subtextId);
+            
+            // Also get mobile versions
+            const displayMobile = document.getElementById(displayId + '_mobile');
+            const subtextMobile = document.getElementById(subtextId + '_mobile');
 
             if (input && display) {
                 const dateValue = input.value;
@@ -1181,16 +1200,31 @@
 
                     display.textContent = formattedDate;
                     display.className = 'form-field-value';
+                    if (displayMobile) {
+                        displayMobile.textContent = formattedDate;
+                        displayMobile.className = 'form-field-value';
+                    }
 
                     if (subtext) {
                         subtext.textContent = dayName;
                         subtext.style.display = 'block';
                     }
+                    if (subtextMobile) {
+                        subtextMobile.textContent = dayName;
+                        subtextMobile.style.display = 'block';
+                    }
                 } else {
                     display.textContent = inputId === 'travel_date' ? 'Select date' : 'Add return date';
                     display.className = 'form-field-placeholder';
+                    if (displayMobile) {
+                        displayMobile.textContent = inputId === 'travel_date' ? 'Select date' : 'Add return date';
+                        displayMobile.className = 'form-field-placeholder';
+                    }
                     if (subtext) {
                         subtext.style.display = 'none';
+                    }
+                    if (subtextMobile) {
+                        subtextMobile.style.display = 'none';
                     }
                 }
             }
@@ -1515,11 +1549,11 @@
 
             toggleTripType();
 
-            // Get currently active input (desktop or mobile based on visibility)
+            // Get inputs (same IDs work for both desktop and mobile now)
             const fromInput = document.getElementById('from_location');
             const toInput = document.getElementById('to_location');
-            const travelDateInput = document.getElementById('travel_date') || document.getElementById('travel_date_mobile');
-            const returnDateInput = document.getElementById('return_date') || document.getElementById('return_date_mobile');
+            const travelDateInput = document.getElementById('travel_date');
+            const returnDateInput = document.getElementById('return_date');
             const passengersSelect = document.getElementById('passengers');
 
             // Initialize Persistence (Client Req 6)
