@@ -55,58 +55,29 @@ def abs_value(value):
 
 @register.filter
 def airline_logo(carrier_code):
-    """Return airline logo URL based on carrier code"""
+    """Return airline logo URL based on carrier code (CDN fallback)"""
     if not carrier_code:
         return ''
     
     # Extract airline code (first 2 characters)
     code = str(carrier_code).strip().upper()[:2]
     
-    # Airline logo mappings - using pics.avs.io CDN
-    # Format: https://pics.avs.io/200/80/{IATA_CODE}.png
-    airline_logos = {
-        # Indian Airlines
-        '6E': 'https://pics.avs.io/200/80/6E.png',  # IndiGo
-        'AI': 'https://pics.avs.io/200/80/AI.png',  # Air India
-        'UK': 'https://pics.avs.io/200/80/UK.png',  # Vistara
-        'SG': 'https://pics.avs.io/200/80/SG.png',  # SpiceJet
-        'G8': 'https://pics.avs.io/200/80/G8.png',  # Go First
-        'I5': 'https://pics.avs.io/200/80/I5.png',  # AirAsia India
-        'IX': 'https://pics.avs.io/200/80/IX.png',  # Air India Express
-        'QP': 'https://pics.avs.io/200/80/QP.png',  # Akasa Air
-        '9I': 'https://pics.avs.io/200/80/9I.png',  # Alliance Air
-        'S5': 'https://pics.avs.io/200/80/S5.png',  # Star Air
-        
-        # International Airlines
-        'EK': 'https://pics.avs.io/200/80/EK.png',  # Emirates
-        'EY': 'https://pics.avs.io/200/80/EY.png',  # Etihad
-        'QR': 'https://pics.avs.io/200/80/QR.png',  # Qatar Airways
-        'SQ': 'https://pics.avs.io/200/80/SQ.png',  # Singapore Airlines
-        'TG': 'https://pics.avs.io/200/80/TG.png',  # Thai Airways
-        'MH': 'https://pics.avs.io/200/80/MH.png',  # Malaysia Airlines
-        'CX': 'https://pics.avs.io/200/80/CX.png',  # Cathay Pacific
-        'BA': 'https://pics.avs.io/200/80/BA.png',  # British Airways
-        'LH': 'https://pics.avs.io/200/80/LH.png',  # Lufthansa
-        'AF': 'https://pics.avs.io/200/80/AF.png',  # Air France
-        'KL': 'https://pics.avs.io/200/80/KL.png',  # KLM
-        'TK': 'https://pics.avs.io/200/80/TK.png',  # Turkish Airlines
-        'SV': 'https://pics.avs.io/200/80/SV.png',  # Saudia
-        'GF': 'https://pics.avs.io/200/80/GF.png',  # Gulf Air
-        'WY': 'https://pics.avs.io/200/80/WY.png',  # Oman Air
-        'FZ': 'https://pics.avs.io/200/80/FZ.png',  # Fly Dubai
-        'G9': 'https://pics.avs.io/200/80/G9.png',  # Air Arabia
-        'UL': 'https://pics.avs.io/200/80/UL.png',  # SriLankan Airlines
-        'BG': 'https://pics.avs.io/200/80/BG.png',  # Biman Bangladesh
-        'PK': 'https://pics.avs.io/200/80/PK.png',  # PIA
-        'RA': 'https://pics.avs.io/200/80/RA.png',  # Nepal Airlines
-    }
+    # Return CDN URL - fallback if static not found
+    return f'https://pics.avs.io/200/80/{code}.png'
+
+
+@register.filter
+def airline_logo_static(airline_name):
+    """Return static file path for airline logo based on airline name from database.
+    The logo files should be in static/images/flight-logo/{airline_name}.png
+    E.g., "Air India" -> "/static/images/flight-logo/air-india.png"
+    """
+    if not airline_name:
+        return ''
     
-    # Return logo URL or generic aviation icon
-    if code in airline_logos:
-        return airline_logos[code]
-    else:
-        # Fallback to CDN with the code (may work for unlisted airlines)
-        return f'https://pics.avs.io/200/80/{code}.png'
+    # Convert to lowercase and replace spaces with hyphens for file path
+    name = str(airline_name).strip().lower().replace(' ', '-')
+    return f'/static/images/flight-logo/{name}.png'
 
 
 @register.filter

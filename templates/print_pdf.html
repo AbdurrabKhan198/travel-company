@@ -276,12 +276,12 @@
             </div>
             <!-- Airline Logo -->
             <div style="text-align: right; min-width: 120px;">
-                <img src="{{ booking.schedule.route.carrier_number|airline_logo }}" 
-                     alt="{{ booking.schedule.route.carrier_number|airline_name_from_code }}" 
+                <img src="{{ booking.schedule.route.airline_name|airline_logo_static }}" 
+                     alt="{{ booking.schedule.route.airline_name }}" 
                      style="max-height: 50px; max-width: 120px; object-fit: contain;"
-                     onerror="this.style.display='none'">
+                     onerror="this.src='{{ booking.schedule.route.carrier_number|airline_logo }}'">
                 <div style="font-size: 8pt; font-weight: bold; color: #2c3e50; margin-top: 3px;">
-                    {{ booking.schedule.route.carrier_number|airline_name_from_code }}
+                    {{ booking.schedule.route.airline_name|default:booking.schedule.route.carrier_number|airline_name_from_code }}
                 </div>
             </div>
         </div>
@@ -303,7 +303,7 @@
                 <td>{{ booking.schedule.route.carrier_number }}</td>
                 <td>{% if booking.schedule.route.departure_terminal %}{{ booking.schedule.route.departure_terminal }}{% else %}-{% endif %}</td>
                 <td>-</td>
-                <td>{{ booking.schedule.route.carrier_number|airline_name_from_code }}</td>
+                <td>{{ booking.schedule.route.airline_name|default:booking.schedule.route.carrier_number|airline_name_from_code }}</td>
             </tr>
     </table>
     </div>
@@ -352,11 +352,11 @@
                 <tr>
                     <td>
                         <div style="display: flex; align-items: center; gap: 5px;">
-                            <img src="{{ booking.schedule.route.carrier_number|airline_logo }}" 
+                            <img src="{{ booking.schedule.route.airline_name|airline_logo_static }}" 
                                  alt="" 
                                  style="height: 20px; width: auto;"
-                                 onerror="this.style.display='none'">
-                            <span>{{ booking.schedule.route.carrier_number|airline_name_from_code }}</span>
+                                 onerror="this.src='{{ booking.schedule.route.carrier_number|airline_logo }}'">
+                            <span>{{ booking.schedule.route.airline_name|default:booking.schedule.route.carrier_number|airline_name_from_code }}</span>
                         </div>
                     </td>
                     <td>{% if booking.schedule.route.arrival_terminal %}{{ booking.schedule.route.arrival_terminal }}{% else %}-{% endif %}</td>

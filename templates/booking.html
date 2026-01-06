@@ -167,11 +167,11 @@
                             <div class="mb-4">
                                 <label class="flex items-start space-x-2 cursor-pointer">
                                     <input type="checkbox" required
-                                        class="mt-0.5 w-4 h-4 text-primary border-2 border-gray-300 rounded focus:ring-primary">
+                                        class="mt-0.5 w-4 h-4 text-primary border-2 border-gray-300 rounded focus:ring-primary"
+                                        oninvalid="this.setCustomValidity('Please check')"
+                                        oninput="this.setCustomValidity('')">
                                     <span class="text-gray-700 text-sm">
-                                        I agree to the <a href="#" class="text-primary hover:underline">terms and
-                                            conditions</a>
-                                        and <a href="#" class="text-primary hover:underline">cancellation policy</a>
+                                        I agree to the <a href="{% url 'terms_conditions' %}" target="_blank" class="text-primary hover:underline">terms & conditions</a>
                                     </span>
                                 </label>
                             </div>
