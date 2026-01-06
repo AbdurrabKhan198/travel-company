@@ -29,6 +29,8 @@
     .form-field-wrapper {
         position: relative;
         margin-bottom: 15px;
+        overflow: hidden;
+        isolation: isolate;
     }
 
     .form-field-label {
@@ -69,6 +71,8 @@
         flex-direction: column;
         justify-content: center;
         transition: all 0.2s;
+        position: relative;
+        z-index: 1;
     }
 
     .form-field-display:hover {
@@ -168,12 +172,28 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        cursor: pointer;
+        cursor: pointer !important;
         transition: background 0.2s;
+        position: relative;
+        z-index: 9999 !important;
+        pointer-events: auto !important;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
     }
 
     .search-btn:hover {
         background: #e55a2b;
+    }
+    
+    .search-btn:active {
+        background: #d14a1f;
+        transform: scale(0.98);
+    }
+    
+    .search-btn:focus {
+        outline: 2px solid #ff6b35;
+        outline-offset: 2px;
     }
 
     .hidden-input-overlay {
@@ -184,12 +204,39 @@
         height: 100%;
         opacity: 0;
         cursor: pointer;
-        z-index: 5;
+        z-index: 1;
+        border: none;
+        background: transparent;
+        pointer-events: auto;
+    }
+    
+    /* Ensure search button area is never blocked */
+    .w-40 {
+        pointer-events: auto !important;
+        position: relative !important;
+        z-index: 9999 !important;
+    }
+    
+    .w-40 * {
+        pointer-events: auto !important;
+    }
+    
+    /* Make sure form field wrappers don't extend beyond their bounds */
+    #formFieldsRow > .form-field-wrapper {
+        overflow: hidden;
+    }
+    
+    /* Search button should always be on top */
+    #searchButton, #searchButtonMobile {
+        position: relative !important;
+        z-index: 99999 !important;
+        pointer-events: auto !important;
     }
 
     .hidden-input-overlay:focus {
         opacity: 1;
-        z-index: 10;
+        z-index: 15;
+        background: transparent;
     }
 
     .error-notification {
@@ -372,7 +419,7 @@
             <div class="w-full lg:w-[60%] order-2 lg:order-1">
                 <!-- Search Form -->
                 <div class="search-form-container" style="padding: 30px;">
-                <form method="GET" action="{% url 'search_flights' %}" id="searchForm">
+                <form method="GET" action="{% url 'search_flights' %}" id="searchForm" onsubmit="return syncMobileInputsBeforeSubmit();">
                     <!-- Hidden radio inputs for trip type -->
                     <input type="radio" name="trip_type" value="one_way" checked id="trip_one_way" style="display: none;">
                     <input type="radio" name="trip_type" value="return" id="trip_return" style="display: none;">
@@ -414,14 +461,16 @@
                         </div>
                         
                         <!-- All Fields in One Horizontal Row -->
-                        <div class="flex gap-3 items-end">
+                        <div class="flex gap-3 items-end" style="position: relative; align-items: flex-end;" id="formFieldsRow">
                             <!-- From -->
-                            <div class="flex-1 form-field-wrapper">
+                            <div class="flex-1 form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label text-xs font-bold mb-1.5 block">FROM</label>
-                                <div class="form-field-display h-12" id="from_display_card">
-                                    <div class="form-field-value text-sm" id="from_display">Enter city</div>
-                                    <div class="form-field-subtext text-xs" id="from_subtext" style="display: none;"></div>
+                                <div class="form-field-display h-12 cursor-pointer" id="from_display_card" onclick="document.getElementById('from_location').focus(); document.getElementById('from_location').click();">
+                                    <div class="form-field-value text-sm" id="from_display" style="pointer-events: none;">Enter city</div>
+                                    <div class="form-field-subtext text-xs" id="from_subtext" style="display: none; pointer-events: none;"></div>
                                 </div>
+                                <input type="text" name="from_location" id="from_location" list="origin-suggestions"  value="{{ prefill_from }}" 
+                                    class="form-field-input hidden-input-overlay" placeholder="Enter city">
                             </div>
 
                             <!-- Swap Button -->
@@ -433,31 +482,38 @@
                             </div>
 
                             <!-- To -->
-                            <div class="flex-1 form-field-wrapper">
+                            <div class="flex-1 form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label text-xs font-bold mb-1.5 block">TO</label>
-                                <div class="form-field-display h-12" id="to_display_card">
-                                    <div class="form-field-value text-sm" id="to_display">Enter city</div>
-                                    <div class="form-field-subtext text-xs" id="to_subtext" style="display: none;"></div>
+                                <div class="form-field-display h-12 cursor-pointer" id="to_display_card" onclick="document.getElementById('to_location').focus(); document.getElementById('to_location').click();">
+                                    <div class="form-field-value text-sm" id="to_display" style="pointer-events: none;">Enter city</div>
+                                    <div class="form-field-subtext text-xs" id="to_subtext" style="display: none; pointer-events: none;"></div>
                                 </div>
+                                <input type="text" name="to_location" id="to_location" list="destination-suggestions"  value="{{ prefill_to }}" 
+                                    class="form-field-input hidden-input-overlay" placeholder="Enter city">
                             </div>
 
                             <!-- Departure Date -->
-                            <div class="flex-1 form-field-wrapper">
+                            <div class="flex-1 form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label text-xs font-bold mb-1.5 block">DEPARTURE</label>
-                                <div class="form-field-display h-12" id="departure_display_card">
-                                    <div class="form-field-value text-sm" id="departure_display">Select date</div>
-                                    <div class="form-field-subtext text-xs" id="departure_subtext" style="display: none;"></div>
+                                <div class="form-field-display h-12 cursor-pointer" id="departure_display_card" onclick="openDepartureDatePicker();">
+                                    <div class="form-field-value text-sm" id="departure_display" style="pointer-events: none;">Select date</div>
+                                    <div class="form-field-subtext text-xs" id="departure_subtext" style="display: none; pointer-events: none;"></div>
                                 </div>
+                                <input type="text" name="travel_date" id="travel_date" placeholder="Select date"  readonly value="{{ prefill_travel_date }}" 
+                                    class="form-field-input hidden-input-overlay">
                             </div>
 
                             <!-- Return Date -->
-                            <div class="flex-1 form-field-wrapper" id="return_date_wrapper" style="display: none;">
+                            <div class="flex-1 form-field-wrapper" id="return_date_wrapper" style="display: none; position: relative;">
                                 <label class="form-field-label text-xs font-bold mb-1.5 block">RETURN</label>
-                                <div class="form-field-display h-12" id="return_display_card"
+                                <div class="form-field-display h-12 cursor-pointer" id="return_display_card"
+                                    onclick="openReturnDatePicker();"
                                     style="background: #f9fafb; border-color: #e5e7eb;">
-                                    <div class="form-field-placeholder text-sm" id="return_display">Add return date</div>
-                                    <div class="form-field-subtext text-xs" id="return_subtext" style="display: none;"></div>
+                                    <div class="form-field-placeholder text-sm" id="return_display" style="pointer-events: none;">Add return date</div>
+                                    <div class="form-field-subtext text-xs" id="return_subtext" style="display: none; pointer-events: none;"></div>
                                 </div>
+                                <input type="text" name="return_date" id="return_date" placeholder="Select date" disabled readonly value="{{ prefill_return_date }}" 
+                                    class="form-field-input hidden-input-overlay">
                             </div>
 
                             <!-- Passengers -->
@@ -470,8 +526,8 @@
                             </div>
                             
                             <!-- Search Button -->
-                            <div class="w-40">
-                                <button type="submit" class="search-btn w-full h-12 text-sm font-bold">
+                            <div class="w-40 flex-shrink-0">
+                                <button type="submit" id="searchButton" class="search-btn w-full h-12 text-sm font-bold">
                                     <i class="fas fa-search mr-1"></i>
                                     SEARCH
                                 </button>
@@ -509,47 +565,45 @@
                         <!-- Form Fields - Vertical Layout -->
                         <div class="grid grid-cols-1 gap-4">
                             <!-- From -->
-                            <div class="form-field-wrapper">
+                            <div class="form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label">FROM</label>
-                                <div class="form-field-display" id="from_display_card_mobile">
-                                    <div class="form-field-value" id="from_display_mobile">Enter city</div>
-                                    <div class="form-field-subtext" id="from_subtext_mobile" style="display: none;"></div>
+                                <div class="form-field-display cursor-pointer" id="from_display_card_mobile" onclick="document.getElementById('from_location_mobile').focus(); document.getElementById('from_location_mobile').click();">
+                                    <div class="form-field-value" id="from_display_mobile" style="pointer-events: none;">Enter city</div>
+                                    <div class="form-field-subtext" id="from_subtext_mobile" style="display: none; pointer-events: none;"></div>
                                 </div>
-                                <input type="text" name="from_location" id="from_location" list="origin-suggestions"
-                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_from }}">
+                                <input type="text" name="from_location_mobile" id="from_location_mobile" list="origin-suggestions"
+                                    class="form-field-input hidden-input-overlay" value="{{ prefill_from }}" placeholder="Enter city">
                             </div>
 
                             <!-- To -->
-                            <div class="form-field-wrapper">
+                            <div class="form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label">TO</label>
-                                <div class="form-field-display" id="to_display_card_mobile">
-                                    <div class="form-field-value" id="to_display_mobile">Enter city</div>
-                                    <div class="form-field-subtext" id="to_subtext_mobile" style="display: none;"></div>
+                                <div class="form-field-display cursor-pointer" id="to_display_card_mobile" onclick="document.getElementById('to_location_mobile').focus(); document.getElementById('to_location_mobile').click();">
+                                    <div class="form-field-value" id="to_display_mobile" style="pointer-events: none;">Enter city</div>
+                                    <div class="form-field-subtext" id="to_subtext_mobile" style="display: none; pointer-events: none;"></div>
                                 </div>
-                                <input type="text" name="to_location" id="to_location" list="destination-suggestions"
-                                    class="form-field-input hidden-input-overlay" required value="{{ prefill_to }}">
+                                <input type="text" name="to_location_mobile" id="to_location_mobile" list="destination-suggestions"
+                                    class="form-field-input hidden-input-overlay" value="{{ prefill_to }}" placeholder="Enter city">
                             </div>
 
                             <!-- Departure Date -->
-                            <div class="form-field-wrapper">
+                            <div class="form-field-wrapper" style="position: relative;">
                                 <label class="form-field-label">DEPARTURE</label>
                                 <div class="form-field-display" id="departure_display_card_mobile">
-                                    <div class="form-field-value" id="departure_display_mobile">Select date</div>
-                                    <div class="form-field-subtext" id="departure_subtext_mobile" style="display: none;"></div>
+                                    <input type="date" name="travel_date_mobile" id="travel_date_mobile"
+                                        class="w-full h-full bg-transparent border-0 outline-none px-3 py-2 text-sm cursor-pointer" 
+                                         value="{{ prefill_travel_date }}">
                                 </div>
-                                <input type="text" name="travel_date" id="travel_date" placeholder="Select date"
-                                    class="form-field-input hidden-input-overlay" required readonly value="{{ prefill_travel_date }}">
                             </div>
 
                             <!-- Return Date -->
-                            <div class="form-field-wrapper" id="return_date_wrapper_mobile" style="display: none;">
+                            <div class="form-field-wrapper" id="return_date_wrapper_mobile" style="display: none; position: relative;">
                                 <label class="form-field-label">RETURN</label>
-                                <div class="form-field-display" id="return_display_card_mobile" style="background: #f9fafb; border-color: #e5e7eb;">
-                                    <div class="form-field-placeholder" id="return_display_mobile">Add return date</div>
-                                    <div class="form-field-subtext" id="return_subtext_mobile" style="display: none;"></div>
+                                <div class="form-field-display" id="return_display_card_mobile">
+                                    <input type="date" name="return_date_mobile" id="return_date_mobile"
+                                        class="w-full h-full bg-transparent border-0 outline-none px-3 py-2 text-sm cursor-pointer" 
+                                        value="{{ prefill_return_date }}">
                                 </div>
-                                <input type="text" name="return_date" id="return_date" placeholder="Select date"
-                                    class="form-field-input hidden-input-overlay" disabled readonly value="{{ prefill_return_date }}">
                             </div>
 
                             <!-- Passengers -->
@@ -568,7 +622,7 @@
 
                         <!-- Search Button -->
                         <div class="mt-6">
-                            <button type="submit" class="search-btn">
+                            <button type="submit" id="searchButtonMobile" class="search-btn">
                                 <i class="fas fa-search mr-2"></i>
                                 Search Flights
                             </button>
@@ -1131,12 +1185,26 @@
             const display = document.getElementById(displayId);
             const subtext = document.getElementById(subtextId);
             
-            // Also get mobile versions
-            const displayMobile = document.getElementById(displayId + '_mobile');
-            const subtextMobile = document.getElementById(subtextId + '_mobile');
+            // Check if we're dealing with mobile inputs (IDs already end with _mobile)
+            const isMobileInput = inputId.endsWith('_mobile');
+            
+            // For desktop inputs, also get mobile versions
+            let displayMobile = null;
+            let subtextMobile = null;
+            if (!isMobileInput) {
+                displayMobile = document.getElementById(displayId + '_mobile');
+                subtextMobile = document.getElementById(subtextId + '_mobile');
+            }
 
             if (input && display) {
                 const value = input.value.trim();
+                console.log('updateLocationDisplay:', inputId, 'value:', value);
+                
+                // Ensure input value is set properly
+                if (!value && input.dataset.value) {
+                    input.value = input.dataset.value;
+                }
+                
                 if (value) {
                     const match = value.match(/^(.+?)(\s*\(([^)]+)\))?$/);
                     const cityName = match ? match[1].trim() : value;
@@ -1403,6 +1471,7 @@
         window.swapLocations = swapLocations;
 
         // Show Error
+        // Form Validation UI Helpers
         function showError(message) {
             const existing = document.querySelector('.error-notification');
             if (existing) existing.remove();
@@ -1417,61 +1486,9 @@
                 setTimeout(() => errorDiv.remove(), 300);
             }, 4000);
         }
-
-        // Form Validation
-        const searchForm = document.getElementById('searchForm');
-        if (searchForm) {
-            searchForm.addEventListener('submit', function (e) {
-                const fromInput = document.getElementById('from_location');
-                const toInput = document.getElementById('to_location');
-
-                if (!fromInput.value.trim()) {
-                    e.preventDefault();
-                    showError('Please select a departure city');
-                    fromInput.focus();
-                    return false;
-                }
-
-                if (!toInput.value.trim()) {
-                    e.preventDefault();
-                    showError('Please select a destination city');
-                    toInput.focus();
-                    return false;
-                }
-
-                const fromCity = fromInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || fromInput.value;
-                const toCity = toInput.value.match(/^(.+?)(\s*\([^)]+\))?$/)?.[1]?.trim() || toInput.value;
-
-                if (fromCity === toCity) {
-                    e.preventDefault();
-                    showError('Departure and destination cannot be the same');
-                    return false;
-                }
-
-                if (tripReturnRadio.checked && returnDateInput && !returnDateInput.value.trim()) {
-                    e.preventDefault();
-                    showError('Please select a return date for round trip');
-                    returnDateInput.focus();
-                    return false;
-                }
-
-                // Validate at least one adult
-                const adults = parseInt(document.getElementById('adults_input').value) || 0;
-                if (adults === 0) {
-                    e.preventDefault();
-                    showError('At least 1 adult is required');
-                    return false;
-                }
-
-                // Validate infants don't exceed adults
-                const infants = parseInt(document.getElementById('infants_input').value) || 0;
-                if (infants > adults) {
-                    e.preventDefault();
-                    showError('Number of infants cannot exceed number of adults');
-                    return false;
-                }
-            });
-        }
+        
+        // Make showError globally accessible for form validation
+        window.showError = showError;
 
         // Store original datalist options
         const originalOptions = {
@@ -1595,13 +1612,42 @@
                 fromInput.addEventListener('input', function () {
                     filterDatalist(this, 'origin-suggestions', 'origin');
                     updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                    // Ensure value is set
+                    console.log('From input value on input event:', this.value);
+                });
+                
+                // Listen for change event (when datalist option is selected)
+                fromInput.addEventListener('change', function() {
+                    console.log('From input - change event, value:', this.value);
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                    }
+                });
+                
+                // Also listen for blur to ensure value is captured
+                fromInput.addEventListener('blur', function() {
+                    console.log('From input - blur event, value:', this.value);
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                    }
+                });
+                
+                // Listen for when datalist option is selected
+                fromInput.addEventListener('select', function() {
+                    console.log('From input - select event, value:', this.value);
                 });
 
-                fromInput.addEventListener('change', () => {
-                    updateLocationDisplay('from_location', 'from_display', 'from_subtext');
-                    // Client Req 2: Auto Focus To
-                    if (this.value && toInput) {
-                        toInput.focus();
+                fromInput.addEventListener('change', function() {
+                    console.log('From input changed:', this.value);
+                    // Ensure value is properly set
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('from_location', 'from_display', 'from_subtext');
+                        // Client Req 2: Auto Focus To
+                        if (toInput) {
+                            toInput.focus();
+                        }
+                    } else {
+                        updateLocationDisplay('from_location', 'from_display', 'from_subtext');
                     }
                 });
 
@@ -1620,9 +1666,27 @@
                 toInput.addEventListener('input', function () {
                     filterDatalist(this, 'destination-suggestions', 'destination');
                     updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+                    // Ensure value is set
+                    console.log('To input value on input event:', this.value);
+                });
+                
+                // Also listen for blur to ensure value is captured
+                toInput.addEventListener('blur', function() {
+                    console.log('To input blur - value:', this.value);
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+                    }
                 });
 
-                toInput.addEventListener('change', () => updateLocationDisplay('to_location', 'to_display', 'to_subtext'));
+                toInput.addEventListener('change', function() {
+                    console.log('To input changed:', this.value);
+                    // Ensure value is properly set
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+                    } else {
+                        updateLocationDisplay('to_location', 'to_display', 'to_subtext');
+                    }
+                });
 
                 toInput.addEventListener('focus', function () {
                     // Clear options on focus if input is empty
@@ -1649,17 +1713,34 @@
             }
 
 
-            // Make display cards clickable (Desktop)
-            document.getElementById('from_display_card').addEventListener('click', () => fromInput.focus());
-            document.getElementById('to_display_card').addEventListener('click', () => toInput.focus());
-            document.getElementById('departure_display_card').addEventListener('click', () => travelDateInput.focus());
-            document.getElementById('return_display_card').addEventListener('click', () => {
-                // Client Req 3: Auto Switch to Round Trip
-                if (tripReturnBtn && !tripReturnBtn.classList.contains('active')) {
-                    tripReturnBtn.click();
-                }
-                setTimeout(() => { if (returnDateInput) returnDateInput.focus(); }, 100);
-            });
+            // Make display cards clickable (Desktop) - onclick handlers are already in HTML, but keep these as backup
+            const fromDisplayCard = document.getElementById('from_display_card');
+            const toDisplayCard = document.getElementById('to_display_card');
+            const departureDisplayCard = document.getElementById('departure_display_card');
+            const returnDisplayCard = document.getElementById('return_display_card');
+            
+            if (fromDisplayCard && fromInput) {
+                fromDisplayCard.addEventListener('click', () => {
+                    fromInput.focus();
+                    fromInput.click();
+                });
+            }
+            if (toDisplayCard && toInput) {
+                toDisplayCard.addEventListener('click', () => {
+                    toInput.focus();
+                    toInput.click();
+                });
+            }
+            if (departureDisplayCard && travelDateInput) {
+                departureDisplayCard.addEventListener('click', () => {
+                    openDepartureDatePicker();
+                });
+            }
+            if (returnDisplayCard && returnDateInput) {
+                returnDisplayCard.addEventListener('click', () => {
+                    openReturnDatePicker();
+                });
+            }
 
             // Make display cards clickable (Mobile)
             const fromDisplayCardMobile = document.getElementById('from_display_card_mobile');
@@ -1667,52 +1748,64 @@
             const departureDisplayCardMobile = document.getElementById('departure_display_card_mobile');
             const returnDisplayCardMobile = document.getElementById('return_display_card_mobile');
             
+            // Mobile display card handlers - trigger MOBILE inputs
+            const fromInputMobile = document.getElementById('from_location_mobile');
+            const toInputMobile = document.getElementById('to_location_mobile');
+            
             if (fromDisplayCardMobile) {
                 fromDisplayCardMobile.addEventListener('click', () => {
-                    if (fromInput) {
-                        fromInput.click();
-                        fromInput.focus();
+                    if (fromInputMobile) {
+                        fromInputMobile.focus();
+                        fromInputMobile.click();
                     }
                 });
             }
             if (toDisplayCardMobile) {
                 toDisplayCardMobile.addEventListener('click', () => {
-                    if (toInput) {
-                        toInput.click();
-                        toInput.focus();
+                    if (toInputMobile) {
+                        toInputMobile.focus();
+                        toInputMobile.click();
                     }
                 });
             }
-            if (departureDisplayCardMobile) {
-                departureDisplayCardMobile.addEventListener('click', () => {
-                    if (travelDateInput) {
-                        travelDateInput.click();
-                        travelDateInput.focus();
-                        // Trigger flatpickr
-                        if (window.departurePicker) {
-                            window.departurePicker.open();
-                        }
+            // Mobile date inputs are type="date" and handle their own clicks
+            // No extra listeners needed for departureDisplayCardMobile/returnDisplayCardMobile
+            
+            // Add event listeners for mobile inputs to update displays AND filter datalist
+            if (fromInputMobile) {
+                fromInputMobile.addEventListener('input', function() {
+                    filterDatalist(this, 'origin-suggestions', 'origin');
+                    updateLocationDisplay('from_location_mobile', 'from_display_mobile', 'from_subtext_mobile');
+                });
+                fromInputMobile.addEventListener('change', function() {
+                    updateLocationDisplay('from_location_mobile', 'from_display_mobile', 'from_subtext_mobile');
+                    // Auto focus to destination after selecting origin
+                    if (toInputMobile && this.value.trim()) {
+                        toInputMobile.focus();
+                    }
+                });
+                fromInputMobile.addEventListener('blur', function() {
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('from_location_mobile', 'from_display_mobile', 'from_subtext_mobile');
                     }
                 });
             }
-            if (returnDisplayCardMobile) {
-                returnDisplayCardMobile.addEventListener('click', () => {
-                    // Auto Switch to Round Trip on mobile
-                    if (tripReturnBtnMobile && !tripReturnBtnMobile.classList.contains('active')) {
-                        tripReturnBtnMobile.click();
+            if (toInputMobile) {
+                toInputMobile.addEventListener('input', function() {
+                    filterDatalist(this, 'destination-suggestions', 'destination');
+                    updateLocationDisplay('to_location_mobile', 'to_display_mobile', 'to_subtext_mobile');
+                });
+                toInputMobile.addEventListener('change', function() {
+                    updateLocationDisplay('to_location_mobile', 'to_display_mobile', 'to_subtext_mobile');
+                });
+                toInputMobile.addEventListener('blur', function() {
+                    if (this.value && this.value.trim()) {
+                        updateLocationDisplay('to_location_mobile', 'to_display_mobile', 'to_subtext_mobile');
                     }
-                    setTimeout(() => {
-                        if (returnDateInput) {
-                            returnDateInput.click();
-                            returnDateInput.focus();
-                            // Trigger flatpickr
-                            if (window.returnPicker) {
-                                window.returnPicker.open();
-                            }
-                        }
-                    }, 100);
                 });
             }
+            
+            // Mobile date inputs are now native type="date" and visible, so they handle their own display.
 
             // Passenger display card - open modal (Desktop)
             const passengerDisplayCard = document.getElementById('passenger_display_card');
@@ -1733,6 +1826,17 @@
                     e.preventDefault();
                     e.stopPropagation();
                     applyPassengerSelection();
+                });
+            }
+
+            // Mobile Search Button - Ensure it triggers form submission
+            const mobileSearchBtn = document.getElementById('searchButtonMobile');
+            const mainForm = document.getElementById('searchForm');
+            if (mobileSearchBtn && mainForm) {
+                mobileSearchBtn.addEventListener('click', function(e) {
+                    console.log('Mobile search button clicked');
+                    // If it's not naturally submitting, we trigger it
+                    // The syncMobileInputsBeforeSubmit() on form will still run
                 });
             }
         });
@@ -1824,5 +1928,193 @@
             selectFlightType('any'); // Default to 'any'
         }, 100);
     });
+    
+    // Helper functions for date pickers
+    function openDepartureDatePicker() {
+        const isMobile = window.innerWidth < 1024;
+        const travelDateInput = document.getElementById(isMobile ? 'travel_date_mobile' : 'travel_date');
+        
+        if (travelDateInput) {
+            travelDateInput.focus();
+            
+            // Try to show native date picker
+            try {
+                travelDateInput.showPicker();
+            } catch(e) {
+                console.log('showPicker not supported');
+            }
+            
+            // Trigger flatpickr ONLY on desktop
+            if (!isMobile && window.departurePicker) {
+                window.departurePicker.open();
+            }
+        }
+    }
+    
+    function openReturnDatePicker() {
+        const isMobile = window.innerWidth < 1024;
+        const returnDateInput = document.getElementById(isMobile ? 'return_date_mobile' : 'return_date');
+        const tripReturnBtn = document.getElementById('trip_return_btn');
+        const tripReturnBtnMobile = document.getElementById('trip_return_btn_mobile');
+        
+        // Auto switch to Round Trip if needed
+        if (tripReturnBtn && !tripReturnBtn.classList.contains('active')) {
+            tripReturnBtn.click();
+        } else if (tripReturnBtnMobile && !tripReturnBtnMobile.classList.contains('active')) {
+            tripReturnBtnMobile.click();
+        }
+        
+        if (returnDateInput) {
+            setTimeout(() => {
+                returnDateInput.disabled = false;
+                returnDateInput.focus();
+                
+                // Try to show native date picker
+                try {
+                    returnDateInput.showPicker();
+                } catch(e) {
+                    console.log('showPicker not supported');
+                }
+                
+                // Trigger flatpickr ONLY on desktop
+                if (!isMobile && window.returnPicker) {
+                    window.returnPicker.open();
+                }
+            }, 100);
+        }
+    }
+    
+    // Make functions globally accessible
+    window.openDepartureDatePicker = openDepartureDatePicker;
+    window.openReturnDatePicker = openReturnDatePicker;
+    
+    // Sync mobile inputs to desktop inputs before form submission
+    function syncMobileInputsBeforeSubmit() {
+        console.log('syncMobileInputsBeforeSubmit called');
+        
+        try {
+            // Determine if we are in mobile mode by checking visibility of mobile inputs
+            const fromInputMobile = document.getElementById('from_location_mobile');
+            // If mobile input exists and is visible (offsetParent is not null)
+            const isMobile = fromInputMobile && fromInputMobile.offsetParent !== null;
+            
+            console.log('Sync Mode:', isMobile ? 'MOBILE' : 'DESKTOP');
+            
+            // Get desktop inputs (these are the ones that will be submitted)
+            const fromInput = document.getElementById('from_location');
+            const toInput = document.getElementById('to_location');
+            const travelDateInput = document.getElementById('travel_date');
+            const returnDateInput = document.getElementById('return_date');
+            const tripReturnRadio = document.getElementById('trip_return');
+            const adultsInput = document.getElementById('adults_input');
+            const infantsInput = document.getElementById('infants_input');
+            
+            // Get mobile inputs
+            const toInputMobile = document.getElementById('to_location_mobile');
+            const travelDateInputMobile = document.getElementById('travel_date_mobile');
+            const returnDateInputMobile = document.getElementById('return_date_mobile');
+            
+            // If on mobile layout, we MUST copy values to the desktop inputs
+            // because the form submission uses the desktop input 'name' attributes
+            if (isMobile) {
+                // 1. FROM LOCATION
+                let mobileFromValue = fromInputMobile ? fromInputMobile.value.trim() : '';
+                if (!mobileFromValue) {
+                    // Fallback to display text
+                    const fromDisplay = document.getElementById('from_display_mobile');
+                    if (fromDisplay && fromDisplay.textContent && fromDisplay.textContent !== 'Enter city') {
+                        mobileFromValue = fromDisplay.textContent.trim();
+                    }
+                }
+                if (fromInput) fromInput.value = mobileFromValue;
+
+                // 2. TO LOCATION
+                let mobileToValue = toInputMobile ? toInputMobile.value.trim() : '';
+                if (!mobileToValue) {
+                    // Fallback to display text
+                    const toDisplay = document.getElementById('to_display_mobile');
+                    if (toDisplay && toDisplay.textContent && toDisplay.textContent !== 'Enter city') {
+                        mobileToValue = toDisplay.textContent.trim();
+                    }
+                }
+                if (toInput) toInput.value = mobileToValue;
+
+                // 3. DATES
+                if (travelDateInputMobile && travelDateInput && travelDateInputMobile.value) {
+                    travelDateInput.value = travelDateInputMobile.value;
+                }
+                if (returnDateInputMobile && returnDateInput && returnDateInputMobile.value) {
+                    returnDateInput.value = returnDateInputMobile.value;
+                }
+            }
+            
+            // --- VALIDATION (On the Desktop inputs, which now hold the synced values) ---
+            
+            const finalFromValue = fromInput ? fromInput.value.trim() : '';
+            const finalToValue = toInput ? toInput.value.trim() : '';
+            
+            if (!finalFromValue) {
+                showError('Please select a departure city');
+                // Focus the visible input
+                if (isMobile && fromInputMobile) fromInputMobile.focus();
+                else if (fromInput) fromInput.focus();
+                return false;
+            }
+            
+            if (!finalToValue) {
+                showError('Please select a destination city');
+                if (isMobile && toInputMobile) toInputMobile.focus();
+                else if (toInput) toInput.focus();
+                return false;
+            }
+    
+            // Same city check
+            // Extract city name if format is "City (CODE)"
+            const getCity = (val) => {
+                const match = val.match(/^(.+?)(\s*\([^)]+\))?$/);
+                return match ? match[1].trim().toLowerCase() : val.trim().toLowerCase();
+            };
+            
+            if (getCity(finalFromValue) === getCity(finalToValue)) {
+                showError('Departure and destination cannot be the same');
+                return false;
+            }
+    
+            // Return date check for round trip
+            if (tripReturnRadio && tripReturnRadio.checked) {
+                const finalReturnDate = returnDateInput ? returnDateInput.value.trim() : '';
+                if (!finalReturnDate) {
+                    showError('Please select a return date for round trip');
+                    if (isMobile && returnDateInputMobile) returnDateInputMobile.focus();
+                    else if (returnDateInput) openReturnDatePicker(); // Use helper to open correct picker
+                    return false;
+                }
+            }
+    
+            // Passenger validation
+            const adults = parseInt(adultsInput ? adultsInput.value : '0') || 0;
+            const infants = parseInt(infantsInput ? infantsInput.value : '0') || 0;
+            
+            if (adults < 1) {
+                showError('At least 1 adult is required');
+                return false;
+            }
+            if (infants > adults) {
+                showError('Number of infants cannot exceed number of adults');
+                return false;
+            }
+            
+            console.log('Validation passed. Submitting form...');
+            return true;
+            
+        } catch (error) {
+            console.error('Error in syncMobileInputsBeforeSubmit:', error);
+            alert('An internal error occurred: ' + error.message);
+            return false;
+        }
+    }
+    
+    // Make function globally accessible
+    window.syncMobileInputsBeforeSubmit = syncMobileInputsBeforeSubmit;
 </script>
 {% endblock %}
